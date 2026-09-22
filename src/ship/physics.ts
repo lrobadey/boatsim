@@ -12,7 +12,7 @@ const RHO_AIR = 1.225;
 const G = 9.81;
 const BLADE_AREA = 0.11;
 const BLADE_CD = 1.5;
-const ROWER_MAX_FORCE = 300; // N at the blade
+const ROWER_MAX_FORCE = 370; // N at the blade (a trained rower's sprint effort through the oar lever)
 const RUDDER_AREA = 0.85;
 
 const _v = new THREE.Vector3();
@@ -211,7 +211,9 @@ export class ShipPhysics {
       // ITTC-like friction (~0.0022 at Re~1e8) x form factor, plus parasitic drag of the oars'
       // looms/ports and a wave-making term that climbs steeply toward hull speed
       const Cw = 0.003 * Math.pow(Fr / 0.33, 4);
-      const Fz = -0.5 * RHO * (0.0072 + Cw) * Swet * lv.z * Math.abs(lv.z);
+      // going astern the up-swept stern and steering oars lead: much higher form drag
+      const astern = lv.z > 0 ? 2.4 : 1;
+      const Fz = -0.5 * RHO * (0.006 * astern + Cw) * Swet * lv.z * Math.abs(lv.z);
       // vertical: radiation/viscous damping
       const Fy = -0.5 * RHO * 0.9 * c.area * lv.y * Math.abs(lv.y) - 1800 * c.area * lv.y;
       const Fl = _v.set(Fx, Fy, Fz).applyQuaternion(this.quat);
@@ -221,6 +223,13 @@ export class ShipPhysics {
     this.bowImmersion = bowImm;
     // weak angular damping (added-mass, appendages)
     this.torque.addScaledVector(this.angVel, -this.mass * 0.6);
+    // roll damping: bilge/keel eddy-making plus 170 oar blades acting as outriggers when in the
+    // water (much stronger with the oars run out than with them shipped)
+    const fwdAxis = _v.set(0, 0, -1).applyQuaternion(this.quat);
+    const rollRate = this.angVel.dot(fwdAxis);
+    const oarsOut = this.crew.readiness;
+    const cRoll = 22000 + 60000 * oarsOut;
+    this.torque.addScaledVector(fwdAxis, -cRoll * rollRate - 40000 * rollRate * Math.abs(rollRate));
   }
 
   private oars(invQ: THREE.Quaternion) {
@@ -380,7 +389,9 @@ export class ShipPhysics {
       // friction
       const vt = v.addScaledVector(n, -vn);
       const vtl = vt.length();
-      if (vtl > 1e-4) F.addScaledVector(vt, (-0.45 * Fn * Math.min(1, vtl / 0.3)) / vtl);
+      // friction: a greased keel slides on sand (gentle slopes), grinds on rock (steep)
+      const mu = 0.12 + 0.5 * Math.min(1, (1 - n.y) * 3);
+      if (vtl > 1e-4) F.addScaledVector(vt, (-mu * Fn * Math.min(1, vtl / 0.3)) / vtl);
       this.addForceAt(F, w);
       g += Fn;
     }

@@ -14,12 +14,12 @@ export interface Order {
 }
 
 export const ORDERS: Order[] = [
-  { name: 'Back Water', short: 'BACK', rate: 20, dir: -1, effort: 0.7, drain: 0.002 },
+  { name: 'Back Water', short: 'BACK', rate: 18, dir: -1, effort: 0.5, drain: 0.002 },
   { name: 'Oars Up', short: 'STOP', rate: 0, dir: 0, effort: 0, drain: -0.03 },
   { name: 'Slow', short: 'SLOW', rate: 18, dir: 1, effort: 0.45, drain: -0.015 },
   { name: 'Half', short: 'HALF', rate: 26, dir: 1, effort: 0.65, drain: -0.004 },
-  { name: 'Full', short: 'FULL', rate: 34, dir: 1, effort: 0.85, drain: 0.004 },
-  { name: 'Ramming Speed', short: 'RAM', rate: 44, dir: 1, effort: 1.0, drain: 0.028 },
+  { name: 'Full', short: 'FULL', rate: 31, dir: 1, effort: 0.85, drain: 0.004 },
+  { name: 'Ramming Speed', short: 'RAM', rate: 46, dir: 1, effort: 1.0, drain: 0.017 },
 ];
 export const ORDER_STOP = 1;
 
@@ -45,7 +45,7 @@ export class Crew {
 
   /** duration of the drive phase in seconds for the current rate */
   get driveTime() {
-    return Math.max(0.52, 1.0 - this.rate * 0.0105);
+    return Math.max(0.42, 1.0 - this.rate * 0.012);
   }
   get period() {
     return this.rate > 0.5 ? 60 / this.rate : 1e9;
