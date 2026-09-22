@@ -1,0 +1,657 @@
+/// <reference lib="webworker" />
+import { createNoise2D } from 'simplex-noise';
+import type { WorldGenRequest, WorldGenResult, IslandInfo, Sites, House } from './worldgenTypes';
+
+/**
+ * Seeded archipelago generator.
+ * 1. stochastic island layout (sizes from a power law, rejection-spaced)
+ * 2. per-island shape: warped distance field, coast profile that turns to cliffs on coasts facing the
+ *    prevailing wind (wave-cut) and to beaches in the lee; ridged mountains; underwater shelves
+ * 3. droplet hydraulic erosion on land (gullies, alluvial fans)
+ * 4. terrain analysis: islands (connected components + generated names), harbour, temple, village,
+ *    pier, vegetation — all chosen by scoring the generated terrain.
+ */
+
+function mulberry(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+interface Island {
+  x: number;
+  z: number;
+  r: number;
+  rot: number;
+  elong: number;
+  peak: number;
+  sharp: number; // ridge sharpness
+  kind: 'main' | 'medium' | 'small' | 'stack';
+}
+
+const post = (msg: any, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(msg, transfer);
+
+self.onmessage = (e: MessageEvent<WorldGenRequest>) => {
+  const req = e.data;
+  const res = generate(req, (p, label) => post({ type: 'progress', p, label }));
+  post({ type: 'done', result: res }, [res.heights.buffer, res.vegetation.buffer, res.ao.buffer]);
+};
+
+function generate(req: WorldGenRequest, progress: (p: number, label: string) => void): WorldGenResult {
+  const { size: N, worldSize: S, seed } = req;
+  const rand = mulberry(seed);
+  const n2a = createNoise2D(mulberry(seed * 7 + 1));
+  const n2b = createNoise2D(mulberry(seed * 13 + 2));
+  const n2c = createNoise2D(mulberry(seed * 17 + 3));
+  const half = S / 2;
+  const cell = S / N;
+  const windFrom = req.windFrom;
+  // unit vector pointing toward where the wind comes FROM (world xz)
+  const wfx = Math.sin(windFrom);
+  const wfz = -Math.cos(windFrom);
+
+  const fbm = (x: number, z: number, oct: number, noise = n2a) => {
+    let a = 0,
+      amp = 0.5,
+      f = 1;
+    for (let i = 0; i < oct; i++) {
+      a += amp * noise(x * f, z * f);
+      f *= 2.03;
+      amp *= 0.5;
+    }
+    return a;
+  };
+  const ridged = (x: number, z: number, oct: number) => {
+    let a = 0,
+      amp = 0.5,
+      f = 1,
+      w = 1;
+    for (let i = 0; i < oct; i++) {
+      let n = 1 - Math.abs(n2b(x * f, z * f));
+      n *= n;
+      a += n * amp * w;
+      w = Math.min(1, n * 2);
+      f *= 2.1;
+      amp *= 0.5;
+    }
+    return a;
+  };
+
+  // ---------- 1. island layout ----------
+  progress(0.02, 'Charting the islands');
+  const islands: Island[] = [];
+  const bound = half * 0.78;
+  const tryPlace = (r: number, kind: Island['kind'], minGap: number, tries = 400) => {
+    for (let t = 0; t < tries; t++) {
+      const x = (rand() * 2 - 1) * (bound - r * 0.6);
+      const z = (rand() * 2 - 1) * (bound - r * 0.6);
+      let ok = true;
+      for (const o of islands) {
+        const d = Math.hypot(o.x - x, o.z - z);
+        if (d < (o.r + r) * minGap) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      const peak =
+        kind === 'stack' ? 18 + rand() * 45 : kind === 'small' ? r * (0.12 + rand() * 0.18) : r * (0.11 + rand() * 0.1);
+      const isl: Island = {
+        x,
+        z,
+        r,
+        rot: rand() * Math.PI,
+        elong: kind === 'stack' ? 1 : 1 + rand() * (kind === 'main' ? 0.6 : 1.2),
+        peak: Math.min(peak, 460),
+        sharp: 0.5 + rand() * 0.5,
+        kind,
+      };
+      islands.push(isl);
+      return isl;
+    }
+    return null;
+  };
+  // main island near-ish the centre so the player starts somewhere interesting
+  const main = tryPlace(1700 + rand() * 400, 'main', 1.2, 1)!;
+  main.x = (rand() - 0.5) * 1200;
+  main.z = (rand() - 0.5) * 1200 - 900;
+  const nMedium = 2 + Math.floor(rand() * 2);
+  for (let i = 0; i < nMedium; i++) tryPlace(650 + rand() * 450, 'medium', 1.35);
+  const nSmall = 4 + Math.floor(rand() * 3);
+  for (let i = 0; i < nSmall; i++) tryPlace(170 + rand() * 280, 'small', 1.6);
+  // clusters of sea stacks ("teeth")
+  const nClusters = 2;
+  for (let c = 0; c < nClusters; c++) {
+    const anchor = tryPlace(90, 'stack', 3);
+    if (!anchor) continue;
+    for (let i = 0; i < 5 + Math.floor(rand() * 4); i++) {
+      const a = rand() * Math.PI * 2;
+      const d = 80 + rand() * 260;
+      islands.push({ x: anchor.x + Math.cos(a) * d, z: anchor.z + Math.sin(a) * d, r: 25 + rand() * 60, rot: rand() * 3, elong: 1 + rand(), peak: 10 + rand() * 40, sharp: 1, kind: 'stack' });
+    }
+  }
+
+  // ---------- 2. height field ----------
+  progress(0.05, 'Raising the land');
+  const H = new Float32Array(N * N);
+  const isl = islands.map((i) => ({ ...i, cr: Math.cos(-i.rot), sr: Math.sin(-i.rot), reach: i.r * i.elong * 2.6 }));
+
+  const heightAt = (x: number, z: number): number => {
+    // sea floor
+    let h = -58 + 14 * fbm(x / 5200, z / 5200, 3, n2c);
+    for (const I of isl) {
+      const dx = x - I.x,
+        dz = z - I.z;
+      if (Math.abs(dx) > I.reach || Math.abs(dz) > I.reach) continue;
+      const lx = dx * I.cr - dz * I.sr;
+      const lz = dx * I.sr + dz * I.cr;
+      const u = lx / (I.r * I.elong);
+      const v = (lz * I.elong) / I.r;
+      let d = Math.sqrt(u * u + v * v);
+      if (d > 2.6) continue;
+      // coastline warp: bays & headlands at several scales
+      const ws = I.r * 0.55;
+      d += 0.3 * fbm(x / ws + I.x, z / ws, 4, n2a) + 0.08 * n2c(x / (ws * 0.25), z / (ws * 0.25));
+      // wind exposure of this part of the coast: 1 = faces the wind (cliffs), -1 = lee (beaches)
+      const len = Math.hypot(dx, dz) + 1e-3;
+      const expo = (dx * wfx + dz * wfz) / len;
+      const cliff = Math.min(1, Math.max(0, 0.5 + 0.6 * expo + 0.35 * n2b(x / 900, z / 900)));
+      let hi: number;
+      if (d < 1) {
+        const t = 1 - d; // 0 at coast -> 1 at centre
+        // coast profile: concave (gentle, beaches) in the lee, straighter where exposed
+        const p = 1.55 - 0.55 * cliff;
+        const base = Math.pow(t, p);
+        // ridged mountains with valleys; ridge strength grows inland
+        // one or two main ridgelines per island (low frequency), with secondary spurs
+        const rid = ridged(x / (I.r * 1.35) + I.x * 0.001, z / (I.r * 1.35), 5);
+        const spur = ridged(x / (I.r * 0.45), z / (I.r * 0.45), 3);
+        const valleys = 0.6 + 0.4 * fbm(x / (I.r * 0.6), z / (I.r * 0.6), 3, n2c);
+        const detail = 0.05 * fbm(x / 90, z / 90, 4, n2c);
+        const mount = base * (0.28 + 0.8 * rid * I.sharp * valleys + 0.18 * spur * t) + detail * Math.min(1, t * 5);
+        hi = I.peak * mount;
+        // wave-cut cliff on exposed coasts: a steep face whose height varies along the coast
+        const cliffH = Math.min(I.peak * 0.22, 14 + 30 * (0.5 + 0.5 * n2a(x / 350, z / 350))) * cliff * cliff;
+        hi += cliffH * smoothstep(0.0, 0.012 + 0.01 * (1 - cliff), t);
+        // beaches: flatten the first metres in the lee
+        hi = Math.max(hi, 0.4 + 2.2 * smoothstep(0, 0.05, t) * (1 - cliff));
+      } else {
+        const t = d - 1;
+        // shelf: shallow sandy apron wider in the lee; drops faster below cliffs
+        const shelfW = 0.18 + 0.35 * (1 - cliff);
+        hi = -0.3 - 9 * smoothstep(0, shelfW, t) - 55 * smoothstep(shelfW * 0.8, shelfW + 1.2, t);
+        hi += 1.5 * n2c(x / 60, z / 60) * Math.max(0, 1 - t * 2);
+      }
+      if (hi > h) h = hi;
+    }
+    return h;
+  };
+
+  for (let j = 0; j < N; j++) {
+    const z = -half + (j + 0.5) * cell;
+    for (let i = 0; i < N; i++) {
+      H[j * N + i] = heightAt(-half + (i + 0.5) * cell, z);
+    }
+    if ((j & 63) === 0) progress(0.05 + 0.45 * (j / N), 'Raising the land');
+  }
+
+  // ---------- 3. hydraulic erosion (droplets) ----------
+  progress(0.5, 'Weathering the hills');
+  erode(H, N, cell, mulberry(seed + 99), Math.floor(N * N * 0.03),(p) => progress(0.5 + 0.25 * p, 'Weathering the hills'));
+
+  // ---------- 4. analysis ----------
+  progress(0.76, 'Surveying harbours');
+  const sample = (x: number, z: number) => {
+    const fx = (x + half) / cell - 0.5;
+    const fz = (z + half) / cell - 0.5;
+    const i = Math.max(0, Math.min(N - 2, Math.floor(fx)));
+    const j = Math.max(0, Math.min(N - 2, Math.floor(fz)));
+    const tx = Math.min(1, Math.max(0, fx - i));
+    const tz = Math.min(1, Math.max(0, fz - j));
+    const a = H[j * N + i],
+      b = H[j * N + i + 1],
+      c = H[(j + 1) * N + i],
+      d = H[(j + 1) * N + i + 1];
+    return (a * (1 - tx) + b * tx) * (1 - tz) + (c * (1 - tx) + d * tx) * tz;
+  };
+  const slopeAt = (x: number, z: number) => {
+    const e = cell;
+    const gx = (sample(x + e, z) - sample(x - e, z)) / (2 * e);
+    const gz = (sample(x, z + e) - sample(x, z - e)) / (2 * e);
+    return Math.hypot(gx, gz);
+  };
+
+  // islands via connected components on a coarse grid
+  const G = 256;
+  const gc = S / G;
+  const lab = new Int32Array(G * G).fill(-1);
+  const infos: IslandInfo[] = [];
+  const names = makeNames(mulberry(seed + 5));
+  for (let j = 0; j < G; j++)
+    for (let i = 0; i < G; i++) {
+      const idx = j * G + i;
+      if (lab[idx] !== -1) continue;
+      const x = -half + (i + 0.5) * gc,
+        z = -half + (j + 0.5) * gc;
+      if (sample(x, z) <= 0.5) continue;
+      const id = infos.length;
+      const stack = [idx];
+      lab[idx] = id;
+      let cnt = 0,
+        sx = 0,
+        sz = 0,
+        maxH = 0,
+        px = 0,
+        pz = 0;
+      while (stack.length) {
+        const k = stack.pop()!;
+        const ki = k % G,
+          kj = (k / G) | 0;
+        const kx = -half + (ki + 0.5) * gc,
+          kz = -half + (kj + 0.5) * gc;
+        const hh = sample(kx, kz);
+        cnt++;
+        sx += kx;
+        sz += kz;
+        if (hh > maxH) {
+          maxH = hh;
+          px = kx;
+          pz = kz;
+        }
+        for (const [di, dj] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]) {
+          const ni = ki + di,
+            nj = kj + dj;
+          if (ni < 0 || nj < 0 || ni >= G || nj >= G) continue;
+          const nk = nj * G + ni;
+          if (lab[nk] !== -1) continue;
+          if (sample(-half + (ni + 0.5) * gc, -half + (nj + 0.5) * gc) <= 0.5) continue;
+          lab[nk] = id;
+          stack.push(nk);
+        }
+      }
+      infos.push({ id, name: '', cx: sx / cnt, cz: sz / cnt, area: cnt * gc * gc, peak: maxH, peakX: px, peakZ: pz });
+    }
+  infos.sort((a, b) => b.area - a.area);
+  infos.forEach((I, k) => (I.name = I.area > 40000 ? names[k % names.length] : ''));
+  const mainIsland = infos[0];
+
+  // --- harbour: sheltered, navigable water next to gentle land, on the main island, away from the wind ---
+  const RAYS = 24;
+  const rayLand = (x: number, z: number, a: number, maxD: number) => {
+    const dx = Math.cos(a),
+      dz = Math.sin(a);
+    for (let d = 30; d < maxD; d += 30) if (sample(x + dx * d, z + dz * d) > 0) return d;
+    return -1;
+  };
+  let best = { score: -1e9, x: 0, z: 0, openA: 0 };
+  const hstep = 45;
+  for (let z = mainIsland.cz - 3200; z < mainIsland.cz + 3200; z += hstep)
+    for (let x = mainIsland.cx - 3200; x < mainIsland.cx + 3200; x += hstep) {
+      const h = sample(x, z);
+      if (h > -4 || h < -18) continue;
+      // near the main island's shore
+      let nearLand = rayLand(x, z, 0, 1) ;
+      let enclosed = 0,
+        windExposed = 0,
+        bestOpenRun = 0,
+        run = 0,
+        runStart = 0,
+        openCenter = 0,
+        minD = 1e9;
+      const hits: number[] = [];
+      for (let k = 0; k < RAYS; k++) {
+        const a = (k / RAYS) * Math.PI * 2;
+        const d = rayLand(x, z, a, 1400);
+        hits.push(d);
+        if (d > 0) {
+          enclosed += 1 - d / 1400;
+          minD = Math.min(minD, d);
+        } else {
+          // open to the sea in this direction: bad if that is where the wind/waves come from
+          const ex = Math.cos(a) * wfx + Math.sin(a) * wfz;
+          windExposed += Math.max(0, ex);
+        }
+      }
+      // navigable entrance: longest run of open rays
+      for (let k = 0; k < RAYS * 2; k++) {
+        if (hits[k % RAYS] < 0) {
+          if (run === 0) runStart = k;
+          run++;
+          if (run > bestOpenRun) {
+            bestOpenRun = run;
+            openCenter = runStart + run / 2;
+          }
+        } else run = 0;
+      }
+      if (bestOpenRun < 2 || bestOpenRun > RAYS * 0.6 || minD > 450 || minD < 60) continue;
+      // gentle land to build on nearby
+      let gentle = 0;
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        const lx = x + Math.cos(a) * (minD + 120),
+          lz = z + Math.sin(a) * (minD + 120);
+        const lh = sample(lx, lz);
+        if (lh > 1 && lh < 60 && slopeAt(lx, lz) < 0.3) gentle++;
+      }
+      const onMain = lab[Math.floor((z + half) / gc) * G + Math.floor((x + half) / gc)];
+      const score = enclosed * 1.0 - windExposed * 1.6 + gentle * 0.6 - Math.abs(h + 9) * 0.05 + nearLand * 0;
+      if (score > best.score) best = { score, x, z, openA: (openCenter / RAYS) * Math.PI * 2 };
+    }
+  const harbour = { x: best.x, z: best.z, openAngle: best.openA };
+  // shore point: nearest land toward the inside of the bay (opposite of the opening)
+  let shore = { x: harbour.x, z: harbour.z };
+  {
+    let bd = 1e9;
+    for (let k = 0; k < 72; k++) {
+      const a = (k / 72) * Math.PI * 2;
+      const d = rayLand(harbour.x, harbour.z, a, 900);
+      if (d > 0 && d < bd) {
+        bd = d;
+        shore = { x: harbour.x + Math.cos(a) * d, z: harbour.z + Math.sin(a) * d };
+      }
+    }
+  }
+
+  // --- temple: prominent, near the harbour, with a sea view, reasonably flat ---
+  progress(0.82, 'Choosing a site for the temple');
+  let tb = { score: -1e9, x: 0, z: 0, h: 0 };
+  for (let z = harbour.z - 1800; z < harbour.z + 1800; z += 24)
+    for (let x = harbour.x - 1800; x < harbour.x + 1800; x += 24) {
+      const h = sample(x, z);
+      if (h < 25 || h > 220) continue;
+      const sl = slopeAt(x, z);
+      if (sl > 0.45) continue;
+      let ring = 0;
+      let seaView = 0;
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        ring += sample(x + Math.cos(a) * 220, z + Math.sin(a) * 220);
+        if (sample(x + Math.cos(a) * 500, z + Math.sin(a) * 500) < 0) seaView++;
+      }
+      const prominence = h - ring / 12;
+      const dH = Math.hypot(x - harbour.x, z - harbour.z);
+      const score = prominence * 0.9 + seaView * 6 - sl * 60 - dH * 0.02 + Math.min(h, 90) * 0.15;
+      if (score > tb.score) tb = { score, x, z, h };
+    }
+  // flatten the temple platform into the heightmap (it is part of the physical world)
+  flatten(H, N, cell, half, tb.x, tb.z, 34, 58, tb.h);
+
+  // --- village: houses on gentle slopes around the harbour shore, density falling off with distance ---
+  progress(0.86, 'Founding the village');
+  const houses: House[] = [];
+  const vr = mulberry(seed + 31);
+  for (let t = 0; t < 9000 && houses.length < 140; t++) {
+    const a = vr() * Math.PI * 2;
+    const d = Math.pow(vr(), 0.7) * 650;
+    const x = shore.x + Math.cos(a) * d,
+      z = shore.z + Math.sin(a) * d;
+    const h = sample(x, z);
+    if (h < 2.2 || h > 70) continue;
+    const sl = slopeAt(x, z);
+    if (sl > 0.42) continue;
+    if (Math.hypot(x - tb.x, z - tb.z) < 60) continue;
+    if (vr() > Math.exp(-d / 320)) continue;
+    const w = 4 + vr() * 5,
+      l = 5 + vr() * 6;
+    let clash = false;
+    for (const o of houses) if (Math.hypot(o.x - x, o.z - z) < (Math.max(w, l) + Math.max(o.w, o.l)) * 0.62) { clash = true; break; }
+    if (clash) continue;
+    // face downhill (toward the sea)
+    const gx = sample(x + 3, z) - sample(x - 3, z);
+    const gz = sample(x, z + 3) - sample(x, z - 3);
+    const rot = Math.atan2(-gx, -gz);
+    // base = lowest ground under the footprint so the house never floats
+    let minH = h;
+    for (const [ox, oz] of [[-w / 2, -l / 2], [w / 2, -l / 2], [-w / 2, l / 2], [w / 2, l / 2]]) minH = Math.min(minH, sample(x + ox, z + oz));
+    houses.push({ x, z, y: minH, w, l, hgt: 3 + vr() * 2.5 + (vr() < 0.25 ? 3 : 0), rot, maxY: Math.max(h, minH) });
+  }
+
+  // --- pier: from the shore toward the harbour anchorage ---
+  const pdx = harbour.x - shore.x,
+    pdz = harbour.z - shore.z;
+  const plen = Math.hypot(pdx, pdz);
+  const pier = { x: shore.x, z: shore.z, angle: Math.atan2(pdz, pdx), length: Math.min(90, plen * 0.55) };
+
+  // --- player start: out through the harbour mouth, facing in ---
+  const oa = harbour.openAngle;
+  let sd = 700;
+  for (; sd < 1600; sd += 50) {
+    const sx = harbour.x + Math.cos(oa) * sd,
+      sz = harbour.z + Math.sin(oa) * sd;
+    let clear = true;
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      if (sample(sx + Math.cos(a) * 90, sz + Math.sin(a) * 90) > -3) clear = false;
+    }
+    if (clear) break;
+  }
+  const start = {
+    x: harbour.x + Math.cos(oa) * sd,
+    z: harbour.z + Math.sin(oa) * sd,
+    // heading = compass bearing toward the harbour
+    heading: Math.atan2(harbour.x - (harbour.x + Math.cos(oa) * sd), -(harbour.z - (harbour.z + Math.sin(oa) * sd))),
+  };
+
+  // --- vegetation by biome rules ---
+  progress(0.9, 'Planting olive groves');
+  const veg: number[] = []; // x, y, z, scale, rot, type
+  const pr = mulberry(seed + 77);
+  const dens = req.vegetationDensity;
+  const vstep = 9 / Math.sqrt(dens);
+  for (let z = -half; z < half; z += vstep)
+    for (let x = -half; x < half; x += vstep) {
+      const jx = x + (pr() - 0.5) * vstep,
+        jz = z + (pr() - 0.5) * vstep;
+      const h = sample(jx, jz);
+      if (h < 2.5) continue;
+      const sl = slopeAt(jx, jz);
+      const moist = 0.5 + 0.5 * n2a(jx / 700, jz / 700) + 0.2 * n2c(jx / 150, jz / 150);
+      // wind exposure: ground whose slope faces the prevailing wind is drier/more barren
+      const gx = sample(jx + cell, jz) - sample(jx - cell, jz);
+      const gz = sample(jx, jz + cell) - sample(jx, jz - cell);
+      const gl = Math.hypot(gx, gz) + 1e-4;
+      const faceWind = -(gx * wfx + gz * wfz) / gl; // slope faces toward the wind
+      const shelter = 1 - Math.max(0, faceWind) * Math.min(1, sl * 3);
+      const dVill = Math.hypot(jx - shore.x, jz - shore.z);
+      const nearVillage = Math.exp(-dVill / 500);
+      const nearTemple = Math.exp(-Math.hypot(jx - tb.x, jz - tb.z) / 120);
+      if (Math.hypot(jx - tb.x, jz - tb.z) < 34) continue;
+      let onHouse = false;
+      if (dVill < 800) for (const o of houses) if (Math.abs(o.x - jx) < 9 && Math.abs(o.z - jz) < 9) { onHouse = true; break; }
+      if (onHouse) continue;
+      const r = pr();
+      const altF = Math.max(0, 1 - h / 380);
+      // olive groves: gentle, low, near the village, moist-ish
+      const pOlive = (sl < 0.28 ? 1 : 0) * (h < 160 ? 1 : 0) * (0.03 + 0.5 * nearVillage) * (0.4 + moist) * shelter;
+      // cypress: moist sheltered pockets, clusters, and planted around the temple/village
+      const pCyp = (sl < 0.5 ? 1 : 0) * (0.02 + 0.2 * Math.max(0, moist - 0.55) + 0.35 * nearTemple + 0.05 * nearVillage) * shelter * altF;
+      // aleppo pine: coastal slopes up to mid altitude
+      const pPine = (sl < 0.7 ? 1 : 0) * (h < 220 ? 1 : 0) * 0.06 * Math.max(0, moist - 0.35) * shelter;
+      // maquis scrub everywhere reasonable
+      const pBush = (sl < 0.85 ? 1 : 0) * (0.14 + 0.2 * moist) * (0.4 + 0.6 * shelter) * (0.3 + 0.7 * altF);
+      // boulders on steep or high ground
+      const pRock = Math.min(0.5, Math.max(0, sl - 0.35) * 0.9 + (h > 250 ? 0.08 : 0) + 0.01);
+      const total = pOlive + pCyp + pPine + pBush + pRock;
+      if (r > Math.min(0.95, total)) continue;
+      let pick = pr() * total;
+      let type = 3;
+      if ((pick -= pOlive) < 0) type = 1;
+      else if ((pick -= pCyp) < 0) type = 0;
+      else if ((pick -= pPine) < 0) type = 4;
+      else if ((pick -= pBush) < 0) type = 2;
+      else type = 3;
+      const sc = type === 0 ? 0.7 + pr() * 0.6 : type === 3 ? 0.4 + pr() * 1.8 : 0.6 + pr() * 0.8;
+      veg.push(jx, sample(jx, jz), jz, sc, pr() * Math.PI * 2, type);
+    }
+
+  // --- ambient occlusion: horizon-based sky visibility on a coarser grid ---
+  progress(0.95, 'Shading the valleys');
+  const AO = 512;
+  const ao = new Uint8Array(AO * AO);
+  const ac = S / AO;
+  const dirs = 10;
+  const dx8: number[] = [],
+    dz8: number[] = [];
+  for (let k = 0; k < dirs; k++) {
+    dx8.push(Math.cos((k / dirs) * Math.PI * 2));
+    dz8.push(Math.sin((k / dirs) * Math.PI * 2));
+  }
+  for (let j = 0; j < AO; j++)
+    for (let i = 0; i < AO; i++) {
+      const x = -half + (i + 0.5) * ac,
+        z = -half + (j + 0.5) * ac;
+      const h0 = sample(x, z);
+      if (h0 < -25) {
+        ao[j * AO + i] = 255;
+        continue;
+      }
+      let vis = 0;
+      for (let k = 0; k < dirs; k++) {
+        let maxSlope = 0;
+        let d = ac * 0.7;
+        for (let st = 0; st < 9; st++) {
+          const hh = sample(x + dx8[k] * d, z + dz8[k] * d);
+          maxSlope = Math.max(maxSlope, (hh - h0) / d);
+          d *= 1.7;
+        }
+        // cosine-weighted visible sky above the horizon elevation
+        const elev = Math.atan(maxSlope);
+        vis += 1 - Math.sin(elev);
+      }
+      ao[j * AO + i] = Math.round(Math.max(0, Math.min(1, vis / dirs)) * 255);
+    }
+
+  progress(0.98, 'Launching the ship');
+  const sites: Sites = { harbour, shore, temple: { x: tb.x, z: tb.z, y: tb.h }, houses, pier, start };
+  return { heights: H, size: N, worldSize: S, islands: infos, sites, vegetation: new Float32Array(veg), ao, aoSize: AO };
+}
+
+function smoothstep(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+function flatten(H: Float32Array, N: number, cell: number, half: number, cx: number, cz: number, r0: number, r1: number, h: number) {
+  const i0 = Math.floor((cx - r1 + half) / cell),
+    i1 = Math.ceil((cx + r1 + half) / cell);
+  const j0 = Math.floor((cz - r1 + half) / cell),
+    j1 = Math.ceil((cz + r1 + half) / cell);
+  for (let j = Math.max(0, j0); j <= Math.min(N - 1, j1); j++)
+    for (let i = Math.max(0, i0); i <= Math.min(N - 1, i1); i++) {
+      const x = -half + (i + 0.5) * cell,
+        z = -half + (j + 0.5) * cell;
+      const d = Math.hypot(x - cx, z - cz);
+      const w = 1 - smoothstep(r0, r1, d);
+      const k = j * N + i;
+      H[k] = H[k] * (1 - w) + h * w;
+    }
+}
+
+/** Droplet-based hydraulic erosion, restricted to land (h > 0). */
+function erode(H: Float32Array, N: number, cell: number, rand: () => number, drops: number, progress: (p: number) => void) {
+  const inertia = 0.06,
+    capacityK = 5,
+    minSlope = 0.01,
+    depositK = 0.3,
+    erodeK = 0.35,
+    evap = 0.02,
+    gravity = 4,
+    maxLife = 48;
+  const scale = 1 / cell; // heights are metres, positions in cells
+  const grad = (px: number, pz: number) => {
+    const i = px | 0,
+      j = pz | 0;
+    const u = px - i,
+      v = pz - j;
+    const k = j * N + i;
+    const a = H[k],
+      b = H[k + 1],
+      c = H[k + N],
+      d = H[k + N + 1];
+    return {
+      h: a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v,
+      gx: ((b - a) * (1 - v) + (d - c) * v) * scale,
+      gz: ((c - a) * (1 - u) + (d - b) * u) * scale,
+    };
+  };
+  for (let n = 0; n < drops; n++) {
+    let px = 1 + rand() * (N - 3),
+      pz = 1 + rand() * (N - 3);
+    // rain only matters on land: resample until the droplet starts above the shore
+    for (let tries = 0; tries < 30 && H[(pz | 0) * N + (px | 0)] < 3; tries++) {
+      px = 1 + rand() * (N - 3);
+      pz = 1 + rand() * (N - 3);
+    }
+    if (H[(pz | 0) * N + (px | 0)] < 3) continue;
+    let dx = 0,
+      dz = 0,
+      speed = 1,
+      water = 1,
+      sediment = 0;
+    for (let life = 0; life < maxLife; life++) {
+      const i = px | 0,
+        j = pz | 0;
+      const u = px - i,
+        v = pz - j;
+      const g = grad(px, pz);
+      dx = dx * inertia - g.gx * (1 - inertia);
+      dz = dz * inertia - g.gz * (1 - inertia);
+      const len = Math.hypot(dx, dz);
+      if (len < 1e-8) break;
+      dx /= len;
+      dz /= len;
+      const nx = px + dx,
+        nz = pz + dz;
+      if (nx < 1 || nz < 1 || nx > N - 2 || nz > N - 2) break;
+      const nh = grad(nx, nz).h;
+      const dh = nh - g.h;
+      const cap = Math.max(-dh * scale, minSlope) * speed * water * capacityK;
+      const k = j * N + i;
+      if (sediment > cap || dh > 0) {
+        const amt = dh > 0 ? Math.min(dh, sediment) : (sediment - cap) * depositK;
+        sediment -= amt;
+        H[k] += amt * (1 - u) * (1 - v);
+        H[k + 1] += amt * u * (1 - v);
+        H[k + N] += amt * (1 - u) * v;
+        H[k + N + 1] += amt * u * v;
+      } else {
+        const amt = Math.min((cap - sediment) * erodeK, -dh) * (g.h > 0.5 ? 1 : 0.2);
+        // spread erosion over a small footprint to avoid pits
+        for (let oj = -1; oj <= 1; oj++)
+          for (let oi = -1; oi <= 1; oi++) {
+            const w = oi === 0 && oj === 0 ? 0.36 : oi === 0 || oj === 0 ? 0.1 : 0.06;
+            H[k + oj * N + oi] -= amt * w;
+          }
+        sediment += amt;
+      }
+      speed = Math.sqrt(Math.max(0, speed * speed + -dh * scale * gravity));
+      water *= 1 - evap;
+      px = nx;
+      pz = nz;
+      if (H[(pz | 0) * N + (px | 0)] < -2) break;
+    }
+    if ((n & 32767) === 0) progress(n / drops);
+  }
+}
+
+function makeNames(rand: () => number) {
+  const pre = ['Ne', 'Ka', 'Ly', 'Me', 'Ser', 'Thy', 'Ari', 'Pha', 'Del', 'Kor', 'Ios', 'Ana', 'Hy', 'Syr', 'Pa', 'Ky', 'Mi', 'Ze', 'Ter', 'Ol'];
+  const mid = ['ro', 'ki', 'da', 'phi', 'lo', 'ne', 'the', 'ma', 'so', 'ly', 'ra', ''];
+  const suf = ['s', 'os', 'a', 'e', 'on', 'ia', 'nos', 'thos', 'ssa', 'kos'];
+  const out: string[] = [];
+  while (out.length < 20) {
+    const n = pre[Math.floor(rand() * pre.length)] + mid[Math.floor(rand() * mid.length)] + suf[Math.floor(rand() * suf.length)];
+    if (!out.includes(n) && n.length > 3) out.push(n);
+  }
+  return out;
+}
