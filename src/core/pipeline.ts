@@ -112,7 +112,7 @@ export class Pipeline {
       mipmapBlur: true,
       luminanceThreshold: 3.2,
       luminanceSmoothing: 0.6,
-      intensity: 0.55,
+      intensity: 0.45,
       radius: 0.62,
       levels: 8,
     });

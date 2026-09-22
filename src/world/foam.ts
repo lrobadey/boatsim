@@ -23,6 +23,8 @@ interface P {
   foam: number;
   turb: number;
   ring: number;
+  /** fraction of the life over which the white foam decays (the turbulent slick lasts the whole life) */
+  ff: number;
 }
 
 export class FoamSystem {
@@ -38,6 +40,7 @@ export class FoamSystem {
   private distAcc = 0;
   private lastPos = new THREE.Vector3();
   private sideAcc = 0;
+  private slamCd = 0;
   private wasIn: boolean[] = [];
 
   constructor(res = 1024) {
@@ -85,7 +88,12 @@ export class FoamSystem {
       transparent: true,
       depthTest: false,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      // foam coverage saturates: overlapping splashes take the max, they don't sum to a white sheet
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.MaxEquation,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneFactor,
+      side: THREE.DoubleSide, // xy->xz mapping mirrors the winding under the top-down camera
     });
     this.mesh = new THREE.InstancedMesh(geo as unknown as THREE.BufferGeometry, mat, MAX);
     this.mesh.frustumCulled = false;
@@ -95,7 +103,7 @@ export class FoamSystem {
 
   private spawn(p: Partial<P> & { x: number; z: number }) {
     if (this.parts.length >= MAX) this.parts.shift();
-    this.parts.push({ vx: 0, vz: 0, age: 0, life: 20, size0: 2, size1: 6, foam: 0.6, turb: 0.4, ring: 0, ...p });
+    this.parts.push({ vx: 0, vz: 0, age: 0, life: 20, size0: 2, size1: 6, foam: 0.6, turb: 0.4, ring: 0, ff: 0.6, ...p });
   }
 
   update(dt: number, ship: ShipPhysics, model: Trireme, renderer: THREE.WebGLRenderer) {
@@ -125,24 +133,26 @@ export class FoamSystem {
           z: bow.z + right.z * off,
           vx: right.x * s * vAbs * KELVIN,
           vz: right.z * s * vAbs * KELVIN,
-          life: 26 + 10 * k,
-          size0: 1.6,
-          size1: 9,
-          foam: 0.55 * k + 0.1,
-          turb: 0.5 * k,
+          life: 45 + 25 * k,
+          size0: 2.2,
+          size1: 10,
+          foam: 0.65 * k + 0.1,
+          turb: 0.6 * k,
+          ff: 0.3,
         });
       }
-      // stern wash: broad turbulent band
+      // stern wash: a rowed hull leaves a broad glassy slick with fraying foam, not a prop wash
       this.spawn({
         x: stern.x + (Math.random() - 0.5) * 2,
         z: stern.z + (Math.random() - 0.5) * 2,
         vx: fwd.x * vAbs * 0.15,
         vz: fwd.z * vAbs * 0.15,
-        life: 45,
-        size0: 5,
-        size1: 22,
-        foam: 0.5 * k,
-        turb: 0.9 * k + 0.1,
+        life: 80,
+        size0: 3,
+        size1: 18,
+        foam: 0.85 * k,
+        turb: 0.8 * k + 0.1,
+        ff: 0.25,
       });
     }
     // hull-side foam where the bow wave rolls along the hull
@@ -153,10 +163,12 @@ export class FoamSystem {
       const side = Math.random() < 0.5 ? -1 : 1;
       const lp = new THREE.Vector3(side * (halfBeam(s) + 0.3), 0, zOf(s));
       const wp = ship.toWorld(lp, lp);
-      this.spawn({ x: wp.x, z: wp.z, vx: right.x * side * 0.6, vz: right.z * side * 0.6, life: 10, size0: 1.2, size1: 4, foam: 0.5 * Math.min(1, speed / 4), turb: 0.3 });
+      this.spawn({ x: wp.x, z: wp.z, vx: right.x * side * 0.6, vz: right.z * side * 0.6, life: 8, size0: 1.0, size1: 3.2, foam: 0.75 * Math.min(1, speed / 4), turb: 0.4 });
     }
     // bow slamming into a wave throws a burst of foam
-    if (ship.bowSlam > 1.5 && speed > 1.5) {
+    this.slamCd -= dt;
+    if (ship.bowSlam > 1.5 && speed > 1.5 && this.slamCd <= 0) {
+      this.slamCd = 0.5;
       for (let i = 0; i < 6; i++)
         this.spawn({ x: bow.x + (Math.random() - 0.5) * 4, z: bow.z + (Math.random() - 0.5) * 4, vx: (Math.random() - 0.5) * 2, vz: (Math.random() - 0.5) * 2, life: 12, size0: 2, size1: 7, foam: 0.8, turb: 0.6 });
     }
@@ -166,7 +178,7 @@ export class FoamSystem {
       const was = this.wasIn[i] ?? false;
       if (inW !== was) {
         const b = model.bladeWorld[i];
-        this.spawn({ x: b.x, z: b.z, life: inW ? 5 : 9, size0: inW ? 0.6 : 0.9, size1: inW ? 2.4 : 3.2, foam: inW ? 0.7 : 0.45, turb: 0.5, ring: inW ? 1 : 0 });
+        this.spawn({ x: b.x, z: b.z, life: inW ? 3.5 : 7, size0: inW ? 0.4 : 0.6, size1: inW ? 1.6 : 2.2, foam: inW ? 0.85 : 0.6, turb: 0.45, ring: inW ? 1 : 0 });
       }
       this.wasIn[i] = inW;
     }
@@ -187,7 +199,8 @@ export class FoamSystem {
       p.vz *= damping;
       alive.push(p);
       const t = p.age / p.life;
-      const fade = (1 - t) * (1 - t) * Math.min(1, p.age * 6);
+      // white foam decays over the first part of a particle's life; the slick (turbulence) lingers
+      const fade = Math.pow(Math.max(0, 1 - t / p.ff), 1.5) * Math.min(1, p.age * 6);
       a[n * 4] = p.x;
       a[n * 4 + 1] = p.z;
       a[n * 4 + 2] = p.size0 + (p.size1 - p.size0) * Math.sqrt(t);

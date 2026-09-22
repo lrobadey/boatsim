@@ -48,6 +48,22 @@ export class SkySystem {
     u.cloudDensity.value = 0.5;
     u.cloudElevation.value = 0.6;
     u.cloudScale.value = 0.00018;
+    // moonlit night sky: the Preetham model only knows the sun, so add the moon's own (dim, blue)
+    // Rayleigh sky, a glow around the moon, faint airglow near the horizon, and moonlit clouds
+    u.uNightSky = { value: new THREE.Vector3() };
+    u.uMoonDir = { value: new THREE.Vector3(0, 1, 0) };
+    const fs = this.sky.material.fragmentShader;
+    this.sky.material.fragmentShader = fs
+      .replace('uniform float cloudScale;', 'uniform float cloudScale;\nuniform vec3 uNightSky;\nuniform vec3 uMoonDir;')
+      .replace(
+        'if ( direction.y > 0.0 && cloudCoverage > 0.0 ) {',
+        `float hz = 1.0 - clamp( direction.y, 0.0, 1.0 );
+        float mu = max( dot( direction, uMoonDir ), 0.0 );
+        texColor += uNightSky * ( 0.55 + 1.3 * hz * hz * hz + 2.5 * pow( mu, 12.0 ) + 6.0 * pow( mu, 200.0 ) );
+        texColor += vec3( 0.0006, 0.0008, 0.0011 ) * hz * hz;
+        if ( direction.y > 0.0 && cloudCoverage > 0.0 ) {`,
+      )
+      .replace('cloudColor *= max( dayFactor, 0.03 );', 'cloudColor *= max( dayFactor, 0.03 );\n\t\t\t\tcloudColor += uNightSky * ( 1.4 + 3.0 * pow( mu, 6.0 ) );');
     this.sky.material.depthTest = false;
     this.sky.renderOrder = -1000;
     this.sky.frustumCulled = false;
@@ -202,6 +218,9 @@ export class SkySystem {
     const phaseLight = 0.5 - 0.5 * Math.cos(c.moonPhase * Math.PI * 2);
     const moonVis = smoothstep(-0.02, 0.1, moon.y) * this.night;
     const moonI = 0.22 * phaseLight * moonVis;
+    const skyMoon = phaseLight * smoothstep(-0.05, 0.15, moon.y) * smoothstep(0.0, -0.1, sunY);
+    (this.sky.material.uniforms.uNightSky.value as THREE.Vector3).set(0.0022, 0.0048, 0.0115).multiplyScalar(skyMoon);
+    (this.sky.material.uniforms.uMoonDir.value as THREE.Vector3).copy(moon).normalize();
 
     const L = this.light;
     const sunColor = shared.uSunColor.value;
@@ -224,7 +243,8 @@ export class SkySystem {
     this.hemi.color.setRGB(0.35, 0.45, 0.8);
 
     // stars/moon
-    this.starMat.uniforms.uNight.value = this.night;
+    // stars emerge through nautical twilight (sun -3deg .. -12deg), not while the sky is still bright
+    this.starMat.uniforms.uNight.value = smoothstep(-0.05, -0.2, sunY);
     this.starMat.uniforms.uPixel.value = this.renderer.getPixelRatio();
     this.stars.rotation.set(0, 0, 0);
     this.stars.quaternion
@@ -232,10 +252,9 @@ export class SkySystem {
       .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -c.siderealAngle));
     const moonDist = 20000;
     this.moon.position.copy(moon).multiplyScalar(moonDist);
-    this.moon.lookAt(camera.position.clone().sub(this.group.position).multiplyScalar(0)); // face origin
-    this.moon.lookAt(0, 0, 0);
-    this.moon.rotateY(Math.PI);
-    this.moon.scale.setScalar(moonDist * 0.0095 * 1.6);
+    this.moon.updateMatrixWorld();
+    this.moon.lookAt(camera.position); // +z (the lit hemisphere's frame) faces the viewer
+    this.moon.scale.setScalar(moonDist * 0.034); // ~2deg: exaggerated like the eye perceives it low over the sea
     this.moon.updateMatrixWorld();
     const inv = new THREE.Matrix4().copy(this.moon.matrixWorld).invert();
     const sunLocal = sun.clone().transformDirection(inv);

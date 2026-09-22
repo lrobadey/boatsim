@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WAVES_GLSL, WaveField } from './waves';
+import type { OceanFFT } from './oceanFFT';
 import { FOG_PARS_GLSL, TERRAIN_LIGHT_GLSL, shared } from '../gfx/shared';
 
 /**
@@ -22,6 +23,7 @@ export class Ocean {
 
   constructor(
     waves: WaveField,
+    private fft: OceanFFT,
     textures: { ripple: THREE.Texture; noise: THREE.Texture; height: THREE.Texture; terrainSize: number },
     params: Partial<OceanParams> = {},
   ) {
@@ -56,6 +58,15 @@ export class Ocean {
       uFoamMap: { value: null },
       uFoamCenter: { value: new THREE.Vector2() },
       uFoamSize: { value: 600 },
+      uSlopeA: { value: fft.slope(0) },
+      uSlopeB: { value: fft.slope(1) },
+      uDispA: { value: fft.disp(0) },
+      uFoamA: { value: fft.foam(0) },
+      uLA: { value: fft.cascades[0].L },
+      uWhiteJ: { value: 0.6 },
+      uWhiteRamp: { value: 0.1 },
+      uLB: { value: fft.cascades[1].L },
+      uTexelA: { value: fft.cascades[0].L / fft.N },
       uShipInv: { value: new THREE.Matrix4() },
       uHullLen: { value: 34 },
       uHullW: { value: new Float32Array(16) },
@@ -123,6 +134,11 @@ export class Ocean {
   }
 
   update(camera: THREE.Camera) {
+    // FFT outputs ping-pong (persistent foam reads last frame's)
+    this.uniforms.uSlopeA.value = this.fft.slope(0);
+    this.uniforms.uSlopeB.value = this.fft.slope(1);
+    this.uniforms.uDispA.value = this.fft.disp(0);
+    this.uniforms.uFoamA.value = this.fft.foam(0);
     const cx = camera.position.x,
       cz = camera.position.z;
     // camera height pushes the fine levels out: skip levels that would be sub-pixel
@@ -149,6 +165,9 @@ export class Ocean {
 const VERT = /* glsl */ `
 ${WAVES_GLSL}
 uniform float uCell;
+uniform sampler2D uDispA;
+uniform float uLA;
+uniform float uTexelA;
 uniform vec2 uCenter;
 uniform float uHalf;
 varying vec3 vWorld;
@@ -169,6 +188,9 @@ void main() {
   float dist = length(vec3(p.x - cameraPosition.x, cameraPosition.y, p.y - cameraPosition.z));
   vec3 N; float J;
   vec3 d = gerstner(p, dist, N, J);
+  // short-wave chop from the FFT cascade, prefiltered to this level's vertex spacing
+  float fadeA = 1.0 - smoothstep(250.0, 900.0, dist);
+  if (fadeA > 0.0) d += textureLod(uDispA, p / uLA, max(0.0, log2(uCell / uTexelA))).xyz * fadeA;
   vec3 wp = vec3(p.x + d.x, d.y, p.y + d.z);
   vWorld = wp;
   vN = N;
@@ -184,7 +206,7 @@ const FRAG = /* glsl */ `
 #include <packing>
 ${FOG_PARS_GLSL}
 ${TERRAIN_LIGHT_GLSL}
-uniform float uTime;
+${WAVES_GLSL}
 uniform float uNight;
 uniform vec2 uWindDir;
 uniform float uWindStrength;
@@ -196,6 +218,14 @@ uniform sampler2D uRefractDepth;
 uniform vec2 uScreen;
 uniform float uNear;
 uniform float uFar;
+uniform sampler2D uSlopeA;
+uniform sampler2D uSlopeB;
+uniform sampler2D uDispA;
+uniform sampler2D uFoamA;
+uniform float uLA;
+uniform float uLB;
+uniform float uWhiteJ;
+uniform float uWhiteRamp;
 uniform sampler2D uFoamMap;
 uniform vec2 uFoamCenter;
 uniform float uFoamSize;
@@ -240,39 +270,45 @@ void main() {
   float dist = length(toCam);
   vec3 V = toCam / dist;
 
-  // ---- normal: gerstner + two scrolling ripple layers (fade with distance) ----
+  // ---- normal: Gerstner swell + FFT short waves + far macro variation ----
   vec2 wd = normalize(uWindDir + 1e-4);
-  mat2 rot = mat2(wd.y, -wd.x, wd.x, wd.y);
-  // cat's paws: gust patches drifting downwind modulate the capillary ripples
+  // cat's paws: gust patches drifting downwind roughen the short waves and ripples
   float gust = texture2D(uNoise, vWorld.xz / 420.0 - wd * uTime * 0.011).r;
   gust += 0.35 * (texture2D(uNoise, vWorld.xz / 110.0 - wd * uTime * 0.028).g - 0.5);
   gust = smoothstep(0.28, 0.78, gust);
-  float rs = (0.3 + 0.7 * uWindStrength) * (0.35 + 0.95 * gust);
-  mat2 r30 = mat2(0.866, 0.5, -0.5, 0.866);
-  vec2 uv1 = rot * vWorld.xz / 13.0 + wd * uTime * 0.034;
-  vec2 uv2 = (r30 * rot) * vWorld.xz / 5.3 + wd * uTime * 0.058;
-  vec2 uv3 = (rot * r30) * vWorld.xz / 1.9 + wd * uTime * 0.092;
-  vec2 uv4 = vWorld.xz / 61.0 + wd * uTime * 0.016;
-  vec2 r1 = texture2D(uRipple, uv1).xy * 2.0 - 1.0;
-  vec2 r2 = texture2D(uRipple, uv2).xy * 2.0 - 1.0;
-  vec2 r3 = texture2D(uRipple, uv3).xy * 2.0 - 1.0;
-  vec2 r4 = texture2D(uRipple, uv4).xy * 2.0 - 1.0;
-  float f1 = 1.0 - smoothstep(150.0, 1400.0, dist);
+  vec2 r4 = texture2D(uRipple, vWorld.xz / 61.0 + wd * uTime * 0.016).xy * 2.0 - 1.0;
+  vec2 r3 = texture2D(uRipple, vWorld.xz / 1.9 + wd * uTime * 0.092).xy * 2.0 - 1.0;
   float f2 = 1.0 - smoothstep(60.0, 500.0, dist);
-  float f3 = 1.0 - smoothstep(12.0, 90.0, dist);
   float f4 = 1.0 - smoothstep(1500.0, 6000.0, dist);
-  vec2 slope = (r1 * 0.15 * f1 + r2 * 0.11 * f2 + r3 * 0.08 * f3) * rs + r4 * 0.09 * f4 * (0.6 + 0.4 * gust);
-  vec3 r2v = vec3(r2, 0.0);
-  vec3 r1v = vec3(r1, 0.0);
 
   // wake foam / turbulence map
   vec2 fd = (vWorld.xz - uFoamCenter) / uFoamSize;
   vec2 fuv = vec2(fd.x, -fd.y) + 0.5; // ortho foam camera: up = -z
   vec2 wake = vec2(0.0);
   if (all(greaterThan(fuv, vec2(0.0))) && all(lessThan(fuv, vec2(1.0)))) wake = texture2D(uFoamMap, fuv).rg;
-  slope += (r2v.xy * 0.3 + r1v.xy * 0.18) * clamp(wake.g, 0.0, 1.0);
+  float slick = clamp(wake.g, 0.0, 1.0);
 
-  vec3 N = normalize(vN + vec3(slope.x, 0.0, slope.y));
+  // FFT cascades are sampled at the undisplaced (Lagrangian) position so short waves ride the swell.
+  // Their mip chain carries mean slope AND mean squared slope: the difference is the slope variance
+  // hidden inside this pixel, which becomes microfacet roughness below.
+  vec2 uvA = vGrid / uLA, uvB = vGrid / uLB;
+  vec4 sA = texture2D(uSlopeA, uvA);
+  vec4 sB = texture2D(uSlopeB, uvB);
+  float gA = mix(0.8, 1.15, gust) * (1.0 - 0.45 * slick);
+  // the wake's turbulence flattens the ripples into a glassy slick
+  float gB = mix(0.3, 1.3, gust) * (1.0 - 0.85 * slick);
+  vec2 dS = sA.xy * gA + sB.xy * gB;
+  vec2 varS = max(sA.zw - sA.xy * sA.xy, 0.0) * gA * gA + max(sB.zw - sB.xy * sB.xy, 0.0) * gB * gB;
+  dS += r4 * 0.05 * f4 * (0.6 + 0.4 * gust);
+  dS += r3 * 0.06 * clamp(wake.r, 0.0, 1.0) * f2; // churned surface right in the foam
+
+  // Gerstner normal & Jacobian evaluated per pixel at the undisplaced position: identical across
+  // clipmap levels (no seams) and sharper than per-vertex interpolation
+  vec3 gN; float gJ;
+  gerstner(vGrid, dist, gN, gJ);
+  vec2 gS = -gN.xz / max(gN.y, 0.2);
+  vec3 N = normalize(vec3(-(gS.x + dS.x), 1.0, -(gS.y + dS.y)));
+  float slopeVar = varS.x + varS.y + gLostVar;
   // far away, flatten normals toward the mean (reduces sparkle aliasing & grazing-angle darkness)
   N = normalize(mix(N, vec3(0.0, 1.0, 0.0), smoothstep(3000.0, 25000.0, dist) * 0.85));
 
@@ -282,14 +318,15 @@ void main() {
   // ---- reflection (sky environment) ----
   vec3 R = reflect(-V, N);
   R.y = abs(R.y) * 0.9 + 0.02;
-  float lod = clamp(log2(dist / 30.0 + 1.0) * 0.8, 0.0, 5.0);
+  // unresolved slope variance blurs the reflection (cube texel ~0.006 rad at lod 0)
+  float lod = clamp(log2(1.0 + 330.0 * sqrt(slopeVar)), 0.0, 6.0);
   vec3 sky = textureLod(uFogEnv, R, lod).rgb;
 
   // sun / moon glitter: GGX, roughness grows with distance (sub-pixel waves)
   vec3 L = normalize(uSunDir);
   vec3 H = normalize(L + V);
-  float rough = 0.06 + 0.12 * smoothstep(20.0, 3000.0, dist);
-  float a2 = rough * rough * rough * rough;
+  // GGX alpha^2 ~ total unresolved mean-square slope (plus a floor for the capillary scale)
+  float a2 = 0.0012 + slopeVar;
   float NdotH = max(dot(N, H), 0.0);
   float dd = NdotH * NdotH * (a2 - 1.0) + 1.0;
   float D = a2 / (3.14159 * dd * dd);
@@ -322,7 +359,7 @@ void main() {
   vec3 scatterCol = vec3(0.012, 0.075, 0.105);
   vec3 inscatter = scatterCol * light * (1.0 - T);
   // aerated water (wake) glows turquoise
-  inscatter += vec3(0.05, 0.16, 0.16) * light * clamp(wake.g, 0.0, 1.0) * 0.35;
+  inscatter += vec3(0.04, 0.15, 0.15) * light * clamp(wake.g, 0.0, 1.0) * 0.12;
   vec3 refr = sceneCol * T + inscatter;
 
   // subsurface: light through backlit wave crests
@@ -335,16 +372,31 @@ void main() {
   // ---- foam ----
   vec2 fp = vWorld.xz;
   float fn = texture2D(uNoise, fp * 0.045 + uTime * 0.004).r * 0.6 + texture2D(uNoise, fp * 0.18 - uTime * 0.01).g * 0.4;
-  // whitecaps: where the surface compresses (Jacobian), breaking more inside gust patches
-  float crestFoam = smoothstep(0.55 + 0.12 * gust, 0.15, vJ) * smoothstep(0.42, 0.7, fn) * (0.35 + 0.65 * gust);
+  // whitecaps: break where the combined surface compresses (Jacobians compose multiplicatively);
+  // the FFT's persistent foam then trails off the crests as streaks that fray and fade
+  float fadeF = 1.0 - smoothstep(300.0, 2500.0, dist);
+  float JA = mix(1.0, texture2D(uDispA, uvA).w, fadeF);
+  float Jt = gJ * JA;
+  float trail = texture2D(uFoamA, uvA).r * fadeF;
+  // threshold set from the sea's statistics (see OceanFFT.whitecaps); gusts push more crests over
+  float wj = uWhiteJ + (gust - 0.5) * uWhiteRamp;
+  float crestSrc = smoothstep(wj + uWhiteRamp * 0.5, wj - uWhiteRamp, Jt) + trail * smoothstep(1.1, 0.85, gJ);
   float band = 0.5 + 0.5 * sin(depthV * 4.0 - uTime * 1.6 + fn * 6.0);
   float shoreFoam = (1.0 - smoothstep(0.0, 1.8, depthV)) * smoothstep(0.3, 0.7, fn * 0.7 + band * 0.5);
   shoreFoam += (1.0 - smoothstep(0.0, 0.35, depthV)) * 0.8;
-  float wakeFoam = smoothstep(0.15, 0.9, wake.r * (0.55 + 0.9 * fn));
-  float foam = clamp(max(max(crestFoam * 0.8, shoreFoam), wakeFoam), 0.0, 1.0);
+  // wake foam as coverage of a lace pattern: dense foam covers solidly, thin foam survives only as
+  // filaments and bubbles, so the wake frays naturally as it ages
+  float wf = clamp(wake.r, 0.0, 2.0);
+  float lace = texture2D(uNoise, fp * 0.13 + uTime * 0.006).b * 0.55 + texture2D(uNoise, fp * 0.41 - uTime * 0.01).a * 0.3 + texture2D(uNoise, fp * 1.3).r * 0.15;
+  lace = clamp((lace - 0.5) * 2.4 + 0.5, 0.0, 1.0); // the octave sum clusters near 0.5: restore contrast
+  float wakeFoam = clamp((wf * 1.05 - (1.0 - lace)) * 3.5, 0.0, 1.0) * 0.95;
+  float crestFoam = clamp((crestSrc * 1.1 - (1.0 - lace)) * 3.0, 0.0, 1.0);
+  float foam = clamp(max(max(crestFoam * 0.9, shoreFoam), wakeFoam), 0.0, 1.0);
   foam *= 1.0 - smoothstep(1500.0, 5000.0, dist) * 0.7;
   vec3 foamCol = uSunColor * (max(L.y, 0.0) * 0.28 + 0.05) * sunVis + skyIrr * 0.9;
-  col = mix(col, foamCol, foam * 0.92);
+  // foam is bubbly, not flat paint: shade by the lace so dense patches still read as texture
+  foamCol *= 0.78 + 0.35 * lace;
+  col = mix(col, foamCol, foam * 0.9);
 
   col = applyAerial(col, vWorld);
   gl_FragColor = vec4(col, 1.0);

@@ -79,7 +79,7 @@ button:hover { background: rgba(185, 140, 60, 0.28); border-color: var(--gold); 
 .helm .lbl.r { left: auto; right: -6px; }
 .prompt { position: absolute; top: 60%; left: 50%; transform: translateX(-50%); font-size: 19px; white-space: nowrap; color: var(--ink); }
 .prompt .warn { color: #ffa084; font-style: italic; }
-.toast { position: absolute; top: 28%; left: 50%; transform: translateX(-50%); font: 600 22px 'Cinzel', serif; letter-spacing: 0.36em; margin-right: -0.36em; text-transform: uppercase; opacity: 0; transition: opacity 0.5s; color: var(--ink); }
+.toast { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); font: 600 17px 'Cinzel', serif; letter-spacing: 0.36em; margin-right: -0.36em; text-transform: uppercase; opacity: 0; transition: opacity 0.5s; color: var(--ink); }
 .toast.on { opacity: 0.85; }
 .help-hint { position: absolute; bottom: 10px; left: 34px; font-size: 13px; color: var(--ink-dim); transition: opacity 1.5s; }
 .help-hint.dim { opacity: 0.35; }

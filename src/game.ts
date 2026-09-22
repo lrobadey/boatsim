@@ -9,6 +9,7 @@ import { Wind } from './world/wind';
 import { WaveField } from './world/waves';
 import { SkySystem } from './world/sky';
 import { Ocean } from './world/ocean';
+import { OceanFFT } from './world/oceanFFT';
 import { Terrain } from './world/terrain';
 import { FoamSystem } from './world/foam';
 import { Props } from './world/props';
@@ -36,6 +37,7 @@ export class Game {
   readonly waves: WaveField;
   readonly sky: SkySystem;
   readonly ocean: Ocean;
+  readonly fft: OceanFFT;
   readonly terrain: Terrain;
   readonly foam: FoamSystem;
   readonly props: Props;
@@ -118,7 +120,9 @@ export class Game {
     shared.uTerrainMax.value = maxH + 20;
 
     T('terrain');
-    this.ocean = new Ocean(this.waves, { ripple, noise, height: this.terrain.heightTexture, terrainSize: gen.worldSize }, { grid: quality.oceanGrid, levels: 13, cell0: 0.25 });
+    this.fft = new OceanFFT(quality.fftSize);
+    this.fft.retarget(this.wind.meanSpeed, this.wind.from + Math.PI, this.waves.fetch, true);
+    this.ocean = new Ocean(this.waves, this.fft, { ripple, noise, height: this.terrain.heightTexture, terrainSize: gen.worldSize }, { grid: quality.oceanGrid, levels: 13, cell0: 0.25 });
     this.scene.add(this.ocean.group);
     this.ocean.uniforms.uHullW.value = hullWidthTable();
     this.ocean.uniforms.uHullLen.value = HULL_LENGTH;
@@ -223,15 +227,22 @@ export class Game {
     if (!(commanding && (inp.down('KeyA') || inp.down('KeyD')))) this.ship.helm *= Math.exp(-dt * 0.25);
   }
 
-  private frame() {
+  /** dev/testing: run the whole game forward at a fixed step without presenting frames */
+  fastForward(seconds: number, step = 1 / 60) {
+    for (let t = 0; t < seconds; t += step) this.frame(step, false);
+  }
+
+  private frame(fixedDt?: number, present = true) {
     const now = performance.now();
     const frameMs = now - this.last;
-    let dt = frameMs / 1000;
+    let dt = fixedDt ?? frameMs / 1000;
     this.last = now;
     dt = Math.min(dt, 0.1);
-    this.frameMs.push(frameMs);
-    if (this.frameMs.length > 120) this.frameMs.shift();
-    this.pipeline.adapt(frameMs, dt);
+    if (fixedDt === undefined) {
+      this.frameMs.push(frameMs);
+      if (this.frameMs.length > 120) this.frameMs.shift();
+      this.pipeline.adapt(frameMs, dt);
+    }
 
     if (!this.paused) {
       if (this.cinematic) this.player.chaseYaw += dt * 0.035;
@@ -241,6 +252,10 @@ export class Game {
       this.waveRetarget -= dt;
       if (this.waveRetarget <= 0) {
         this.waves.retarget(this.wind);
+        this.fft.retarget(this.wind.meanSpeed, this.wind.from + Math.PI, this.waves.fetch);
+        const wc = this.fft.whitecaps(this.wind.meanSpeed, this.waves.jVar);
+        this.ocean.uniforms.uWhiteJ.value = wc.threshold;
+        this.ocean.uniforms.uWhiteRamp.value = wc.ramp;
         this.waveRetarget = 1;
       }
       this.waves.update(dt);
@@ -279,7 +294,7 @@ export class Game {
     this.pipeline.grade.uniforms.get('exposure')!.value = this.sky.exposure;
     // bloom thresholds the raw HDR scene: keep it relative to the adapted exposure so only true
     // highlights (sun, glitter, fire) bloom at any time of day
-    this.pipeline.bloom.luminanceMaterial.threshold = 2.4 / this.sky.exposure;
+    this.pipeline.bloom.luminanceMaterial.threshold = 5.0 / this.sky.exposure;
     this.pipeline.grade.uniforms.get('nightTint')!.value = this.sky.night;
     this.pipeline.grade.uniforms.get('spyglass')!.value = this.player.zoom;
     const sl = this.sky.light;
@@ -287,6 +302,7 @@ export class Game {
     sl.target.position.copy(focus);
     sl.position.copy(focus).addScaledVector(shared.uSunDir.value, 200);
     sl.target.updateMatrixWorld();
+    if (present) this.fft.update(this.pipeline.renderer, this.ship.time, dt);
     this.ocean.update(this.camera);
     this.props.update(dt, this.ship.time, this.camera, this.sky.night);
     this.birds.update(dt, this.camera);
@@ -296,6 +312,7 @@ export class Game {
     const size = this.pipeline.renderer.getDrawingBufferSize(new THREE.Vector2());
     this.ocean.setRefraction(rt.texture, rt.depthTexture!, size.x, size.y, this.camera.near, this.camera.far);
 
+    if (!present) return;
     this.pipeline.render(dt, () => {});
 
     // audio & UI
