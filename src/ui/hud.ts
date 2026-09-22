@@ -33,6 +33,8 @@ export class Hud {
   private helpHint = el('div', 'help-hint', `${key('?')} controls`);
   private card = el('div', 'controls-card');
   private toast = el('div', 'toast');
+  private note = el('div', 'note');
+  private noteT = 0;
   private astro = new Astrolabe();
   private debugOn = false;
   private pipEls: HTMLElement[] = [];
@@ -67,7 +69,8 @@ export class Hud {
         <div>${key('W')}${key('A')}${key('S')}${key('D')} walk · ${key('Shift')} run</div>
         <div>${key('E')} take the helm (stern)</div>
         <h4>Look</h4>
-        <div>${key('RMB')} spyglass</div>
+        <div>Mouse · click to capture · ${key('←')}${key('→')}</div>
+        <div>${key('RMB')} spyglass · wheel zoom (chase)</div>
         <div>${key('C')} chase view · ${key('Q')} Ikaros</div>
         <div>${key('M')} sea chart</div></div>
       <div class="grp"><h4>World</h4>
@@ -75,8 +78,13 @@ export class Hud {
         <div>${key('T')} skip to dawn / noon / dusk / night</div>
         <div>${key('H')} hide interface · ${key('N')} mute</div>
         <div>${key('Esc')} pause & settings</div></div>`;
-    this.root.append(this.brand, this.location, left, right, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast);
+    this.root.append(this.brand, this.location, left, right, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast, this.note);
     ui.appendChild(this.root);
+  }
+
+  /** add a widget that shows/hides with the HUD */
+  mount(node: HTMLElement) {
+    this.root.appendChild(node);
   }
 
   setVisible(v: boolean) {
@@ -90,6 +98,13 @@ export class Hud {
     this.card.classList.toggle('open');
     this.hintT = 0;
   }
+  /** a quiet one-line hint (italic, fades after a few seconds) */
+  showNote(html: string, seconds = 6) {
+    this.note.innerHTML = html;
+    this.note.classList.add('on');
+    this.noteT = seconds;
+  }
+
   showToast(text: string) {
     this.toast.textContent = text;
     this.toast.classList.add('on');
@@ -131,6 +146,8 @@ export class Hud {
     }
     this.toastT -= dt;
     if (this.toastT <= 0) this.toast.classList.remove('on');
+    this.noteT -= dt;
+    if (this.noteT <= 0) this.note.classList.remove('on');
 
     // "?" hint fades after a while
     this.hintT -= dt;

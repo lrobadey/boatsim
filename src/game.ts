@@ -22,6 +22,7 @@ import { hullWidthTable, HULL_LENGTH } from './ship/hull';
 import { PlayerController } from './player/controller';
 import { Hud } from './ui/hud';
 import { Chart } from './ui/chart';
+import { Minimap } from './ui/minimap';
 import { AudioEngine } from './audio/audio';
 import { clamp } from './core/util';
 
@@ -38,6 +39,8 @@ export class Game {
   readonly sky: SkySystem;
   readonly ocean: Ocean;
   readonly fft: OceanFFT;
+  private hoverHinted = false;
+  readonly minimap: Minimap;
   readonly terrain: Terrain;
   readonly foam: FoamSystem;
   readonly props: Props;
@@ -151,6 +154,8 @@ export class Game {
     this.player = new PlayerController(this.camera, this.input);
     this.hud = new Hud();
     this.chart = new Chart(gen, this.terrain);
+    this.minimap = new Minimap(this.chart, gen);
+    this.hud.mount(this.minimap.root);
     // named places, described from their terrain
     for (const i of gen.islands) {
       if (!i.name) continue;
@@ -166,7 +171,7 @@ export class Game {
     this.sky.update(0, this.camera, true);
     this.scene.environment = this.sky.envMap;
     // sky irradiance relative to the sun (~1:4-5 on a clear Aegean day)
-    this.scene.environmentIntensity = 0.5;
+    this.scene.environmentIntensity = 0.85;
     T('done');
   }
 
@@ -285,6 +290,13 @@ export class Game {
     this.model.group.updateMatrixWorld(true);
     (this.ocean.uniforms.uShipInv.value as THREE.Matrix4).copy(this.model.group.matrixWorld).invert();
 
+    this.player.shipSpeed = this.ship.speed;
+    this.player.autoCenter = !this.cinematic;
+    this.input.lookEnabled = !this.paused && !this.cinematic;
+    if (this.input.hoverLook && !this.hoverHinted && !this.cinematic) {
+      this.hoverHinted = true;
+      this.hud.showNote('No mouse capture here — rest the cursor at a screen edge, or use the arrow keys, to keep turning', 9);
+    }
     this.player.update(dt, this.model.group.position, this.shipQuat, this.terrain, this.waves, this.ship.time);
     this.model.update(this.ship, this.crew, this.sky.night, this.ship.time);
 
@@ -319,6 +331,13 @@ export class Game {
     this.audio.update(dt, this);
     if (this.showHud) this.hud.update(this, this.frameMs, dt);
     this.chart.update(this.ship, this.player);
+    if (this.showHud) {
+      const cd = this.camera.getWorldDirection(new THREE.Vector3());
+      const eagle = this.player.mode === 'eagle';
+      const cx = eagle ? this.camera.position.x : this.shipPos.x;
+      const cz = eagle ? this.camera.position.z : this.shipPos.z;
+      this.minimap.update(dt, cx, cz, Math.atan2(cd.x, -cd.z), this.shipPos.x, this.shipPos.z, this.ship.heading);
+    }
     this.input.endFrame();
   }
 }

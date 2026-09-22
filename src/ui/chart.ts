@@ -6,7 +6,8 @@ import type { PlayerController } from '../player/controller';
 /** Parchment sea chart drawn from the heightmap, with island names, the temple, and the ship. */
 export class Chart {
   private root = document.createElement('div');
-  private canvas = document.createElement('canvas');
+  /** the rendered parchment (shared with the minimap) */
+  readonly canvas = document.createElement("canvas");
   private overlay = document.createElement('canvas');
   private open = false;
   private size = 900;

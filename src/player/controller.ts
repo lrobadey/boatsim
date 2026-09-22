@@ -30,6 +30,12 @@ export class PlayerController {
   chaseDist = 42;
   /** raises the look-at point (cinematic framing puts the ship low in frame) */
   chaseLift = 0;
+  /** chase camera swings back behind the ship after the player stops looking around */
+  autoCenter = true;
+  shipSpeed = 0;
+  private lookIdle = 0;
+  private chaseHeading = NaN; // smoothed ship heading the chase camera trails
+  private distS = 42; // smoothed zoom
   // eagle
   eaglePos = new THREE.Vector3();
   eagleVel = new THREE.Vector3();
@@ -91,8 +97,10 @@ export class PlayerController {
   update(dt: number, shipPos: THREE.Vector3, shipQuat: THREE.Quaternion, terrain: Terrain, waves: WaveField, time: number) {
     const inp = this.input;
     const sensK = 1 / (1 + this.zoom * 5);
-    const mdx = inp.mouseDX * inp.sensitivity * sensK;
-    const mdy = inp.mouseDY * inp.sensitivity * sensK * (inp.invertY ? -1 : 1);
+    // mouse deltas plus continuous look (arrow keys / screen-edge hover without pointer lock)
+    const mdx = (inp.mouseDX * inp.sensitivity + inp.lookX * 2.1 * dt) * sensK;
+    const mdy = (inp.mouseDY * inp.sensitivity + inp.lookY * 1.3 * dt) * sensK * (inp.invertY ? -1 : 1);
+    this.lookIdle = Math.abs(mdx) + Math.abs(mdy) > 1e-6 ? 0 : this.lookIdle + dt;
 
     // spyglass
     const wantZoom = inp.rmb && this.mode !== 'eagle' ? 1 : 0;
@@ -138,17 +146,28 @@ export class PlayerController {
       const level = new THREE.Quaternion().setFromRotationMatrix(this.m.lookAt(new THREE.Vector3(), f, new THREE.Vector3(0, 1, 0)));
       this.camera.quaternion.copy(qShip).slerp(level, this.levelFactor);
     } else if (this.mode === 'chase') {
-      this.chaseYaw -= mdx;
+      // third-person orbit (AC style): mouse orbits, wheel zooms smoothly, the rig trails the ship's
+      // heading with a lag (turns swing the view instead of snapping it), and after a few idle
+      // seconds under way it settles back behind the stern
+      this.chaseYaw = wrapAngle(this.chaseYaw - mdx);
       this.chasePitch = clamp(this.chasePitch + mdy, -0.05, 1.3);
-      this.chaseDist = clamp(this.chaseDist * (1 + inp.wheel * 0.08), 14, 160);
-      // follow ship heading loosely (AC style): camera yaw is relative to ship heading
+      this.chaseDist = clamp(this.chaseDist * (1 + inp.wheel * 0.1), 14, 160);
+      this.distS = damp(this.distS, this.chaseDist, 8, dt);
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(shipQuat);
       const heading = Math.atan2(-fwd.x, -fwd.z);
-      const yaw = heading + this.chaseYaw;
+      if (Number.isNaN(this.chaseHeading) || dt > 0.5) this.chaseHeading = heading;
+      else this.chaseHeading = wrapAngle(this.chaseHeading + wrapAngle(heading - this.chaseHeading) * (1 - Math.exp(-dt * 1.8)));
+      if (this.autoCenter && this.lookIdle > 4.5 && Math.abs(this.shipSpeed) > 1.2) {
+        const k = 1 - Math.exp(-dt * 0.6);
+        this.chaseYaw = wrapAngle(this.chaseYaw - this.chaseYaw * k);
+        this.chasePitch += (0.24 - this.chasePitch) * k * 0.6;
+      }
+      const yaw = this.chaseHeading + this.chaseYaw;
       const target = shipPos.clone().add(new THREE.Vector3(0, 4 + this.chaseLift, 0));
-      const d = this.chaseDist;
+      const d = this.distS;
       const off = new THREE.Vector3(Math.sin(yaw) * Math.cos(this.chasePitch), Math.sin(this.chasePitch), Math.cos(yaw) * Math.cos(this.chasePitch)).multiplyScalar(d);
       const pos = target.clone().add(off);
+      // keep above the sea and pull in front of terrain between camera and ship
       const minY = Math.max(waves.heightAt(pos.x, pos.z, time), terrain.heightAt(pos.x, pos.z)) + 1.5;
       if (pos.y < minY) pos.y = minY;
       this.camera.position.copy(pos);
@@ -178,4 +197,8 @@ export class PlayerController {
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
   }
+}
+
+function wrapAngle(a: number) {
+  return a - Math.PI * 2 * Math.floor((a + Math.PI) / (Math.PI * 2));
 }

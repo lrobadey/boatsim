@@ -18,8 +18,8 @@ export const ORDERS: Order[] = [
   { name: 'Oars Up', short: 'STOP', rate: 0, dir: 0, effort: 0, drain: -0.03 },
   { name: 'Slow', short: 'SLOW', rate: 18, dir: 1, effort: 0.45, drain: -0.015 },
   { name: 'Half', short: 'HALF', rate: 26, dir: 1, effort: 0.65, drain: -0.004 },
-  { name: 'Full', short: 'FULL', rate: 31, dir: 1, effort: 0.85, drain: 0.004 },
-  { name: 'Ramming Speed', short: 'RAM', rate: 46, dir: 1, effort: 1.0, drain: 0.017 },
+  { name: 'Full', short: 'FULL', rate: 31, dir: 1, effort: 0.85, drain: 0.0011 },
+  { name: 'Ramming Speed', short: 'RAM', rate: 46, dir: 1, effort: 1.0, drain: 0.011 },
 ];
 export const ORDER_STOP = 1;
 
