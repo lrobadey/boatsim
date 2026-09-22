@@ -112,6 +112,7 @@ export class Hud {
   }
 
   update(g: Game, frames: number[], dt: number) {
+    this.root.classList.toggle('spy', g.player.zoom > 0.4);
     const ship = g.ship;
     const kn = ship.speed * KNOTS;
     this.speed.innerHTML = `${Math.abs(kn).toFixed(1)}<small>kn</small>`;

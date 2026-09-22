@@ -101,6 +101,8 @@ button:hover { background: rgba(185, 140, 60, 0.28); border-color: var(--gold); 
 /* ---------- minimap ---------- */
 .minimap { position: absolute; top: 20px; right: 26px; width: 150px; height: 150px; border-radius: 50%; filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.45)); opacity: 0.92; }
 .minimap canvas { display: block; }
+.minimap, .panel.right { transition: opacity 0.3s; }
+.hud.spy .minimap, .hud.spy .panel.right { opacity: 0.12; }
 
 /* ---------- chart ---------- */
 .chart { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 6, 3, 0.55); opacity: 0; transition: opacity 0.25s; }
