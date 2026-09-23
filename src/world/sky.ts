@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { shared } from '../gfx/shared';
+import { CLOUD_GLSL, type Clouds } from '../gfx/clouds';
 import { clamp, smoothstep, rng } from '../core/util';
 import type { AstroClock } from './astro';
 
@@ -35,6 +36,7 @@ export class SkySystem {
   /** suggested exposure (eye adaptation) */
   exposure = 1;
   sunIntensity = 0;
+  clouds: Clouds | null = null;
 
   constructor(private renderer: THREE.WebGLRenderer, private clock: AstroClock) {
     this.sky = new Sky();
@@ -276,11 +278,55 @@ export class SkySystem {
     }
   }
 
+  /**
+   * Composite volumetric clouds into the sky dome (and occlude stars and moon with them). The main
+   * view reads the clouds' low-res pass; the environment bake marches them inline.
+   */
+  attachClouds(clouds: Clouds) {
+    this.clouds = clouds;
+    const m = this.sky.material;
+    Object.assign(m.uniforms, clouds.uniforms, {
+      uCloudTex: { value: clouds.texture },
+      uCloudScreen: { value: new THREE.Vector2(1, 1) },
+      uCloudOn: { value: 1 },
+      uCloudInline: { value: 0 },
+    });
+    m.uniforms.cloudCoverage.value = 0; // volumetric clouds replace the flat procedural layer
+    m.fragmentShader = m.fragmentShader
+      .replace('uniform float cloudScale;', 'uniform float cloudScale;\n' + CLOUD_GLSL + '\nuniform sampler2D uCloudTex;\nuniform vec2 uCloudScreen;\nuniform float uCloudOn;\nuniform float uCloudInline;')
+      .replace(
+        'gl_FragColor = vec4( texColor, 1.0 );',
+        `if ( uCloudOn > 0.5 ) {
+          vec4 cl = uCloudInline > 0.5 ? vcMarch( direction, 28.0, 0.5 ) : texture2D( uCloudTex, gl_FragCoord.xy / uCloudScreen );
+          texColor = texColor * cl.a + cl.rgb;
+        }
+        gl_FragColor = vec4( texColor, 1.0 );`,
+      );
+    m.needsUpdate = true;
+    for (const mat of [this.starMat, this.moonMat]) {
+      mat.uniforms.uCloudTex = m.uniforms.uCloudTex;
+      mat.uniforms.uCloudScreen = m.uniforms.uCloudScreen;
+      mat.fragmentShader = mat.fragmentShader
+        .replace('void main(){', 'uniform sampler2D uCloudTex; uniform vec2 uCloudScreen;\nvoid main(){')
+        .replace(/gl_FragColor = vec4\(([^;]*)\);\s*}\s*$/, (_, a) => `gl_FragColor = vec4(${a}); gl_FragColor.rgb *= texture2D(uCloudTex, gl_FragCoord.xy / uCloudScreen).a;\n        }`);
+      mat.needsUpdate = true;
+    }
+  }
+
+  /** per frame: point the sky at the current cloud frame */
+  setCloudFrame(tex: THREE.Texture, w: number, h: number) {
+    const u = this.sky.material.uniforms;
+    if (!u.uCloudTex) return;
+    u.uCloudTex.value = tex;
+    (u.uCloudScreen.value as THREE.Vector2).set(w, h);
+  }
+
   bakeEnvironment() {
     this.bakeTimer = 0;
     this.lastBakeSun.copy(this.clock.sunDir);
     const u = this.sky.material.uniforms;
     u.showSunDisc.value = 0;
+    if (u.uCloudInline) u.uCloudInline.value = 1;
     // sea colour in the environment follows sky brightness
     const k = 0.25 + 0.75 * (1 - this.night);
     (this.seaDisc.material as THREE.MeshBasicMaterial).color.setRGB(0.012 * k, 0.05 * k, 0.07 * k);
@@ -288,6 +334,7 @@ export class SkySystem {
     this.cubeCam.position.set(0, 0, 0);
     this.cubeCam.update(this.renderer, this.envScene);
     u.showSunDisc.value = 1;
+    if (u.uCloudInline) u.uCloudInline.value = 0;
     const prev = this.pmremTarget;
     this.pmremTarget = this.pmrem.fromCubemap(this.envTarget.texture);
     this.envMap = this.pmremTarget.texture;

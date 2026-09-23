@@ -171,7 +171,7 @@ export class Hud {
     if (this.debugOn) {
       const avg = frames.reduce((a, b) => a + b, 0) / Math.max(1, frames.length);
       const info = g.pipeline.renderer.info;
-      this.debug.innerHTML = `${(1000 / avg).toFixed(0)} fps · ${avg.toFixed(1)} ms<br>scale ${g.pipeline.renderScale.toFixed(2)} · ${g.pipeline.refreshRate.toFixed(0)} Hz<br>tris ${(info.render.triangles / 1e6).toFixed(2)}M<br>
+      this.debug.innerHTML = `${(1000 / avg).toFixed(0)} fps · ${avg.toFixed(1)} ms<br>scale ${g.pipeline.renderScale.toFixed(2)} · ${g.pipeline.refreshRate.toFixed(0)} Hz · gpu ${g.pipeline.gpuMs.toFixed(1)} ms<br>tris ${(info.render.triangles / 1e6).toFixed(2)}M<br>
         displ ${(ship.displacement / 1000).toFixed(1)} t · heel ${((ship.heel * 180) / Math.PI).toFixed(1)}° · pitch ${((ship.pitch * 180) / Math.PI).toFixed(1)}°<br>
         oar thrust ${(ship.oarThrust / 1000).toFixed(1)} kN · ${g.crew.rate.toFixed(0)} spm<br>
         Hs ${g.waves.hs.toFixed(2)} m · λp ${g.waves.peakLambda.toFixed(0)} m`;

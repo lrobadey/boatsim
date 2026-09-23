@@ -18,6 +18,9 @@ export const shared = {
   // terrain lighting: heightfield (for sun shadows) and baked sky visibility
   uHeightTex: { value: null as THREE.Texture | null },
   uAOTex: { value: null as THREE.Texture | null },
+  uSunShadowTex: { value: null as THREE.Texture | null },
+  uCloudShadowTex: { value: null as THREE.Texture | null },
+  uCloudShadowParams: { value: new THREE.Vector4(0, 0, 16000, 0) }, // centre x, z, size, enabled
   uTerrainSize: { value: 12000 },
   uTerrainMax: { value: 500 },
 };
@@ -57,23 +60,24 @@ uniform sampler2D uHeightTex;
 uniform sampler2D uAOTex;
 uniform float uTerrainSize;
 uniform float uTerrainMax;
+uniform sampler2D uSunShadowTex;
+uniform sampler2D uCloudShadowTex;
+uniform vec4 uCloudShadowParams;
+float cloudShadow(vec3 wp) {
+  if (uCloudShadowParams.w < 0.5) return 1.0;
+  vec2 uv = (wp.xz - uCloudShadowParams.xy) / uCloudShadowParams.z + 0.5;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return 1.0;
+  return texture2D(uCloudShadowTex, uv).r;
+}
+// baked horizon-height map (see SunShadowBake): R = shadow height, G = penumbra width
 float terrainShadow(vec3 wp, vec3 L) {
   if (L.y < -0.02) return 0.0;
-  L.y = max(L.y, 0.005);
-  float t = 1.5;
-  float sh = 1.0;
-  for (int i = 0; i < 28; i++) {
-    vec3 p = wp + L * t;
-    if (p.y > uTerrainMax) break;
-    vec2 uv = p.xz / uTerrainSize + 0.5;
-    if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) break;
-    float h = texture2D(uHeightTex, uv).r;
-    float d = p.y - h + 0.6 + t * 0.012;
-    sh = min(sh, clamp(d / (t * 0.035 + 0.4), 0.0, 1.0));
-    if (sh <= 0.001) break;
-    t = t * 1.28 + 2.5;
-  }
-  return sh * sh * (3.0 - 2.0 * sh);
+  float cs = cloudShadow(wp);
+  vec2 uv = wp.xz / uTerrainSize + 0.5;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return cs;
+  vec2 s = texture2D(uSunShadowTex, uv).rg;
+  float sh = clamp((wp.y - s.x) / max(s.y, 0.25), 0.0, 1.0);
+  return sh * sh * (3.0 - 2.0 * sh) * cs;
 }
 float terrainAO(vec3 wp) {
   vec2 uv = wp.xz / uTerrainSize + 0.5;

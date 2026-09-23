@@ -1,3 +1,4 @@
+import { LAYER_NOREFLECT } from '../core/pipeline';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { patchMaterial, shared } from '../gfx/shared';
@@ -209,6 +210,7 @@ export class Props {
       inst.computeBoundingSphere();
       inst.castShadow = true;
       inst.receiveShadow = true;
+      inst.layers.set(LAYER_NOREFLECT); // thousands of instances for little gain in a rippled mirror
       this.group.add(inst);
       const maxDist = type === 2 ? 2200 : type === 3 ? 3500 : 7000;
       this.blocks.push({ obj: inst, center: new THREE.Vector3(cx / list.length, 0, cz / list.length), maxDist });

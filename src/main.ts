@@ -5,7 +5,20 @@ import { Game } from './game';
 import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
 
 const params = new URLSearchParams(location.search);
-const qName = (params.get('q') as QualityName) || (localStorage.getItem('trieres.quality') as QualityName) || 'high';
+/** default preset from the GPU: Apple Pro/Max/Ultra silicon and discrete GPUs get ultra */
+function detectQuality(): QualityName {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    const info = gl?.getExtension('WEBGL_debug_renderer_info');
+    const r = String(info ? gl!.getParameter(info.UNMASKED_RENDERER_WEBGL) : '');
+    if (/Apple M\d+ (Pro|Max|Ultra)|RTX|Radeon RX|Arc A/i.test(r)) return 'ultra';
+    if (/Apple M\d|GeForce|Radeon/i.test(r)) return 'high';
+    return 'medium';
+  } catch {
+    return 'high';
+  }
+}
+const qName = (params.get('q') as QualityName) || (localStorage.getItem('trieres.quality') as QualityName) || detectQuality();
 const quality = QUALITY[qName] ?? QUALITY.high;
 const seed = Number(params.get('seed') ?? 1729);
 const dev = params.has('dev');
@@ -44,7 +57,7 @@ function generate(): Promise<WorldGenResult> {
   });
 }
 
-function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array }> {
+function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint8Array; cloudDetail: Uint8Array }> {
   return new Promise((resolve, reject) => {
     const w = new Worker(new URL('./gfx/texgen.worker.ts', import.meta.url), { type: 'module' });
     w.onmessage = (e) => {

@@ -43,6 +43,9 @@ export class Ocean {
       uNight: shared.uNight,
       uHeightTex: shared.uHeightTex,
       uAOTex: shared.uAOTex,
+      uSunShadowTex: shared.uSunShadowTex,
+      uCloudShadowTex: shared.uCloudShadowTex,
+      uCloudShadowParams: shared.uCloudShadowParams,
       uTerrainMax: shared.uTerrainMax,
       uWindDir: shared.uWindDir,
       uWindStrength: shared.uWindStrength,
@@ -64,6 +67,9 @@ export class Ocean {
       uFoamA: { value: fft.foam(0) },
       uLA: { value: fft.cascades[0].L },
       uWhiteJ: { value: 0.6 },
+      uReflect: { value: null },
+      uReflMatrix: { value: new THREE.Matrix4() },
+      uReflOn: { value: 0 },
       uWhiteRamp: { value: 0.1 },
       uLB: { value: fft.cascades[1].L },
       uTexelA: { value: fft.cascades[0].L / fft.N },
@@ -225,6 +231,9 @@ uniform sampler2D uFoamA;
 uniform float uLA;
 uniform float uLB;
 uniform float uWhiteJ;
+uniform sampler2D uReflect;
+uniform mat4 uReflMatrix;
+uniform float uReflOn;
 uniform float uWhiteRamp;
 uniform sampler2D uFoamMap;
 uniform vec2 uFoamCenter;
@@ -321,6 +330,15 @@ void main() {
   // unresolved slope variance blurs the reflection (cube texel ~0.006 rad at lod 0)
   float lod = clamp(log2(1.0 + 330.0 * sqrt(slopeVar)), 0.0, 6.0);
   vec3 sky = textureLod(uFogEnv, R, lod).rgb;
+  // planar reflection of the world (islands, hull, sail, lights) over the sky reflection; the wave
+  // normal displaces it (more for near water) and slope variance blurs it via the mip chain
+  if (uReflOn > 0.5) {
+    vec4 rp = uReflMatrix * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
+    vec2 ruvR = rp.xy / rp.w + N.xz * mix(0.05, 0.012, smoothstep(10.0, 600.0, dist)) * vec2(1.0, 0.6);
+    float edgeR = smoothstep(0.0, 0.03, ruvR.x) * smoothstep(1.0, 0.97, ruvR.x) * smoothstep(0.0, 0.03, ruvR.y) * smoothstep(1.0, 0.97, ruvR.y);
+    vec4 pr = textureLod(uReflect, clamp(ruvR, 0.001, 0.999), max(lod - 0.5, 0.0));
+    sky = mix(sky, pr.rgb / max(pr.a, 1e-3), clamp(pr.a, 0.0, 1.0) * edgeR);
+  }
 
   // sun / moon glitter: GGX, roughness grows with distance (sub-pixel waves)
   vec3 L = normalize(uSunDir);
