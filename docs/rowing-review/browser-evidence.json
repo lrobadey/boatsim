@@ -1,0 +1,839 @@
+[
+  {
+    "name": "forward-01",
+    "before": {
+      "gpuMs": 19.78390997383507,
+      "heading": -0.3605736067612094,
+      "heel": -0.15039523553071055,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.6513611111111046,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 239.48153052325225,
+        "dissipatedPower": 35813.987846736185,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.0058823529411764705,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -4843.908449010918,
+        "portThrust": 0,
+        "positivePower": 25852.170759646306,
+        "powerCapFraction": 0,
+        "starboardThrust": -4843.908449010918,
+        "wetArea": 7.232768630222463,
+        "wetBlades": 78,
+        "yawMoment": -26204.445272252808
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 2.957776405698813,
+      "stamina": 0.9840894262959357,
+      "time": 13.124999999999895
+    },
+    "after": {
+      "gpuMs": 19.299902997002185,
+      "heading": -0.3599671365674837,
+      "heel": -0.15137502027692096,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.6901111111111045,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 241.5424317329468,
+        "dissipatedPower": 78960.68555421254,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -8459.628255418284,
+        "portThrust": 0,
+        "positivePower": 66396.15396733653,
+        "powerCapFraction": 0.02352941176470588,
+        "starboardThrust": -8459.628255418284,
+        "wetArea": 8.008314275611074,
+        "wetBlades": 82,
+        "yawMoment": -44367.81563153401
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 2.7649321795030923,
+      "stamina": 0.9839951287872738,
+      "time": 13.199999999999893
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=forward",
+    "logs": []
+  },
+  {
+    "name": "forward-02",
+    "before": {
+      "gpuMs": 20.57226683166283,
+      "heading": -0.33211330159567876,
+      "heel": -0.07125099101905549,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.9548333333333212,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 198.23209001913145,
+        "dissipatedPower": 66.13608019767918,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -51.558757374110904,
+        "portThrust": 0,
+        "positivePower": 0.5776794791771827,
+        "powerCapFraction": 0,
+        "starboardThrust": -51.558757374110904,
+        "wetArea": 0.4126776370421519,
+        "wetBlades": 17,
+        "yawMoment": -339.14137822834715
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 2.7137023707183197,
+      "stamina": 0.9784984195338604,
+      "time": 17.583333333332977
+    },
+    "after": {
+      "gpuMs": 20.544398971701867,
+      "heading": -0.3321129769952787,
+      "heel": -0.06939933391489767,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.976361111111099,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 195.96490922333984,
+        "dissipatedPower": 717.1875749698695,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -449.3659033628115,
+        "portThrust": 0,
+        "positivePower": 2.6975612098832773,
+        "powerCapFraction": 0,
+        "starboardThrust": -449.3659033628115,
+        "wetArea": 0.5013454848236403,
+        "wetBlades": 27,
+        "yawMoment": -611.5208925523793
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 2.709862137189533,
+      "stamina": 0.9785285384765164,
+      "time": 17.62499999999964
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=forward",
+    "logs": []
+  },
+  {
+    "name": "back-01",
+    "before": {
+      "gpuMs": 17.88613065840526,
+      "heading": -0.38360637448270496,
+      "heel": 0.05030728486135664,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.44949999999999646,
+      "rate": 18,
+      "rowing": {
+        "crewLoad": 186.60468850812552,
+        "dissipatedPower": 24945.22505849452,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.12352941176470587,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -292.76547859497987,
+        "portThrust": -292.66296689927367,
+        "positivePower": 25495.746757314653,
+        "powerCapFraction": 0.18235294117647055,
+        "starboardThrust": -0.10251169570620484,
+        "wetArea": 2.898253089444029,
+        "wetBlades": 47,
+        "yawMoment": 3999.1928820673206
+      },
+      "scenario": "back",
+      "sides": [
+        {
+          "direction": -1,
+          "effort": 0.5,
+          "mode": "row"
+        },
+        {
+          "direction": -1,
+          "effort": 0.5,
+          "mode": "row"
+        }
+      ],
+      "speedKn": -1.70374535644362,
+      "stamina": 1,
+      "time": 7.491666666666829
+    },
+    "after": {
+      "gpuMs": 17.841085810294995,
+      "heading": -0.3831358534254199,
+      "heel": 0.05862642827703523,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.4744999999999964,
+      "rate": 18,
+      "rowing": {
+        "crewLoad": 182.68910430318508,
+        "dissipatedPower": 544.6237964177557,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": 325.1112365757226,
+        "portThrust": 325.1112365757226,
+        "positivePower": 286.2963968249967,
+        "powerCapFraction": 0,
+        "starboardThrust": 0,
+        "wetArea": 0.6707410455551692,
+        "wetBlades": 20,
+        "yawMoment": 491.2180980907166
+      },
+      "scenario": "back",
+      "sides": [
+        {
+          "direction": -1,
+          "effort": 0.5,
+          "mode": "row"
+        },
+        {
+          "direction": -1,
+          "effort": 0.5,
+          "mode": "row"
+        }
+      ],
+      "speedKn": -1.6879828385303368,
+      "stamina": 1,
+      "time": 7.575000000000166
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=back",
+    "logs": []
+  },
+  {
+    "name": "hold-01",
+    "before": {
+      "gpuMs": 19.003497043626577,
+      "heading": -0.2690943187744262,
+      "heel": -0.0643480846190771,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 0.06344167556560892,
+        "dissipatedPower": 387.75467629690064,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -549.8710709874381,
+        "portThrust": -521.4069805427989,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": -28.464090444639524,
+        "wetArea": 16.711860731370162,
+        "wetBlades": 170,
+        "yawMoment": 2197.0958795197116
+      },
+      "scenario": "hold",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        }
+      ],
+      "speedKn": 0.305631793152117,
+      "stamina": 1,
+      "time": 34.24166666666537
+    },
+    "after": {
+      "gpuMs": 18.99443935409949,
+      "heading": -0.26886756606166723,
+      "heel": -0.0676401854281294,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 0.06316765678782882,
+        "dissipatedPower": 376.52136895297224,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -459.937848662641,
+        "portThrust": -486.800834489885,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": 26.862985827243943,
+        "wetArea": 16.54262415929231,
+        "wetBlades": 170,
+        "yawMoment": 2281.61955886626
+      },
+      "scenario": "hold",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        }
+      ],
+      "speedKn": 0.2374211363275268,
+      "stamina": 1,
+      "time": 34.291666666665364
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=hold",
+    "logs": []
+  },
+  {
+    "name": "pivot-01",
+    "before": {
+      "gpuMs": 20.997151837223058,
+      "heading": 0.4846639376242397,
+      "heel": 0.039425643075483206,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.11927777777775012,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 213.3627272291944,
+        "dissipatedPower": 120022.0708281045,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.9941176470588236,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0.0058823529411764705,
+        "oarThrust": 3295.6144037434956,
+        "portThrust": 15199.39304434092,
+        "positivePower": 122811.14162494018,
+        "powerCapFraction": 0.9941176470588236,
+        "starboardThrust": -11903.778640597422,
+        "wetArea": 18.213691843617937,
+        "wetBlades": 170,
+        "yawMoment": -129276.56380793574
+      },
+      "scenario": "pivot",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": -1,
+          "effort": 0.6374999916475788,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 1.064463872163234,
+      "stamina": 0.9943863200603454,
+      "time": 31.449999999998855
+    },
+    "after": {
+      "gpuMs": 20.21335311338534,
+      "heading": 0.48679816124879416,
+      "heel": 0.04165505745877311,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.16233333333330577,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 229.69078720485575,
+        "dissipatedPower": 116584.58062527856,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.9823529411764704,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0.01764705882352941,
+        "oarThrust": 3915.673035773036,
+        "portThrust": 15818.856725472957,
+        "positivePower": 120199.32511665997,
+        "powerCapFraction": 0.9823529411764704,
+        "starboardThrust": -11903.183689699925,
+        "wetArea": 17.81093239020029,
+        "wetBlades": 168,
+        "yawMoment": -129829.11155863004
+      },
+      "scenario": "pivot",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": -1,
+          "effort": 0.6374999944937438,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 1.2045864108815976,
+      "stamina": 0.9943711281924724,
+      "time": 31.533333333332184
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=pivot",
+    "logs": []
+  },
+  {
+    "name": "rest-01",
+    "before": {
+      "gpuMs": 19.182203577470432,
+      "heading": -0.2973334311558102,
+      "heel": 0.18539268019131944,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 6.155641663870441,
+        "dissipatedPower": 17.60376323220903,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": 0.5813225075766749,
+        "portThrust": 0.5813225075766749,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": 0,
+        "wetArea": 3.158049826851517,
+        "wetBlades": 43,
+        "yawMoment": -104.17871555245851
+      },
+      "scenario": "rest",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "rest"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "rest"
+        }
+      ],
+      "speedKn": -0.9301496928399952,
+      "stamina": 1,
+      "time": 27.79166666666573
+    },
+    "after": {
+      "gpuMs": 19.284922272569816,
+      "heading": -0.2967476051516131,
+      "heel": 0.1964903731819754,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 5.956944033117402,
+        "dissipatedPower": 38.711543261288945,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": 1.205561829090292,
+        "portThrust": 1.205561829090292,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": 0,
+        "wetArea": 3.4193535286346393,
+        "wetBlades": 50,
+        "yawMoment": 327.38972411365876
+      },
+      "scenario": "rest",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "rest"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "rest"
+        }
+      ],
+      "speedKn": -0.7933145529270229,
+      "stamina": 1,
+      "time": 27.891666666665724
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=rest",
+    "logs": []
+  },
+  {
+    "name": "transition-01",
+    "before": {
+      "gpuMs": 19.62346404619692,
+      "heading": -0.3609695815934904,
+      "heel": 0.040777187873974205,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 117.12399583191672,
+        "dissipatedPower": 17.48970919518632,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -27.58368802768081,
+        "portThrust": -27.58368802768081,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": 0,
+        "wetArea": 0.18989105154477937,
+        "wetBlades": 9,
+        "yawMoment": -56.51603184545683
+      },
+      "scenario": "transition",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.7250000000000004,
+          "mode": "exit"
+        },
+        {
+          "direction": 1,
+          "effort": 0.7250000000000004,
+          "mode": "exit"
+        }
+      ],
+      "speedKn": 2.0546958323260673,
+      "stamina": 1,
+      "time": 16.091666666666395
+    },
+    "after": {
+      "gpuMs": 19.261737508356585,
+      "heading": -0.36047562608004474,
+      "heel": 0.03408561586125171,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 114.5500871191554,
+        "dissipatedPower": 11.338232737706932,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -16.265811835515123,
+        "portThrust": -16.265811835515123,
+        "positivePower": 0.5727990608315162,
+        "powerCapFraction": 0,
+        "starboardThrust": 0,
+        "wetArea": 0.11557508965010373,
+        "wetBlades": 8,
+        "yawMoment": -27.662483226961697
+      },
+      "scenario": "transition",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.6250000000000008,
+          "mode": "exit"
+        },
+        {
+          "direction": 1,
+          "effort": 0.6250000000000008,
+          "mode": "exit"
+        }
+      ],
+      "speedKn": 2.214356656172,
+      "stamina": 1,
+      "time": 16.158333333333058
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=transition",
+    "logs": []
+  },
+  {
+    "name": "final-hold",
+    "before": {
+      "gpuMs": 20.5945958335404,
+      "heading": -0.3484118401211294,
+      "heel": -0.04088680430275814,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 0.08185569832447398,
+        "dissipatedPower": 628.6108747283066,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -1096.934971617041,
+        "portThrust": -423.30399101317914,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": -673.6309806038614,
+        "wetArea": 16.967276942563597,
+        "wetBlades": 170,
+        "yawMoment": -895.4267812549899
+      },
+      "scenario": "hold",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        }
+      ],
+      "speedKn": 0.3030541154728169,
+      "stamina": 1,
+      "time": 16.874999999999684
+    },
+    "after": {
+      "gpuMs": 20.588302634505677,
+      "heading": -0.34822829726669546,
+      "heel": -0.03899613625384293,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0,
+      "rate": 0,
+      "rowing": {
+        "crewLoad": 0.08274042558888693,
+        "dissipatedPower": 630.7206695854159,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0,
+        "oarThrust": -1122.04389954698,
+        "portThrust": -468.2131134091585,
+        "positivePower": 0,
+        "powerCapFraction": 0,
+        "starboardThrust": -653.8307861378221,
+        "wetArea": 17.0202451152975,
+        "wetBlades": 170,
+        "yawMoment": -561.2139789510877
+      },
+      "scenario": "hold",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        },
+        {
+          "direction": 1,
+          "effort": 0,
+          "mode": "hold"
+        }
+      ],
+      "speedKn": 0.43526385883924146,
+      "stamina": 1,
+      "time": 16.941666666666347
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=hold",
+    "logs": []
+  },
+  {
+    "name": "final-forward-drive",
+    "before": {
+      "gpuMs": 18.965716948375764,
+      "heading": -0.32896688225983484,
+      "heel": -0.13559247402204153,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.1635833333333168,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 208.94921902596485,
+        "dissipatedPower": 59060.167876109335,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.6647058823529411,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0.08235294117647059,
+        "oarThrust": 24550.77209523168,
+        "portThrust": 8474.536449210806,
+        "positivePower": 108987.01482333952,
+        "powerCapFraction": 0.5764705882352941,
+        "starboardThrust": 16076.235646020858,
+        "wetArea": 12.272658189923783,
+        "wetBlades": 163,
+        "yawMoment": 41056.345222348165
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 3.992464891230723,
+      "stamina": 0.9779893335854508,
+      "time": 21.858333333332737
+    },
+    "after": {
+      "gpuMs": 19.22062913817708,
+      "heading": -0.32937301255507256,
+      "heel": -0.12954781202408033,
+      "oarMeshes": [
+        62,
+        54,
+        54
+      ],
+      "phase": 0.19802777777776137,
+      "rate": 31,
+      "rowing": {
+        "crewLoad": 220.0809791225523,
+        "dissipatedPower": 55084.16058826182,
+        "fallbackQueries": 0,
+        "forceCapFraction": 0.6647058823529411,
+        "guardedQueries": 0,
+        "missedDriveFraction": 0.06470588235294118,
+        "oarThrust": 24268.910209481703,
+        "portThrust": 7874.95504398117,
+        "positivePower": 104812.79707541628,
+        "powerCapFraction": 0.5647058823529412,
+        "starboardThrust": 16393.955165500538,
+        "wetArea": 12.501876658404566,
+        "wetBlades": 163,
+        "yawMoment": 38725.78369144965
+      },
+      "scenario": "forward",
+      "sides": [
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        },
+        {
+          "direction": 1,
+          "effort": 0.85,
+          "mode": "row"
+        }
+      ],
+      "speedKn": 4.154536490662183,
+      "stamina": 0.9779991312512476,
+      "time": 21.924999999999397
+    },
+    "url": "http://127.0.0.1:5174/?dev&hud=1&q=high&rowingReview=forward",
+    "logs": []
+  }
+]

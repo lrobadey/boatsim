@@ -7,9 +7,26 @@ import type { WorldGenResult } from './worldgenTypes';
 import type { Terrain } from './terrain';
 import type { WaveField } from './waves';
 import type { Quality } from '../core/quality';
+import type { VisualAssets } from '../gfx/assets';
 import { LAYER_REFRACT } from '../core/pipeline';
 
 const BLOCK = 1500;
+
+/** Keep masonry blocks near the scan's two metre physical scale on every face. */
+function stoneUvs(g: THREE.BoxGeometry) {
+  const p = g.getAttribute('position');
+  const n = g.getAttribute('normal');
+  const uv = g.getAttribute('uv');
+  for (let i = 0; i < p.count; i++) {
+    const ax = Math.abs(n.getX(i));
+    const ay = Math.abs(n.getY(i));
+    if (ax > 0.5) uv.setXY(i, p.getZ(i) / 2, p.getY(i) / 2);
+    else if (ay > 0.5) uv.setXY(i, p.getX(i) / 2, p.getZ(i) / 2);
+    else uv.setXY(i, p.getX(i) / 2, p.getY(i) / 2);
+  }
+  uv.needsUpdate = true;
+  return g;
+}
 
 function colorize(g: THREE.BufferGeometry, c: THREE.Color, jitter: number, r: () => number, heightDarken = 0) {
   const n = g.attributes.position.count;
@@ -123,11 +140,12 @@ export class Props {
   private flame: THREE.Mesh;
   private windowMat = new THREE.MeshStandardMaterial();
 
-  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality) {
+  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets) {
     this.buildVegetation(gen);
     this.buildVillage(gen);
     this.buildTemple(gen);
-    this.buildPier(gen);
+    this.buildPier(gen, assets);
+    this.buildRockFaces(gen, assets);
     this.buildBoats(gen);
     // beacon fire in front of the temple (east side)
     const t = gen.sites.temple;
@@ -340,10 +358,10 @@ export class Props {
     this.group.add(frieze);
   }
 
-  private buildPier(gen: WorldGenResult) {
+  private buildPier(gen: WorldGenResult, assets: VisualAssets) {
     const p = gen.sites.pier;
     const segs = Math.max(2, Math.floor(p.length / 6));
-    const stone = patchMaterial(new THREE.MeshStandardMaterial({ color: 0xb0a898, roughness: 0.95 }), undefined, 'pier');
+    const stone = patchMaterial(new THREE.MeshStandardMaterial({ map: assets.stone.color, normalMap: assets.stone.normal, roughnessMap: assets.stone.roughness, normalScale: new THREE.Vector2(0.5, 0.5), roughness: 1 }), undefined, 'pier');
     const dx = Math.cos(p.angle),
       dz = Math.sin(p.angle);
     for (let i = 0; i < segs; i++) {
@@ -353,13 +371,49 @@ export class Props {
       const ground = this.terrain.heightAt(x, z);
       const top = 1.3;
       const h = top - ground + 1;
-      const b = new THREE.Mesh(new THREE.BoxGeometry(p.length / segs + 0.1, h, 5.5), stone);
+      const b = new THREE.Mesh(stoneUvs(new THREE.BoxGeometry(p.length / segs + 0.1, h, 5.5)), stone);
       b.position.set(x, top - h / 2, z);
       b.rotation.y = -p.angle;
       b.castShadow = true;
       b.receiveShadow = true;
       b.layers.enable(LAYER_REFRACT);
       this.group.add(b);
+    }
+  }
+
+  private buildRockFaces(gen: WorldGenResult, assets: VisualAssets) {
+    // Find exposed shore on both sides of the pier from navigable harbor water.
+    const h = gen.sites.harbour;
+    const shoreAngle = gen.sites.pier.angle + Math.PI;
+    const offsets = [-0.58, -0.4, -0.23, 0.23, 0.4, 0.58];
+    assets.rockFace.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      obj.layers.enable(LAYER_REFRACT);
+      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const material of materials) patchMaterial(material, undefined, 'rockface');
+    });
+    for (let i = 0; i < offsets.length; i++) {
+      const a = shoreAngle + offsets[i];
+      const dx = Math.cos(a), dz = Math.sin(a);
+      let d = 0;
+      for (let probe = 35; probe <= 650; probe += 6) {
+        if (this.terrain.heightAt(h.x + dx * probe, h.z + dz * probe) > 2) {
+          d = probe;
+          break;
+        }
+      }
+      if (!d) continue;
+      const x = h.x + dx * (d + 3), z = h.z + dz * (d + 3);
+      const scale = 2.0 + (i % 3) * 0.4;
+      const rock = assets.rockFace.clone(true);
+      rock.scale.setScalar(scale);
+      rock.rotation.y = -Math.PI / 2 - a + (i % 2 ? 0.2 : -0.15);
+      rock.position.set(x, this.terrain.heightAt(x, z) - scale * 0.75, z);
+      rock.updateMatrixWorld(true);
+      this.group.add(rock);
+      this.blocks.push({ obj: rock, center: new THREE.Vector3(x, 0, z), maxDist: 2200 });
     }
   }
 

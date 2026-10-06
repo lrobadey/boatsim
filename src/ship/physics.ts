@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { buildColumns, Column, halfBeam, sheer, zOf, deckY, HULL_LENGTH, RAM_LENGTH } from './hull';
-import { Crew, stroke, OAR_BLADE_R } from './crew';
-import { OAR_BANKS } from './oarLayout';
+import { Crew } from './crew';
+import { RowingSystem } from './rowing';
+import { createFlowSample } from '../world/waves';
 import type { WaveField } from '../world/waves';
 import type { Wind } from '../world/wind';
 import type { Terrain } from '../world/terrain';
@@ -10,9 +11,6 @@ import { clamp } from '../core/util';
 const RHO = 1025;
 const RHO_AIR = 1.225;
 const G = 9.81;
-const BLADE_AREA = 0.11;
-const BLADE_CD = 1.5;
-const ROWER_MAX_FORCE = 370; // N at the blade (a trained rower's sprint effort through the oar lever)
 const RUDDER_AREA = 0.85;
 
 const _v = new THREE.Vector3();
@@ -43,7 +41,8 @@ export class ShipPhysics {
   // accumulators
   private force = new THREE.Vector3();
   private torque = new THREE.Vector3();
-  private waterPrev: Float32Array;
+  readonly rowing: RowingSystem;
+  private flow = createFlowSample();
   private contactPts: THREE.Vector3[] = [];
   // controls
   helm = 0; // -1..1 (positive = turn to starboard)
@@ -70,7 +69,7 @@ export class ShipPhysics {
 
   constructor(private waves: WaveField, private wind: Wind, private terrain: Terrain, public crew: Crew) {
     this.columns = buildColumns(20, 4);
-    this.waterPrev = new Float32Array(this.columns.length);
+    this.rowing = new RowingSystem(crew);
     // mass from displacement at the design waterline: the ship floats where it was designed to
     let vol = 0;
     for (const c of this.columns) vol += c.area * Math.max(0, -c.bottom);
@@ -112,6 +111,7 @@ export class ShipPhysics {
     this.angVel.set(0, 0, 0);
     this.prevPos.copy(this.pos);
     this.prevQuat.copy(this.quat);
+    this.rowing.reset(this, this.time);
   }
 
   /** local hull point -> world */
@@ -138,7 +138,8 @@ export class ShipPhysics {
     const invQ = _q.copy(this.quat).invert();
 
     this.hydrostatics(dt, invQ);
-    this.oars(invQ);
+    this.rowing.step(dt, this.time, this, this.helm, this.waves, this.force, this.torque);
+    this.oarThrust = this.rowing.telemetry.oarThrust;
     this.rudders(dt, invQ);
     this.sail(dt, invQ);
     this.ground();
@@ -167,11 +168,13 @@ export class ShipPhysics {
 
     // telemetry
     const fwd = _v.set(0, 0, -1).applyQuaternion(this.quat);
-    this.speed = this.vel.dot(fwd);
+    const flow = this.waves.sampleFlowAt(this.pos.x, this.pos.y, this.pos.z, this.time, this.flow);
+    this.speed = _v2.set(this.vel.x - flow.vx, this.vel.y - flow.vy, this.vel.z - flow.vz).dot(fwd);
     this.heading = Math.atan2(fwd.x, -fwd.z);
     const right = _v2.set(1, 0, 0).applyQuaternion(this.quat);
     this.heel = Math.asin(clamp(right.y, -1, 1));
     this.pitch = Math.asin(clamp(fwd.y, -1, 1));
+    this.rowing.refreshWorld(this);
   }
 
   private hydrostatics(dt: number, invQ: THREE.Quaternion) {
@@ -183,8 +186,6 @@ export class ShipPhysics {
       const pb = this.toWorld(_p.set(c.x, c.bottom, c.z), _p);
       const pt = this.toWorld(_n.set(c.x, c.top, c.z), _n);
       const water = this.waves.heightAt(pb.x, pb.z, t);
-      const dWater = (water - this.waterPrev[i]) / dt;
-      this.waterPrev[i] = water;
       if (pb.y >= water) continue;
       const span = pt.y - pb.y;
       const f = span > 1e-3 ? clamp((water - pb.y) / span, 0, 1) : 1;
@@ -199,7 +200,8 @@ export class ShipPhysics {
 
       // hydrodynamic drag in hull frame, relative to the water (vertical orbital velocity included)
       const pv = this.pointVel(cp, _v);
-      pv.y -= dWater * 0.8;
+      const flow = this.waves.sampleFlowAt(cp.x, cp.y, cp.z, t, this.flow);
+      pv.x -= flow.vx; pv.y -= flow.vy; pv.z -= flow.vz;
       const lv = pv.applyQuaternion(invQ); // local velocity
       const subDepth = Math.min(subLen, 2.5);
       // lateral: flat-plate-like resistance of the hull side (keel effect)
@@ -227,66 +229,9 @@ export class ShipPhysics {
     // water (much stronger with the oars run out than with them shipped)
     const fwdAxis = _v.set(0, 0, -1).applyQuaternion(this.quat);
     const rollRate = this.angVel.dot(fwdAxis);
-    const oarsOut = this.crew.readiness;
-    const cRoll = 22000 + 60000 * oarsOut;
+    // Blade forces now supply actual oar roll damping; retain only hull damping here.
+    const cRoll = 22000;
     this.torque.addScaledVector(fwdAxis, -cRoll * rollRate - 40000 * rollRate * Math.abs(rollRate));
-  }
-
-  private oars(invQ: THREE.Quaternion) {
-    const crew = this.crew;
-    const o = crew.order;
-    this.oarThrust = 0;
-    const turning = clamp(Math.abs(this.helm) - 0.35, 0, 1) / 0.65;
-    const lowSpeed = clamp(1 - Math.abs(this.speed) / 3, 0, 1);
-    for (const bank of OAR_BANKS) {
-      for (const side of [-1, 1] as const) {
-        // differential rowing: inner side eases (or backs) when the helm is hard over at low speed
-        const inner = Math.sign(this.helm) === side; // helm>0 turns to starboard -> starboard (+x) is inner
-        let effort = o.effort * crew.strength;
-        let dir: number = o.dir;
-        if (inner && turning > 0) {
-          effort *= 1 - turning * (0.6 + 0.4 * lowSpeed);
-          if (lowSpeed > 0.6 && turning > 0.8 && o.dir > 0) dir = -1; // pivot turn: inner side backs water
-        }
-        let sweep = 0,
-          dSweep = 0,
-          imm = 0;
-        if (crew.holdWater) {
-          sweep = 0;
-          dSweep = 0;
-          imm = 1;
-          effort = 1.2;
-        } else if (o.dir !== 0 && crew.rate > 0.5) {
-          const st = stroke(crew.phase, crew.driveFrac, crew.driveTime, crew.period, dir);
-          sweep = st.sweep;
-          dSweep = st.dSweep;
-          imm = st.immersion;
-        } else continue;
-        if (imm <= 0) continue;
-        // blade centre (local) and its velocity relative to the hull
-        const cs = Math.cos(sweep),
-          sn = Math.sin(sweep);
-        const r = OAR_BLADE_R;
-        const bl = _p.set(bank.pivotX * side + side * cs * r, -0.1, bank.zMid - sn * r);
-        const relLocal = _n.set(-side * sn * r * dSweep, 0, -cs * r * dSweep);
-        const bw = this.toWorld(bl, _v2.copy(bl));
-        const waterY = this.waves.heightAt(bw.x, bw.z, this.time);
-        if (bw.y > waterY + 0.35) continue; // blade out of the water (heel, trough)
-        const vWorld = this.pointVel(bw, _v).add(relLocal.applyQuaternion(this.quat));
-        // blade face normal: horizontal, perpendicular to the loom
-        const nLocal = _v3.set(-side * sn, 0, -cs);
-        const nW = nLocal.applyQuaternion(this.quat).clone();
-        const vn = vWorld.dot(nW);
-        let F = -0.5 * RHO * BLADE_CD * BLADE_AREA * vn * Math.abs(vn) * imm;
-        const cap = ROWER_MAX_FORCE * effort;
-        F = clamp(F, -cap, cap) * bank.count;
-        const Fv = nW.multiplyScalar(F);
-        this.addForceAt(Fv, bw);
-        // forward thrust telemetry
-        const fwd = _n.set(0, 0, -1).applyQuaternion(this.quat);
-        this.oarThrust += Fv.dot(fwd);
-      }
-    }
   }
 
   private rudders(dt: number, invQ: THREE.Quaternion) {
@@ -302,7 +247,10 @@ export class ShipPhysics {
       const depth = water - w.y;
       if (depth < 0) continue; // blade lifted clear (heel)
       const sub = clamp(depth / 0.8, 0, 1);
-      const v = this.pointVel(w, _v).applyQuaternion(invQ); // local blade velocity through water
+      const v = this.pointVel(w, _v);
+      const flow = this.waves.sampleFlowAt(w.x, w.y, w.z, this.time, this.flow);
+      v.x -= flow.vx; v.y -= flow.vy; v.z -= flow.vz;
+      v.applyQuaternion(invQ); // local blade velocity relative to moving water
       v.y = 0;
       const sp = v.length();
       if (sp < 0.01) continue;

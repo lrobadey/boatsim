@@ -1,8 +1,10 @@
+import type * as THREE from 'three';
 import { QUALITY, QualityName } from './core/quality';
 import type { WorldGenResult } from './world/worldgenTypes';
 import { Wind } from './world/wind';
 import { Game } from './game';
 import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
+import { loadVisualAssets } from './gfx/assets';
 
 const params = new URLSearchParams(location.search);
 /** default preset from the GPU: Apple Pro/Max/Ultra silicon and discrete GPUs get ultra */
@@ -57,7 +59,7 @@ function generate(): Promise<WorldGenResult> {
   });
 }
 
-function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint8Array; cloudDetail: Uint8Array }> {
+function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }> {
   return new Promise((resolve, reject) => {
     const w = new Worker(new URL('./gfx/texgen.worker.ts', import.meta.url), { type: 'module' });
     w.onmessage = (e) => {
@@ -72,13 +74,49 @@ function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array; cloudShape
 async function boot() {
   if (dev) console.log('[boot] start', performance.now().toFixed(0));
   const texP = textures();
+  const assetsP = loadVisualAssets();
   const gen = await generate();
-  const tex = await texP;
+  const [tex, assets] = await Promise.all([texP, assetsP]);
   if (dev) console.log('[boot] gen done', performance.now().toFixed(0));
   label.textContent = 'Fitting out the ship…';
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
-  const game = new Game(canvas, quality, gen, tex);
+  const game = new Game(canvas, quality, gen, tex, assets);
+  if (dev && params.get('inspect') === 'harbour') {
+    const h = gen.sites.harbour;
+    const towardShore = gen.sites.pier.angle + Math.PI;
+    game.player.mode = 'eagle';
+    game.player.eaglePos.set(h.x, 18, h.z);
+    game.player.eagleYaw = Math.atan2(-Math.cos(towardShore), -Math.sin(towardShore));
+    game.player.eaglePitch = -0.1;
+    game.player.eagleVel.set(0, 0, 0);
+  }
+  // Reproducible visual-review scenes; opt-in dev URL only, normal controls are unchanged.
+  const rowingReview = dev ? params.get('rowingReview') : null;
+  if (rowingReview && ['forward', 'back', 'hold', 'pivot', 'rest', 'transition'].includes(rowingReview)) {
+    game.cinematic = true; game.player.mode = 'chase'; game.player.prevShipMode = 'helm';
+    game.player.chaseYaw = 1.25; game.player.chasePitch = 0.34; game.player.chaseDist = 30;
+    game.crew.setOrder(rowingReview === 'back' ? 0 : rowingReview === 'rest' || rowingReview === 'hold' ? 1 : 4);
+    game.crew.holdWater = rowingReview === 'hold'; game.ship.helm = rowingReview === 'pivot' ? 1 : 0;
+    game.clock.hours = 12.5; game.clock.compute();
+    const reviewState = document.createElement('script');
+    reviewState.type = 'application/json'; reviewState.id = 'rowing-review-state'; ui.appendChild(reviewState);
+    const observeRowing = () => {
+      if (rowingReview === 'transition') {
+        const t = game.ship.time % 12;
+        game.crew.setOrder(t < 4 ? 4 : t < 8 ? 0 : 1);
+        game.crew.holdWater = t >= 8 && t < 10;
+      }
+      reviewState.textContent = JSON.stringify({ scenario: rowingReview, time: game.ship.time,
+        speedKn: game.ship.speed * 1.943844, heading: game.ship.heading, heel: game.ship.heel,
+        stamina: game.crew.stamina, rate: game.crew.rate, phase: game.crew.phase,
+        sides: game.ship.rowing.sides.map(s => ({ mode: s.mode, direction: s.direction, effort: s.effort })),
+        rowing: game.ship.rowing.telemetry, gpuMs: game.pipeline.gpuMs,
+        oarMeshes: game.model.group.children.filter(o => (o as THREE.InstancedMesh).isInstancedMesh && o.layers.isEnabled(1)).map(o => (o as THREE.InstancedMesh).count) });
+      if (game.running) requestAnimationFrame(observeRowing);
+    };
+    requestAnimationFrame(observeRowing);
+  }
   (window as any).game = game;
   if (dev) console.log('[boot] game built', performance.now().toFixed(0));
   fill.style.width = '100%';

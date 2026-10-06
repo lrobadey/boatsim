@@ -85,6 +85,7 @@ export class Ocean {
       const cell = this.params.cell0 * Math.pow(2, l);
       const mat = new THREE.ShaderMaterial({
         uniforms: {
+          ...THREE.UniformsLib.lights,
           ...this.uniforms,
           uCell: { value: cell },
           uCenter: { value: new THREE.Vector2() },
@@ -95,9 +96,11 @@ export class Ocean {
         },
         vertexShader: VERT,
         fragmentShader: FRAG,
+        lights: true,
         side: THREE.FrontSide,
       });
       const mesh = new THREE.Mesh(l === 0 ? levelGeo0 : levelGeo, mat);
+      mesh.receiveShadow = true;
       mesh.frustumCulled = false;
       mesh.renderOrder = 10 + l; // near levels first (early-z)
       this.group.add(mesh);
@@ -169,6 +172,7 @@ export class Ocean {
 }
 
 const VERT = /* glsl */ `
+#include <shadowmap_pars_vertex>
 ${WAVES_GLSL}
 uniform float uCell;
 uniform sampler2D uDispA;
@@ -199,6 +203,14 @@ void main() {
   if (fadeA > 0.0) d += textureLod(uDispA, p / uLA, max(0.0, log2(uCell / uTexelA))).xyz * fadeA;
   vec3 wp = vec3(p.x + d.x, d.y, p.y + d.z);
   vWorld = wp;
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+  // The ocean displaces vertices itself, so shadow coordinates must use the final wave position.
+  vec4 shadowWorldPosition = modelMatrix * vec4(wp, 1.0);
+  for (int i = 0; i < NUM_DIR_LIGHT_SHADOWS; i++) {
+    vec4 biasedPosition = shadowWorldPosition + vec4(0.0, directionalLightShadows[i].shadowNormalBias, 0.0, 0.0);
+    vDirectionalShadowCoord[i] = directionalShadowMatrix[i] * biasedPosition;
+  }
+#endif
   vN = N;
   vJ = J;
   vWaveH = d.y;
@@ -209,7 +221,9 @@ void main() {
 `;
 
 const FRAG = /* glsl */ `
+#include <common>
 #include <packing>
+#include <shadowmap_pars_fragment>
 ${FOG_PARS_GLSL}
 ${TERRAIN_LIGHT_GLSL}
 ${WAVES_GLSL}
@@ -336,7 +350,16 @@ void main() {
     vec4 rp = uReflMatrix * vec4(vWorld.x, 0.0, vWorld.z, 1.0);
     vec2 ruvR = rp.xy / rp.w + N.xz * mix(0.05, 0.012, smoothstep(10.0, 600.0, dist)) * vec2(1.0, 0.6);
     float edgeR = smoothstep(0.0, 0.03, ruvR.x) * smoothstep(1.0, 0.97, ruvR.x) * smoothstep(0.0, 0.03, ruvR.y) * smoothstep(1.0, 0.97, ruvR.y);
-    vec4 pr = textureLod(uReflect, clamp(ruvR, 0.001, 0.999), max(lod - 0.5, 0.0));
+    // rough water stretches reflections vertically into streaks: smear along screen-y by the
+    // unresolved slope (glancing views of a wavy surface see a tall band of mirror directions)
+    float smear = clamp(sqrt(slopeVar) * 0.22 + 0.004, 0.0, 0.06);
+    float lodR = max(lod - 1.0, 0.0);
+    vec4 pr = vec4(0.0);
+    for (int k = 0; k < 4; k++) {
+      float o = (float(k) - 1.0) * smear;
+      pr += textureLod(uReflect, clamp(ruvR + vec2(0.0, o), 0.001, 0.999), lodR);
+    }
+    pr *= 0.25;
     sky = mix(sky, pr.rgb / max(pr.a, 1e-3), clamp(pr.a, 0.0, 1.0) * edgeR);
   }
 
@@ -351,7 +374,17 @@ void main() {
   float NdotL = max(dot(N, L), 0.0);
   float Fs = 0.02 + 0.98 * pow(1.0 - max(dot(H, V), 0.0), 5.0);
   float sunVis = terrainShadow(vWorld, L);
-  vec3 spec = sunVis * uSunColor * min(D * Fs * NdotL / (4.0 * max(NdotV, 0.15) * max(NdotL, 0.15)), 60.0) * NdotL;
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+  // Three.js supplies the active directional light's map, matrix and filtering settings.
+  sunVis *= getShadow(directionalShadowMap[0], directionalLightShadows[0].shadowMapSize,
+    directionalLightShadows[0].shadowIntensity, directionalLightShadows[0].shadowBias,
+    directionalLightShadows[0].shadowRadius, vDirectionalShadowCoord[0]);
+#endif
+  // Height-correlated Smith visibility; the outgoing radiance includes NdotL exactly once.
+  float gV = NdotL * sqrt(a2 + (1.0 - a2) * NdotV * NdotV);
+  float gL = NdotV * sqrt(a2 + (1.0 - a2) * NdotL * NdotL);
+  float ggxVis = 0.5 / max(gV + gL, 1e-4);
+  vec3 spec = sunVis * uSunColor * min(D * Fs * ggxVis * NdotL, 60.0);
 
   // ---- refraction & absorption ----
   vec2 suv = gl_FragCoord.xy / uScreen;

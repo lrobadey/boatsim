@@ -35,7 +35,11 @@ hold the display's refresh rate.
   coverage follows Monahan's empirical wind law, derived statistically from the spectrum. The wake is
   made of Kelvin arms, stern slick and oar puddles.
 - **Ship** — a 6-DOF rigid body at 120 Hz. The hull is lofted from one set of functions that also gives
-  its buoyancy columns, displacement and inertia. It has 170 simulated oars with a stroke cycle, steering
+  its buoyancy columns, displacement and inertia. All 170 oars share bank geometry and continuous
+  catch, drive, extraction, feather and recovery poses with the rendered animation. Each blade samples
+  local immersion and water flow; passive drag is bounded by handle force, work and crew reserves.
+  Low-speed hard helm backs the inner bank, and hold-water brakes through submerged blade drag. This
+  is a reduced-order traction model, without shaft dynamics or unsteady blade vortices. It also has steering
   oars modelled as lifting plates, a square sail trimmed to the apparent wind, crew stamina, and
   grounding.
 - **Sky & light** — astronomical sun and moon (latitude 37°N, midsummer). A Preetham sky with clouds is
@@ -47,3 +51,7 @@ hold the display's refresh rate.
   vegetation by biome rules.
 
 `PLAN.md` holds the original design and scope.
+
+The researched rowing contract is in [docs/rowing-spec.md](docs/rowing-spec.md). Run
+`npm run test:rowing` for geometry, transitions, power, control and sea-stability checks.
+Opt-in browser review scenes use `?dev&hud=1&rowingReview=forward` (or `back`, `hold`, `pivot`, `rest`, `transition`).

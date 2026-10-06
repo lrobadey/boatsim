@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { ShipPhysics } from '../ship/physics';
 import type { Trireme } from '../ship/trireme';
+import type { RowEventCursor } from '../ship/rowing';
 import { HULL_LENGTH, RAM_LENGTH, halfBeam, zOf } from '../ship/hull';
 
 /**
@@ -41,7 +42,7 @@ export class FoamSystem {
   private lastPos = new THREE.Vector3();
   private sideAcc = 0;
   private slamCd = 0;
-  private wasIn: boolean[] = [];
+  private rowingCursor: RowEventCursor | null = null;
 
   constructor(res = 1024) {
     this.target = new THREE.WebGLRenderTarget(res, res, { type: THREE.HalfFloatType, depthBuffer: false });
@@ -106,7 +107,7 @@ export class FoamSystem {
     this.parts.push({ vx: 0, vz: 0, age: 0, life: 20, size0: 2, size1: 6, foam: 0.6, turb: 0.4, ring: 0, ff: 0.6, ...p });
   }
 
-  update(dt: number, ship: ShipPhysics, model: Trireme, renderer: THREE.WebGLRenderer) {
+  update(dt: number, ship: ShipPhysics, model: Trireme, renderer: THREE.WebGLRenderer, renderTime = ship.time, consumeEvents = true) {
     const q = ship.quat;
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
     fwd.y = 0;
@@ -172,16 +173,15 @@ export class FoamSystem {
       for (let i = 0; i < 6; i++)
         this.spawn({ x: bow.x + (Math.random() - 0.5) * 4, z: bow.z + (Math.random() - 0.5) * 4, vx: (Math.random() - 0.5) * 2, vz: (Math.random() - 0.5) * 2, life: 12, size0: 2, size1: 7, foam: 0.8, turb: 0.6 });
     }
-    // oar splashes: ring where each blade enters the water, and a puddle where it leaves
-    for (let i = 0; i < model.bladeWorld.length; i++) {
-      const inW = model.bladeIn[i];
-      const was = this.wasIn[i] ?? false;
-      if (inW !== was) {
-        const b = model.bladeWorld[i];
-        this.spawn({ x: b.x, z: b.z, life: inW ? 3.5 : 7, size0: inW ? 0.4 : 0.6, size1: inW ? 1.6 : 2.2, foam: inW ? 0.85 : 0.6, turb: 0.45, ring: inW ? 1 : 0 });
-      }
-      this.wasIn[i] = inW;
-    }
+    // Each physical contact is consumed once, at its recorded world position and render time.
+    if (!this.rowingCursor) this.rowingCursor = { next: ship.rowing.events.oldestId };
+    if (consumeEvents) ship.rowing.events.read(this.rowingCursor, renderTime, (event) => {
+      if (event.kind === 'catchBeat' || event.intensity <= 0) return;
+      const enter = event.kind === 'enterWater';
+      this.spawn({ x: event.x, z: event.z, life: enter ? 3.5 : 7,
+        size0: enter ? 0.4 : 0.6, size1: enter ? 1.6 : 2.2,
+        foam: (enter ? 0.85 : 0.6) * event.intensity, turb: 0.45 * event.intensity, ring: enter ? 1 : 0 });
+    });
 
     // advance & pack
     this.center.set(Math.round(ship.pos.x), Math.round(ship.pos.z));

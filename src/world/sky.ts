@@ -18,15 +18,16 @@ export class SkySystem {
   readonly light: THREE.DirectionalLight;
   readonly hemi: THREE.HemisphereLight;
   readonly envTarget: THREE.WebGLCubeRenderTarget;
+  private readonly clearSkyTarget: THREE.WebGLCubeRenderTarget;
   envMap: THREE.Texture | null = null;
   private cubeCam: THREE.CubeCamera;
+  private clearSkyCam: THREE.CubeCamera;
   private envScene = new THREE.Scene();
+  private clearSkyScene = new THREE.Scene();
   private pmrem: THREE.PMREMGenerator;
   private pmremTarget: THREE.WebGLRenderTarget | null = null;
   private stars: THREE.Points;
   private starMat: THREE.ShaderMaterial;
-  private moon: THREE.Mesh;
-  private moonMat: THREE.ShaderMaterial;
   private lastBakeSun = new THREE.Vector3(9, 9, 9);
   private bakeTimer = 0;
   private seaDisc: THREE.Mesh;
@@ -54,9 +55,29 @@ export class SkySystem {
     // Rayleigh sky, a glow around the moon, faint airglow near the horizon, and moonlit clouds
     u.uNightSky = { value: new THREE.Vector3() };
     u.uMoonDir = { value: new THREE.Vector3(0, 1, 0) };
+    u.uMoonRight = { value: new THREE.Vector3(1, 0, 0) };
+    u.uMoonUp = { value: new THREE.Vector3(0, 1, 0) };
+    u.uMoonSun = { value: new THREE.Vector3() };
+    u.uMoonBright = { value: 0 };
+    u.uMoonVisible = { value: 0 };
     const fs = this.sky.material.fragmentShader;
     this.sky.material.fragmentShader = fs
-      .replace('uniform float cloudScale;', 'uniform float cloudScale;\nuniform vec3 uNightSky;\nuniform vec3 uMoonDir;')
+      .replace('uniform float cloudScale;', `uniform float cloudScale;
+        uniform vec3 uNightSky;
+        uniform vec3 uMoonDir;
+        uniform vec3 uMoonRight;
+        uniform vec3 uMoonUp;
+        uniform vec3 uMoonSun;
+        uniform float uMoonBright;
+        uniform float uMoonVisible;`)
+      .replace('void main() {', `float moonHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float moonNoise(vec2 p) {
+          vec2 i = floor(p), f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(moonHash(i), moonHash(i + vec2(1.0, 0.0)), f.x),
+            mix(moonHash(i + vec2(0.0, 1.0)), moonHash(i + vec2(1.0, 1.0)), f.x), f.y);
+        }
+        void main() {`)
       .replace(
         'if ( direction.y > 0.0 && cloudCoverage > 0.0 ) {',
         `float hz = 1.0 - clamp( direction.y, 0.0, 1.0 );
@@ -65,7 +86,23 @@ export class SkySystem {
         texColor += vec3( 0.0006, 0.0008, 0.0011 ) * hz * hz;
         if ( direction.y > 0.0 && cloudCoverage > 0.0 ) {`,
       )
-      .replace('cloudColor *= max( dayFactor, 0.03 );', 'cloudColor *= max( dayFactor, 0.03 );\n\t\t\t\tcloudColor += uNightSky * ( 1.4 + 3.0 * pow( mu, 6.0 ) );');
+      .replace('cloudColor *= max( dayFactor, 0.03 );', 'cloudColor *= max( dayFactor, 0.03 );\n\t\t\t\tcloudColor += uNightSky * ( 1.4 + 3.0 * pow( mu, 6.0 ) );')
+      .replace('// Clouds', `// The moon belongs to the sky behind the clouds, including in cube captures.
+        float moonFacing = dot(direction, uMoonDir);
+        if (uMoonVisible > 0.5 && moonFacing > 0.0) {
+          vec2 p = vec2(dot(direction, uMoonRight), dot(direction, uMoonUp)) / (moonFacing * 0.017);
+          float r2 = dot(p, p);
+          if (r2 < 1.0) {
+            vec3 nrm = vec3(p, sqrt(1.0 - r2));
+            float lit = smoothstep(-0.05, 0.12, dot(nrm, uMoonSun));
+            float maria = 0.75 + 0.25 * moonNoise(p * 3.0 + 4.0)
+              - 0.18 * smoothstep(0.55, 0.7, moonNoise(p * 1.7 + 1.3));
+            vec3 moonColor = vec3(1.0, 0.97, 0.9) * maria * (lit + 0.015) * uMoonBright;
+            texColor = mix(texColor, moonColor, 1.0 - smoothstep(0.995, 1.0, r2));
+          }
+        }
+
+        // Clouds`);
     this.sky.material.depthTest = false;
     this.sky.renderOrder = -1000;
     this.sky.frustumCulled = false;
@@ -104,14 +141,18 @@ export class SkySystem {
     sg.setAttribute('aMag', new THREE.BufferAttribute(mag, 1));
     sg.setAttribute('color', new THREE.BufferAttribute(col, 3));
     this.starMat = new THREE.ShaderMaterial({
-      uniforms: { uNight: { value: 0 }, uTime: shared.uTime, uPixel: { value: 1 } },
+      uniforms: {
+        uNight: { value: 0 }, uTime: shared.uTime, uPixel: { value: 1 },
+        uMoonDir: u.uMoonDir, uMoonVisible: u.uMoonVisible,
+      },
       vertexShader: /* glsl */ `
         attribute float aMag; attribute vec3 color;
-        varying float vB; varying vec3 vC;
+        varying float vB; varying vec3 vC; varying vec3 vDir;
         uniform float uTime; uniform float uPixel;
         void main(){
           vec4 wp = modelMatrix * vec4(position * 30000.0, 1.0);
           vec3 d = normalize(wp.xyz - cameraPosition);
+          vDir = d;
           float tw = 0.75 + 0.25 * sin(uTime * (2.0 + aMag * 7.0) + position.x * 400.0);
           vB = (0.25 + aMag * 5.0) * tw * smoothstep(-0.02, 0.12, d.y);
           vC = color;
@@ -120,8 +161,11 @@ export class SkySystem {
           gl_PointSize = (1.2 + aMag * 2.2) * uPixel;
         }`,
       fragmentShader: /* glsl */ `
-        varying float vB; varying vec3 vC; uniform float uNight;
+        varying float vB; varying vec3 vC; varying vec3 vDir;
+        uniform float uNight; uniform vec3 uMoonDir; uniform float uMoonVisible;
         void main(){
+          // Stars lie behind the lunar disc even though their point pass renders after the sky.
+          if (uMoonVisible > 0.5 && dot(normalize(vDir), uMoonDir) > 0.9998555) discard;
           vec2 c = gl_PointCoord - 0.5;
           float a = exp(-dot(c,c) * 18.0);
           gl_FragColor = vec4(vC * vB * a * uNight * 0.6, 1.0);
@@ -135,36 +179,6 @@ export class SkySystem {
     this.stars.frustumCulled = false;
     this.stars.renderOrder = -999;
     this.group.add(this.stars);
-
-    // --- moon ---
-    this.moonMat = new THREE.ShaderMaterial({
-      uniforms: { uSun: { value: new THREE.Vector3() }, uBright: { value: 1 } },
-      vertexShader: /* glsl */ `
-        varying vec2 vUv;
-        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position.z = 0.0; }`,
-      fragmentShader: /* glsl */ `
-        varying vec2 vUv; uniform vec3 uSun; uniform float uBright;
-        float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
-        float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
-          return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
-        void main(){
-          vec2 p = vUv * 2.0 - 1.0;
-          float r2 = dot(p,p);
-          if (r2 > 1.0) discard;
-          vec3 nrm = vec3(p, sqrt(1.0 - r2));
-          // uSun is sun direction in the moon's local frame
-          float lit = smoothstep(-0.05, 0.12, dot(nrm, uSun));
-          float maria = 0.75 + 0.25 * n(p * 3.0 + 4.0) - 0.18 * smoothstep(0.55, 0.7, n(p * 1.7 + 1.3));
-          vec3 c = vec3(1.0, 0.97, 0.9) * maria * (lit + 0.015);
-          gl_FragColor = vec4(c * uBright, 1.0);
-        }`,
-      depthTest: false,
-      depthWrite: false,
-    });
-    this.moon = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.moonMat);
-    this.moon.frustumCulled = false;
-    this.moon.renderOrder = -998;
-    this.group.add(this.moon);
 
     // --- lights ---
     this.light = new THREE.DirectionalLight(0xffffff, 3);
@@ -183,6 +197,19 @@ export class SkySystem {
     const envSky = new THREE.Mesh(this.sky.geometry, this.sky.material);
     envSky.scale.setScalar(40000);
     this.envScene.add(envSky);
+    // Keep a clear-sky radiance source for distant cloud haze. The material is cloned before
+    // attachClouds injects the cloud march, while its celestial uniforms remain shared.
+    const clearSkyMaterial = this.sky.material.clone();
+    clearSkyMaterial.uniforms = this.sky.material.uniforms;
+    const clearSky = new THREE.Mesh(this.sky.geometry, clearSkyMaterial);
+    clearSky.scale.setScalar(40000);
+    this.clearSkyScene.add(clearSky);
+    this.clearSkyTarget = new THREE.WebGLCubeRenderTarget(32, {
+      type: THREE.HalfFloatType,
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
+    });
+    this.clearSkyCam = new THREE.CubeCamera(1, 100000, this.clearSkyTarget);
     // ocean below the horizon for the environment: dark blue-green, lit by sky
     this.seaDisc = new THREE.Mesh(
       new THREE.CircleGeometry(60000, 32).rotateX(-Math.PI / 2),
@@ -195,6 +222,12 @@ export class SkySystem {
   }
 
   update(dt: number, camera: THREE.Camera, force = false) {
+    this.updateLighting(dt, camera, force);
+    this.updateEnvironment(dt, force);
+  }
+
+  /** Set celestial geometry and light before cloud lighting is evaluated. */
+  updateLighting(dt: number, camera: THREE.Camera, force = false) {
     const c = this.clock;
     const sun = c.sunDir;
     const moon = c.moonDir;
@@ -252,17 +285,21 @@ export class SkySystem {
     this.stars.quaternion
       .setFromAxisAngle(new THREE.Vector3(1, 0, 0), c.latitude - Math.PI / 2)
       .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -c.siderealAngle));
-    const moonDist = 20000;
-    this.moon.position.copy(moon).multiplyScalar(moonDist);
-    this.moon.updateMatrixWorld();
-    this.moon.lookAt(camera.position); // +z (the lit hemisphere's frame) faces the viewer
-    this.moon.scale.setScalar(moonDist * 0.034); // ~2deg: exaggerated like the eye perceives it low over the sea
-    this.moon.updateMatrixWorld();
-    const inv = new THREE.Matrix4().copy(this.moon.matrixWorld).invert();
-    const sunLocal = sun.clone().transformDirection(inv);
-    this.moonMat.uniforms.uSun.value.copy(sunLocal);
-    this.moonMat.uniforms.uBright.value = 1.6 * (0.25 + 0.75 * this.night) * (0.3 + 0.7 * smoothstep(-0.05, 0.05, moon.y));
-    this.moon.visible = moon.y > -0.1;
+    // Camera-facing frame for the disc. Its +z points toward the viewer, as it did on the
+    // former billboard. The sky shader uses this same frame for the view and cube capture.
+    const moonFrame = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().lookAt(new THREE.Vector3(), moon, new THREE.Vector3(0, 1, 0)),
+    );
+    const moonRight = new THREE.Vector3(1, 0, 0).applyQuaternion(moonFrame);
+    const moonUp = new THREE.Vector3(0, 1, 0).applyQuaternion(moonFrame);
+    (this.sky.material.uniforms.uMoonRight.value as THREE.Vector3).copy(moonRight);
+    (this.sky.material.uniforms.uMoonUp.value as THREE.Vector3).copy(moonUp);
+    (this.sky.material.uniforms.uMoonSun.value as THREE.Vector3).set(
+      sun.dot(moonRight), sun.dot(moonUp), -sun.dot(moon),
+    );
+    this.sky.material.uniforms.uMoonBright.value = 1.6 * (0.25 + 0.75 * this.night)
+      * (0.3 + 0.7 * smoothstep(-0.05, 0.05, moon.y));
+    this.sky.material.uniforms.uMoonVisible.value = moon.y > -0.1 ? 1 : 0;
 
     // eye adaptation: brighter exposure at night, gentle
     // eye adaptation from the scene illuminance (direct sun on a horizontal surface + sky)
@@ -270,7 +307,11 @@ export class SkySystem {
     const targetExp = 0.62 * Math.pow(1.35 / (E + 0.5), 0.42) * (1 + 5.5 * this.night);
     this.exposure += (targetExp - this.exposure) * (1 - Math.exp(-dt * 1.5));
     if (force) this.exposure = targetExp;
+  }
 
+  /** Bake the environment after this frame's clouds have advanced. */
+  updateEnvironment(dt: number, force = false) {
+    const sun = this.clock.sunDir;
     // environment re-bake when the sun moved or clouds drifted
     this.bakeTimer += dt;
     if (force || this.lastBakeSun.distanceToSquared(sun) > 2e-5 || this.bakeTimer > 3) {
@@ -278,47 +319,27 @@ export class SkySystem {
     }
   }
 
-  /**
-   * Composite volumetric clouds into the sky dome (and occlude stars and moon with them). The main
-   * view reads the clouds' low-res pass; the environment bake marches them inline.
-   */
+  /** Give environment captures the volumetric cloud layer and their haze its clear-sky colour. */
   attachClouds(clouds: Clouds) {
     this.clouds = clouds;
     const m = this.sky.material;
     Object.assign(m.uniforms, clouds.uniforms, {
-      uCloudTex: { value: clouds.texture },
-      uCloudScreen: { value: new THREE.Vector2(1, 1) },
       uCloudOn: { value: 1 },
-      uCloudInline: { value: 0 },
     });
+    clouds.uniforms.uCloudHazeSky.value = this.clearSkyTarget.texture;
+    clouds.uniforms.uCloudHazeReady.value = 0;
     m.uniforms.cloudCoverage.value = 0; // volumetric clouds replace the flat procedural layer
     m.fragmentShader = m.fragmentShader
-      .replace('uniform float cloudScale;', 'uniform float cloudScale;\n' + CLOUD_GLSL + '\nuniform sampler2D uCloudTex;\nuniform vec2 uCloudScreen;\nuniform float uCloudOn;\nuniform float uCloudInline;')
+      .replace('uniform float cloudScale;', 'uniform float cloudScale;\n' + CLOUD_GLSL + '\nuniform float uCloudOn;')
       .replace(
         'gl_FragColor = vec4( texColor, 1.0 );',
         `if ( uCloudOn > 0.5 ) {
-          vec4 cl = uCloudInline > 0.5 ? vcMarch( direction, 28.0, 0.5 ) : texture2D( uCloudTex, gl_FragCoord.xy / uCloudScreen );
+          vec4 cl = vcMarch( direction, 28.0, 0.5 );
           texColor = texColor * cl.a + cl.rgb;
         }
         gl_FragColor = vec4( texColor, 1.0 );`,
       );
     m.needsUpdate = true;
-    for (const mat of [this.starMat, this.moonMat]) {
-      mat.uniforms.uCloudTex = m.uniforms.uCloudTex;
-      mat.uniforms.uCloudScreen = m.uniforms.uCloudScreen;
-      mat.fragmentShader = mat.fragmentShader
-        .replace('void main(){', 'uniform sampler2D uCloudTex; uniform vec2 uCloudScreen;\nvoid main(){')
-        .replace(/gl_FragColor = vec4\(([^;]*)\);\s*}\s*$/, (_, a) => `gl_FragColor = vec4(${a}); gl_FragColor.rgb *= texture2D(uCloudTex, gl_FragCoord.xy / uCloudScreen).a;\n        }`);
-      mat.needsUpdate = true;
-    }
-  }
-
-  /** per frame: point the sky at the current cloud frame */
-  setCloudFrame(tex: THREE.Texture, w: number, h: number) {
-    const u = this.sky.material.uniforms;
-    if (!u.uCloudTex) return;
-    u.uCloudTex.value = tex;
-    (u.uCloudScreen.value as THREE.Vector2).set(w, h);
   }
 
   bakeEnvironment() {
@@ -326,7 +347,10 @@ export class SkySystem {
     this.lastBakeSun.copy(this.clock.sunDir);
     const u = this.sky.material.uniforms;
     u.showSunDisc.value = 0;
-    if (u.uCloudInline) u.uCloudInline.value = 1;
+    this.clearSkyCam.position.set(0, 0, 0);
+    this.clearSkyCam.update(this.renderer, this.clearSkyScene);
+    if (this.clouds) this.clouds.uniforms.uCloudHazeReady.value = 1;
+    if (u.uCloudOn) u.uCloudOn.value = 1;
     // sea colour in the environment follows sky brightness
     const k = 0.25 + 0.75 * (1 - this.night);
     (this.seaDisc.material as THREE.MeshBasicMaterial).color.setRGB(0.012 * k, 0.05 * k, 0.07 * k);
@@ -334,10 +358,8 @@ export class SkySystem {
     this.cubeCam.position.set(0, 0, 0);
     this.cubeCam.update(this.renderer, this.envScene);
     u.showSunDisc.value = 1;
-    if (u.uCloudInline) u.uCloudInline.value = 0;
-    const prev = this.pmremTarget;
-    this.pmremTarget = this.pmrem.fromCubemap(this.envTarget.texture);
+    if (u.uCloudOn) u.uCloudOn.value = 0;
+    this.pmremTarget = this.pmrem.fromCubemap(this.envTarget.texture, this.pmremTarget);
     this.envMap = this.pmremTarget.texture;
-    prev?.dispose();
   }
 }

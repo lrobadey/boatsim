@@ -13,6 +13,8 @@ import {
   BlendFunction,
 } from 'postprocessing';
 import { Quality } from './quality';
+import { CloudPass } from '../gfx/cloudPass';
+import type { Clouds } from '../gfx/clouds';
 
 export const LAYER_REFRACT = 1; // objects visible through the water surface (seabed, hull)
 export const LAYER_NOREFLECT = 2; // drawn by the main camera but left out of the sea reflection (vegetation)
@@ -73,6 +75,7 @@ export class Pipeline {
   readonly reversedDepth: boolean;
   renderScale: number;
   private renderPass: RenderPass;
+  private cloudPass: CloudPass | null = null;
   private width = 1;
   private height = 1;
   // adaptive resolution
@@ -159,6 +162,13 @@ export class Pipeline {
       }
     };
     requestAnimationFrame(probe);
+  }
+
+  /** Install cloud composition between the scene render and HDR grade. */
+  attachClouds(clouds: Clouds) {
+    if (this.cloudPass || !clouds.enabled) return;
+    this.cloudPass = new CloudPass(clouds, this.camera, this.reversedDepth);
+    this.composer.addPass(this.cloudPass, 1);
   }
 
   /** planar reflection target size for the current drawing buffer */

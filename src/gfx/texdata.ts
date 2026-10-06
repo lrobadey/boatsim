@@ -37,6 +37,34 @@ export function noiseData(size = 256, seed = 3): Uint8Array {
 }
 
 /**
+ * Tileable mesoscale weather field for clouds. The channels are independently seeded and have
+ * separate spatial scales: R = broad coverage, G = tower-forming cloud type, B = layer thickness,
+ * A = local optical density. The shader controls global coverage without coupling those other
+ * three properties to it.
+ */
+export function cloudWeatherData(size = 256, seed = 23): Uint8Array {
+  const fields = Array.from({ length: 4 }, (_, c) => createNoise4D(rng(seed + c * 101)));
+  const cycles = [3, 5, 4, 7];
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const a = (x / size) * Math.PI * 2, b = (y / size) * Math.PI * 2;
+      const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+      for (let c = 0; c < 4; c++) {
+        let value = 0, amp = 1, norm = 0;
+        for (let octave = 0; octave < 3; octave++) {
+          const radius = (cycles[c] * (1 << octave)) / (Math.PI * 2);
+          value += amp * fields[c](ca * radius, sa * radius, cb * radius, sb * radius);
+          norm += amp;
+          amp *= 0.5;
+        }
+        data[(y * size + x) * 4 + c] = Math.round(Math.max(0, Math.min(1, 0.5 + 0.5 * value / norm)) * 255);
+      }
+    }
+  return data;
+}
+
+/**
  * Tileable capillary/ripple normal map: sum of many small directional sine waves with integer wave
  * vectors (so it tiles perfectly). RG = slope, B = height.
  */
@@ -163,22 +191,35 @@ const remap = (v: number, a: number, b: number, c: number, d: number) => c + ((v
 
 /**
  * Cloud noise (Schneider, "Nubis", 2015): a 128^3 Perlin-Worley shape texture (billowy cells) and a
- * 32^3 Worley detail texture that erodes the edges into wisps. Both tile seamlessly.
+ * 64^3 Worley detail texture that erodes the edges into wisps. Both tile seamlessly.
  */
-export function cloudNoiseData(seed = 5): { shape: Uint8Array; detail: Uint8Array } {
+/** float -> IEEE half (for 16-bit textures: 8-bit noise bands once the coverage remap stretches it) */
+function toHalf(v: number): number {
+  const f = new Float32Array(1), i = new Uint32Array(f.buffer);
+  f[0] = v;
+  const x = i[0];
+  const sign = (x >> 16) & 0x8000;
+  let e = ((x >> 23) & 0xff) - 127 + 15;
+  const m = x & 0x7fffff;
+  if (e <= 0) return sign;
+  if (e >= 31) return sign | 0x7c00;
+  return sign | (e << 10) | (m >> 13);
+}
+
+export function cloudNoiseData(seed = 5): { shape: Uint16Array; detail: Uint16Array } {
   const N = 128;
   const per = perlin3(N, 4, 4, seed);
   const w1 = worley3(N, 6, seed + 1), w2 = worley3(N, 12, seed + 2), w3 = worley3(N, 24, seed + 3);
-  const shape = new Uint8Array(N * N * N);
+  const shape = new Uint16Array(N * N * N);
   for (let i = 0; i < shape.length; i++) {
     const wf = w1[i] * 0.625 + w2[i] * 0.25 + w3[i] * 0.125;
     const pw = remap(per[i], wf - 1, 1, 0, 1); // Perlin-Worley: perlin dilated by worley cells
     const v = remap(pw, (w2[i] * 0.625 + w3[i] * 0.375) * 0.45 - 0.05, 1, 0, 1);
-    shape[i] = Math.max(0, Math.min(255, v * 255));
+    shape[i] = toHalf(Math.max(0, Math.min(1, v)));
   }
-  const M = 32;
-  const d1 = worley3(M, 3, seed + 7), d2 = worley3(M, 6, seed + 8), d3 = worley3(M, 12, seed + 9);
-  const detail = new Uint8Array(M * M * M);
-  for (let i = 0; i < detail.length; i++) detail[i] = Math.max(0, Math.min(255, (d1[i] * 0.625 + d2[i] * 0.25 + d3[i] * 0.125) * 255));
+  const M = 64;
+  const d1 = worley3(M, 4, seed + 7), d2 = worley3(M, 8, seed + 8), d3 = worley3(M, 14, seed + 9);
+  const detail = new Uint16Array(M * M * M);
+  for (let i = 0; i < detail.length; i++) detail[i] = toHalf(Math.max(0, Math.min(1, d1[i] * 0.625 + d2[i] * 0.25 + d3[i] * 0.125)));
   return { shape, detail };
 }

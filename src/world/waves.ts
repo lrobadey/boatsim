@@ -40,6 +40,16 @@ export interface WaveComponent {
   q: number; // steepness
 }
 
+export interface FlowSample {
+  height: number; hx: number; hz: number; vx: number; vy: number; vz: number;
+  sigma: number; H: number; Hx: number; guarded: boolean;
+  sin: Float64Array; cos: Float64Array;
+}
+export function createFlowSample(count = WAVE_COUNT): FlowSample {
+  return { height: 0, hx: 0, hz: 0, vx: 0, vy: 0, vz: 0,
+    sigma: 1, H: 0, Hx: 0, guarded: false, sin: new Float64Array(count), cos: new Float64Array(count) };
+}
+
 export class WaveField {
   waves: WaveComponent[] = [];
   /** packed for GPU: [dx, dz, k, amp] and [omega, phase, q, lambda] */
@@ -176,7 +186,7 @@ export class WaveField {
     let dx = 0,
       dy = 0,
       dz = 0;
-    for (let i = 0; i < WAVE_COUNT; i++) {
+    for (let i = 0; i < this.waves.length; i++) {
       const w = this.waves[i];
       const th = w.k * (w.dx * x + w.dz * z) - w.omega * t + w.phase;
       const c = Math.cos(th);
@@ -205,23 +215,57 @@ export class WaveField {
     return d[1];
   }
 
-  /** Orbital velocity of water particles at the surface near (x,z) (approx, undisplaced). */
-  velocityAt(x: number, z: number, t: number, out: { x: number; y: number; z: number }) {
-    let vx = 0,
-      vy = 0,
-      vz = 0;
-    for (const w of this.waves) {
-      const th = w.k * (w.dx * x + w.dz * z) - w.omega * t + w.phase;
-      const s = Math.sin(th);
-      const c = Math.cos(th);
-      vx += w.q * w.amp * w.omega * w.dx * s;
-      vz += w.q * w.amp * w.omega * w.dz * s;
-      vy += -w.amp * w.omega * c;
+  /** World-coordinate inverse query shared by hull, rudders and every oar. Frozen amplitudes:
+   * slow weather amplitude derivatives are omitted; orbital velocity decays as deep-water flow. */
+  sampleFlowAt(x: number, y: number, z: number, t: number, out: FlowSample) {
+    let px = x, pz = z;
+    for (let it = 0; it < 4; it++) {
+      this.displacement(px, pz, t, this.tmp);
+      px = x - this.tmp[0]; pz = z - this.tmp[2];
     }
-    out.x = vx;
-    out.y = vy;
-    out.z = vz;
+    let height = 0, gx = 0, gz = 0, jxx = 1, jzz = 1, jxz = 0, H = 0, Hx = 0;
+    if (this.waves.length > out.sin.length) throw new Error('Flow cache is too small');
+    for (let i = 0; i < this.waves.length; i++) {
+      const w = this.waves[i];
+      const th = w.k * (w.dx * px + w.dz * pz) - w.omega * t + w.phase;
+      const sn = Math.sin(th), cs = Math.cos(th);
+      out.sin[i] = sn; out.cos[i] = cs;
+      height += w.amp * sn;
+      gx += w.amp * w.k * w.dx * cs; gz += w.amp * w.k * w.dz * cs;
+      const jk = w.q * w.amp * w.k * sn;
+      jxx -= jk * w.dx * w.dx; jzz -= jk * w.dz * w.dz; jxz -= jk * w.dx * w.dz;
+      H += Math.abs(w.amp) * w.k * w.k; Hx += Math.abs(w.q * w.amp) * w.k * w.k;
+    }
+    let det = jxx * jzz - jxz * jxz;
+    out.guarded = Math.abs(det) < 0.10;
+    if (out.guarded) det = det < 0 ? -0.10 : 0.10;
+    out.height = height; out.hx = (jzz * gx - jxz * gz) / det; out.hz = (jxx * gz - jxz * gx) / det;
+    const delta = Math.hypot(jxx - jzz, 2 * jxz);
+    out.sigma = Math.min(Math.abs((jxx + jzz - delta) / 2), Math.abs((jxx + jzz + delta) / 2));
+    out.H = H; out.Hx = Hx;
+    this.flowAtDepth(out, Math.max(0, height - y), out);
+    return out;
   }
+
+  /** Reuse an inverse query's component phases, adjusting only physical sample depth. */
+  flowAtDepth(cache: FlowSample, depth: number, out: { vx: number; vy: number; vz: number }) {
+    let vx = 0, vy = 0, vz = 0;
+    for (let i = 0; i < this.waves.length; i++) {
+      const w = this.waves[i];
+      const a = Math.exp(-w.k * Math.max(0, depth)) * w.amp * w.omega;
+      vx += a * w.q * w.dx * cache.sin[i]; vz += a * w.q * w.dz * cache.sin[i];
+      vy -= a * cache.cos[i];
+    }
+    out.vx = vx; out.vy = vy; out.vz = vz;
+  }
+
+  private flowScratch = createFlowSample();
+  /** Surface material velocity at world coordinates (same inverse convention as heightAt). */
+  velocityAt(x: number, z: number, t: number, out: { x: number; y: number; z: number }) {
+    const f = this.sampleFlowAt(x, Infinity, z, t, this.flowScratch);
+    out.x = f.vx; out.y = f.vy; out.z = f.vz;
+  }
+
 }
 
 /** GLSL implementation matching WaveField.displacement. Requires uniforms uWaveA/uWaveB/uTime. */

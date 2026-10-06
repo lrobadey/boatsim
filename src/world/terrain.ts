@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { patchMaterial, shared } from '../gfx/shared';
 import { LAYER_REFRACT } from '../core/pipeline';
 import type { WorldGenResult } from './worldgenTypes';
+import type { SurfaceMaps } from '../gfx/assets';
 
 const CHUNK = 64; // cells per chunk side
 
@@ -19,7 +20,7 @@ export class Terrain {
   readonly heightTexture: THREE.DataTexture;
   readonly material: THREE.MeshStandardMaterial;
 
-  constructor(gen: WorldGenResult, noiseTex: THREE.Texture, lodCount: number) {
+  constructor(gen: WorldGenResult, noiseTex: THREE.Texture, lodCount: number, sand: SurfaceMaps) {
     this.heights = gen.heights;
     this.N = gen.size;
     this.S = gen.worldSize;
@@ -35,7 +36,7 @@ export class Terrain {
     this.heightTexture.wrapS = this.heightTexture.wrapT = THREE.ClampToEdgeWrapping;
     this.heightTexture.needsUpdate = true;
 
-    this.material = this.makeMaterial(noiseTex);
+    this.material = this.makeMaterial(noiseTex, sand);
     this.buildChunks(lodCount);
   }
 
@@ -189,10 +190,15 @@ export class Terrain {
     return g;
   }
 
-  private makeMaterial(noiseTex: THREE.Texture) {
+  private makeMaterial(noiseTex: THREE.Texture, sand: SurfaceMaps) {
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0 });
     mat.side = THREE.DoubleSide; // skirts
-    const uniforms = { uNoise: { value: noiseTex } };
+    const uniforms = {
+      uNoise: { value: noiseTex },
+      uSandColor: { value: sand.color },
+      uSandNormal: { value: sand.normal },
+      uSandRough: { value: sand.roughness },
+    };
     patchMaterial(
       mat,
       (sh) => {
@@ -212,6 +218,9 @@ export class Terrain {
             varying vec3 vTWorld;
             varying vec3 vTNormal;
             uniform sampler2D uNoise;
+            uniform sampler2D uSandColor;
+            uniform sampler2D uSandNormal;
+            uniform sampler2D uSandRough;
             uniform float uTime;
             uniform float uNight;
             vec3 srgb(vec3 c){ return pow(c, vec3(2.2)); }
@@ -226,6 +235,7 @@ export class Terrain {
               return pow(clamp(c, 0.0, 1.0), 6.0);
             }
             vec3 gTerrainAlbedo; float gTerrainRough; float gWet;
+            vec3 gSandNormal; float gSandWeight;
             // triplanar rock relief (no stretching on cliffs): blocky limestone + fine grain
             vec3 triW(vec3 n) { vec3 a = pow(abs(n), vec3(4.0)); return a / (a.x + a.y + a.z); }
             float rockH(vec3 wp, vec3 w) {
@@ -280,7 +290,18 @@ export class Terrain {
               // beach band
               float beachTop = 2.8 + n2 * 2.5;
               float beach = (1.0 - smoothstep(beachTop - 0.8, beachTop, h)) * (1.0 - smoothstep(0.18, 0.4, slope));
-              vec3 col = mix(land, sandDry, beach);
+              vec3 sandColor = sandDry;
+              float sandRough = 0.95;
+              gSandNormal = vec3(0.0, 0.0, 1.0);
+              gSandWeight = 0.0;
+              if (beach > 0.001 && h > -0.4) {
+                vec2 sandUv = p / 15.0; // source scan covers a 15 m square
+                sandColor = mix(sandDry, texture2D(uSandColor, sandUv).rgb, 0.7);
+                sandRough = texture2D(uSandRough, sandUv).r;
+                gSandNormal = texture2D(uSandNormal, sandUv).xyz * 2.0 - 1.0;
+                gSandWeight = beach;
+              }
+              vec3 col = mix(land, sandColor, beach);
               // below the waterline
               float under = 1.0 - smoothstep(-0.4, 0.6, h);
               vec3 seabed = mix(sandSea, sandSea * 0.8, n3);
@@ -292,7 +313,8 @@ export class Terrain {
               gWet = (1.0 - smoothstep(0.0, 1.3, h)) * (1.0 - under);
               col = mix(col, col * 0.62, gWet);
               gTerrainAlbedo = col;
-              gTerrainRough = mix(0.95, 0.35, gWet) * mix(1.0, 0.8, rockW);
+              gTerrainRough = mix(0.95, sandRough, beach * 0.75);
+              gTerrainRough = mix(gTerrainRough, 0.35, gWet) * mix(1.0, 0.8, rockW);
             }`,
           )
           .replace(
@@ -320,6 +342,7 @@ export class Terrain {
                vec3 g = vec3(rockH(vTWorld + vec3(e, 0.0, 0.0), w) - hC, rockH(vTWorld + vec3(0.0, e, 0.0), w) - hC, rockH(vTWorld + vec3(0.0, 0.0, e), w) - hC) / e;
                g -= dot(g, n0) * n0; // tangential gradient
                vec3 wn = normalize(n0 - g * 3.2 * s);
+               wn = normalize(wn + vec3(gSandNormal.x, 0.0, gSandNormal.y) * gSandWeight * 0.35);
                normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz);
              }`,
           )

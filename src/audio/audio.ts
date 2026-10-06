@@ -1,3 +1,4 @@
+import type { RowingSystem, RowEventCursor } from '../ship/rowing';
 import type { Game } from '../game';
 import type { Crew } from '../ship/crew';
 import { clamp } from '../core/util';
@@ -131,12 +132,12 @@ export class AudioEngine {
     s.stop(when + dur + 0.05);
   }
 
-  /** at each stroke catch: drum beat, then the splash of 170 blades, then the release */
-  stroke(crew: Crew) {
+  /** The beat marks the current catch; water sounds come only from actual contact events. */
+  strokeBeat(intensity: number) {
     if (!this.ctx || this.muted) return;
     const ctx = this.ctx;
     const t = ctx.currentTime + 0.01;
-    const intensity = clamp(crew.order.effort, 0.3, 1);
+    intensity = clamp(intensity, 0.15, 1);
     // drum: pitched membrane + skin noise
     const o = ctx.createOscillator();
     o.type = 'sine';
@@ -150,15 +151,38 @@ export class AudioEngine {
     o.start(t);
     o.stop(t + 0.5);
     this.burst(t, 180, 1.2, 0.12, 0.25 * intensity, 0, 'lowpass');
-    // blades entering
-    this.burst(t + 0.07, 1300, 0.7, 0.35, 0.28 * intensity, -0.6);
-    this.burst(t + 0.09, 1500, 0.7, 0.35, 0.28 * intensity, 0.6);
-    // release (blades leave, water drips)
-    const rel = t + crew.driveTime;
-    this.burst(rel, 2400, 0.9, 0.5, 0.12 * intensity, -0.5);
-    this.burst(rel + 0.02, 2600, 0.9, 0.5, 0.12 * intensity, 0.5);
-    // oars knock in the tholes
-    this.burst(t + crew.driveTime * 0.5, 420, 8, 0.08, 0.05 * intensity, (Math.random() - 0.5) * 0.8);
+    // Thole knock belongs to this beat, rather than a predicted future extraction.
+    this.burst(t, 420, 8, 0.08, 0.05 * intensity, 0);
+  }
+
+  oarContact(side: number, enter: boolean, intensity: number) {
+    if (!this.ctx || this.muted || intensity <= 0) return;
+    this.burst(this.ctx.currentTime + 0.01, enter ? 1400 : 2500, enter ? 0.7 : 0.9,
+      enter ? 0.35 : 0.5, (enter ? 0.28 : 0.12) * clamp(intensity, 0, 1), side * 0.6);
+  }
+  private rowingCursor: RowEventCursor | null = null;
+  private lastBeatTime = -Infinity;
+  private contactBins = new Map<number, { bin: number; side: number; enter: boolean; energy: number }>();
+  rowingEvents(rowing: RowingSystem, renderTime: number) {
+    if (!this.rowingCursor || this.rowingCursor.epoch !== rowing.events.generation) {
+      this.rowingCursor = { next: rowing.events.oldestId, epoch: rowing.events.generation };
+      this.lastBeatTime = -Infinity;
+      this.contactBins.clear();
+    }
+    rowing.events.read(this.rowingCursor, renderTime, event => {
+      if (event.kind === 'catchBeat') {
+        if (event.time - this.lastBeatTime >= 0.08) { this.strokeBeat(event.intensity); this.lastBeatTime = event.time; }
+      } else {
+        const bin = Math.floor(event.time / 0.05), enter = event.kind === 'enterWater';
+        const key = bin * 4 + (event.side > 0 ? 2 : 0) + (enter ? 0 : 1);
+        const existing = this.contactBins.get(key);
+        if (existing) existing.energy += event.intensity * event.intensity;
+        else this.contactBins.set(key, { bin, side: event.side, enter, energy: event.intensity * event.intensity });
+      }
+    });
+    for (const [key, value] of this.contactBins) if ((value.bin + 1) * 0.05 <= renderTime) {
+      this.oarContact(value.side, value.enter, Math.min(1, Math.sqrt(value.energy))); this.contactBins.delete(key);
+    }
   }
 
   private gull() {

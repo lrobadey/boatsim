@@ -29,6 +29,13 @@ export const OAR_BANKS: OarBank[] = [
 ];
 
 export interface OarSlot {
+  id: number;
+  length: number;
+  inboard: number;
+  bladeLength: number;
+  bladeWidth: number;
+  bladeThickness: number;
+  bladeRadius: number;
   bank: number;
   side: -1 | 1;
   x: number;
@@ -46,7 +53,7 @@ export function oarSlots(): OarSlot[] {
         const hb = halfBeam(s);
         const x = side * (hb + (bi === 0 ? 0.62 : bi === 1 ? 0.02 : -0.08));
         const y = bi === 0 ? sheer(s) + 0.08 : bi === 1 ? sheer(s) - 0.6 : 0.5;
-        slots.push({ bank: bi, side, x, y, z: zOf(s), jitter: Math.sin(i * 12.9898 + bi * 78.233 + side) * 0.5 });
+        slots.push({ id: slots.length, length: b.length, inboard: b.inboard, bladeLength: 0.66, bladeWidth: 0.17, bladeThickness: 0.028, bladeRadius: b.length - b.inboard - 0.33, bank: bi, side, x, y, z: zOf(s), jitter: Math.sin(i * 12.9898 + bi * 78.233 + side) * 0.5 });
       }
     }
   });

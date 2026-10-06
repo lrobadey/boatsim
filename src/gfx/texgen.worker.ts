@@ -1,9 +1,13 @@
 /// <reference lib="webworker" />
-import { cloudNoiseData, noiseData, rippleData } from './texdata';
+import { cloudNoiseData, cloudWeatherData, noiseData, rippleData } from './texdata';
 
 self.onmessage = () => {
   const noise = noiseData(256, 3);
   const ripple = rippleData(512, 9);
   const clouds = cloudNoiseData(5);
-  (self as unknown as Worker).postMessage({ noise, ripple, cloudShape: clouds.shape, cloudDetail: clouds.detail }, [noise.buffer, ripple.buffer, clouds.shape.buffer, clouds.detail.buffer]);
+  const cloudWeather = cloudWeatherData(256, 23);
+  (self as unknown as Worker).postMessage(
+    { noise, ripple, cloudShape: clouds.shape, cloudDetail: clouds.detail, cloudWeather },
+    [noise.buffer, ripple.buffer, clouds.shape.buffer, clouds.detail.buffer, cloudWeather.buffer],
+  );
 };

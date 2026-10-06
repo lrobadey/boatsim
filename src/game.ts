@@ -4,6 +4,7 @@ import { Quality } from './core/quality';
 import { Input } from './core/input';
 import { shared } from './gfx/shared';
 import { dataTexture } from './gfx/textures';
+import type { VisualAssets } from './gfx/assets';
 import { AstroClock } from './world/astro';
 import { Wind } from './world/wind';
 import { WaveField } from './world/waves';
@@ -27,7 +28,7 @@ import { PlanarReflection } from './gfx/reflection';
 import { SunShadowBake } from './gfx/sunShadowBake';
 import { Clouds } from './gfx/clouds';
 import { AudioEngine } from './audio/audio';
-import { noise1, clamp } from './core/util';
+import { noise1, clamp, smoothstep } from './core/util';
 
 const SIM_DT = 1 / 120;
 
@@ -49,7 +50,13 @@ export class Game {
   readonly clouds: Clouds;
   private cloudAmbTop = new THREE.Color();
   private cloudAmbBottom = new THREE.Color();
-  private tmpV2 = new THREE.Vector2();
+  private lastCloudLightDir = new THREE.Vector3();
+  private lastCloudLightColor = new THREE.Color();
+  private lastCloudAmbTop = new THREE.Color();
+  private lastCloudHour = 0;
+  private lastCloudDayCount = 0;
+  private cloudLightingReady = false;
+  private lightingJump = false;
   readonly terrain: Terrain;
   readonly foam: FoamSystem;
   readonly props: Props;
@@ -88,7 +95,7 @@ export class Game {
     return best;
   }
 
-  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint8Array; cloudDetail: Uint8Array }) {
+  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets) {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 60000);
     this.pipeline = new Pipeline(canvas, this.scene, this.camera, quality);
     this.input = new Input(canvas);
@@ -106,10 +113,13 @@ export class Game {
     T('textures');
     this.sky = new SkySystem(r, this.clock);
     this.scene.add(this.sky.group, this.sky.light, this.sky.light.target, this.sky.hemi);
-    this.clouds = new Clouds(tex.cloudShape, tex.cloudDetail, noise, quality.cloudScale || 0.3);
+    this.clouds = new Clouds(tex.cloudShape, tex.cloudDetail, dataTexture(tex.cloudWeather, 256), quality.cloudScale || 0.3);
     this.clouds.enabled = quality.cloudScale > 0;
     this.clouds.steps = quality.cloudSteps || 56;
-    if (this.clouds.enabled) this.sky.attachClouds(this.clouds);
+    if (this.clouds.enabled) {
+      this.sky.attachClouds(this.clouds);
+      this.pipeline.attachClouds(this.clouds);
+    }
     const sl = this.sky.light;
     // lights must also be on the refraction layer or the seabed pre-pass renders unlit
     sl.layers.enable(LAYER_REFRACT);
@@ -124,7 +134,7 @@ export class Game {
     sc.near = 1;
     sc.far = 400;
 
-    this.terrain = new Terrain(gen, noise, quality.terrainChunkLods);
+    this.terrain = new Terrain(gen, noise, quality.terrainChunkLods, assets.sand);
     this.scene.add(this.terrain.group);
     shared.uHeightTex.value = this.terrain.heightTexture;
     const aoTex = new THREE.DataTexture(gen.ao, gen.aoSize, gen.aoSize, THREE.RedFormat, THREE.UnsignedByteType);
@@ -155,14 +165,14 @@ export class Game {
     this.ocean.uniforms.uFoamSize.value = this.foam.size;
     this.ocean.uniforms.uFoamCenter.value = this.foam.center;
 
-    this.props = new Props(gen, this.terrain, this.waves, noise, quality);
+    this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets);
     this.scene.add(this.props.group);
     this.birds = new Birds(gen);
     this.scene.add(this.birds.group);
 
     T('props');
     this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew);
-    this.model = new Trireme();
+    this.model = new Trireme(assets.planks, this.ship.rowing.slots);
     this.scene.add(this.model.group);
     this.ship.place(gen.sites.start.x, gen.sites.start.z, gen.sites.start.heading);
     // settle on the water before the player arrives
@@ -184,11 +194,12 @@ export class Game {
     }
     if (gen.islands[0]?.name) this.harbour = { x: gen.sites.harbour.x, z: gen.sites.harbour.z, name: `Harbour of ${gen.islands[0].name}` };
 
-    this.crew.onCatch = () => this.audio.stroke(this.crew);
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
-    this.sky.update(0, this.camera, true);
+    this.sky.updateLighting(0, this.camera, true);
+    this.updateCloudInputs(0);
+    this.sky.updateEnvironment(0, true);
     this.scene.environment = this.sky.envMap;
     // sky irradiance relative to the sun (~1:4-5 on a clear Aegean day)
     this.scene.environmentIntensity = 0.85;
@@ -197,6 +208,57 @@ export class Game {
 
   resize() {
     this.pipeline.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  /** Keep the cloud pass and sky environment capture on the same weather and celestial state. */
+  private updateCloudInputs(dt: number) {
+    const sunY = this.clock.sunDir.y;
+    const day = clamp((sunY + 0.08) / 0.33, 0, 1);
+    const daylight = day * day * (3 - 2 * day);
+    const phase = 0.5 - 0.5 * Math.cos(this.clock.moonPhase * Math.PI * 2);
+    const moonlight = phase * smoothstep(-0.02, 0.1, this.clock.moonDir.y) * this.sky.night;
+    // Faint airglow remains under a new moon; the stronger blue lunar fill follows phase and altitude.
+    const airglow = 0.012;
+    const solarFill = airglow + (1 - airglow) * daylight;
+    this.cloudAmbTop.setRGB(
+      0.36 * solarFill + 0.018 * moonlight,
+      0.46 * solarFill + 0.027 * moonlight,
+      0.62 * solarFill + 0.045 * moonlight,
+    );
+    this.cloudAmbBottom.setRGB(
+      0.09 * solarFill + 0.004 * moonlight,
+      0.1 * solarFill + 0.006 * moonlight,
+      0.115 * solarFill + 0.01 * moonlight,
+    );
+    const direct = shared.uSunColor.value;
+    const elapsedHours = Math.abs((this.clock.dayCount - this.lastCloudDayCount) * 24 + this.clock.hours - this.lastCloudHour);
+    const priorDirect = Math.max(this.lastCloudLightColor.r, this.lastCloudLightColor.g, this.lastCloudLightColor.b);
+    const directDelta = Math.max(
+      Math.abs(direct.r - this.lastCloudLightColor.r),
+      Math.abs(direct.g - this.lastCloudLightColor.g),
+      Math.abs(direct.b - this.lastCloudLightColor.b),
+    );
+    const ambientDelta = Math.max(
+      Math.abs(this.cloudAmbTop.r - this.lastCloudAmbTop.r),
+      Math.abs(this.cloudAmbTop.g - this.lastCloudAmbTop.g),
+      Math.abs(this.cloudAmbTop.b - this.lastCloudAmbTop.b),
+    );
+    const discontinuity = this.cloudLightingReady && (
+      elapsedHours > 0.05 ||
+      this.lastCloudLightDir.dot(shared.uSunDir.value) < Math.cos(0.05) ||
+      directDelta > Math.max(0.025, priorDirect * 0.25) ||
+      ambientDelta > 0.025
+    );
+    this.lastCloudLightDir.copy(shared.uSunDir.value);
+    this.lastCloudLightColor.copy(direct);
+    this.lastCloudAmbTop.copy(this.cloudAmbTop);
+    this.lastCloudHour = this.clock.hours;
+    this.lastCloudDayCount = this.clock.dayCount;
+    this.cloudLightingReady = true;
+    // Weather advances even while presentation is suppressed by fastForward().
+    this.clouds.coverage = 0.36 + 0.18 * noise1(this.clock.hours / 5 + this.simTime / 3000, 17);
+    this.clouds.step(dt, this.wind.vx, this.wind.vz, direct, this.cloudAmbTop, this.cloudAmbBottom, this.camera.position);
+    return discontinuity;
   }
 
   start() {
@@ -239,7 +301,7 @@ export class Game {
       const next = marks.find((m) => m > h + 0.05) ?? marks[0] + 24;
       this.clock.hours = next % 24;
       this.clock.compute();
-      this.sky.update(0, this.camera, true);
+      this.lightingJump = true;
     }
     // helm controls (orders are shouted from the helm; also allowed in chase view)
     const commanding = p.mode === 'helm' || (p.mode === 'chase' && p.prevShipMode === 'helm');
@@ -260,6 +322,7 @@ export class Game {
 
   /** dev/testing: run the whole game forward at a fixed step without presenting frames */
   fastForward(seconds: number, step = 1 / 60) {
+    if (seconds > 0) this.clouds.resetHistory();
     for (let t = 0; t < seconds; t += step) this.frame(step, false);
   }
 
@@ -275,9 +338,14 @@ export class Game {
       this.pipeline.adapt(frameMs, dt);
     }
 
+    let cameraCut = false;
     if (!this.paused) {
       if (this.cinematic) this.player.chaseYaw += dt * 0.035;
-      else this.handleInput(dt);
+      else {
+        const previousMode = this.player.mode;
+        this.handleInput(dt);
+        cameraCut = this.player.mode !== previousMode;
+      }
       this.clock.update(dt);
       this.wind.update(dt);
       this.waveRetarget -= dt;
@@ -297,7 +365,6 @@ export class Game {
       this.acc += dt;
       let steps = 0;
       while (this.acc >= SIM_DT && steps < 12) {
-        this.crew.update(SIM_DT);
         this.ship.step(SIM_DT);
         this.simTime += SIM_DT;
         this.acc -= SIM_DT;
@@ -324,10 +391,15 @@ export class Game {
       this.hud.showNote('No mouse capture here — rest the cursor at a screen edge, or use the arrow keys, to keep turning', 9);
     }
     this.player.update(dt, this.model.group.position, this.shipQuat, this.terrain, this.waves, this.ship.time);
-    this.model.update(this.ship, this.crew, this.sky.night, this.ship.time);
-
     // world systems
-    this.sky.update(dt, this.camera);
+    this.sky.updateLighting(dt, this.camera, this.lightingJump);
+    this.model.update(this.ship, this.crew, this.sky.night, this.ship.time, alpha);
+    const lightingDiscontinuity = this.updateCloudInputs(dt);
+    if (cameraCut || this.lightingJump || lightingDiscontinuity) this.clouds.resetHistory();
+    const timed = present && fixedDt === undefined;
+    if (timed) this.pipeline.beginGpuTimer();
+    this.sky.updateEnvironment(dt, this.lightingJump);
+    this.lightingJump = false;
     if (this.scene.environment !== this.sky.envMap) this.scene.environment = this.sky.envMap;
     this.pipeline.grade.uniforms.get('exposure')!.value = this.sky.exposure;
     // bloom thresholds the raw HDR scene: keep it relative to the adapted exposure so only true
@@ -340,37 +412,20 @@ export class Game {
     sl.target.position.copy(focus);
     sl.position.copy(focus).addScaledVector(shared.uSunDir.value, 200);
     sl.target.updateMatrixWorld();
-    const timed = present && fixedDt === undefined;
-    if (timed) this.pipeline.beginGpuTimer();
     this.sunBake.update(!present);
     if (present) this.fft.update(this.pipeline.renderer, this.ship.time, dt);
     this.ocean.update(this.camera);
     this.props.update(dt, this.ship.time, this.camera, this.sky.night);
     this.birds.update(dt, this.camera);
-    this.foam.update(dt, this.ship, this.model, this.pipeline.renderer);
+    this.foam.update(this.paused ? 0 : dt, this.ship, this.model, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !this.paused);
 
     const rt = this.pipeline.refractTarget;
     const size = this.pipeline.renderer.getDrawingBufferSize(new THREE.Vector2());
     this.ocean.setRefraction(rt.texture, rt.depthTexture!, size.x, size.y, this.camera.near, this.camera.far);
 
-    // weather & light for the clouds (always, so time skips keep them consistent)
-    {
-      const sunY = shared.uSunDir.value.y;
-      const day = clamp((sunY + 0.08) / 0.33, 0, 1);
-      const k = 0.02 + 0.98 * day * day * (3 - 2 * day);
-      this.cloudAmbTop.setRGB(0.36, 0.46, 0.62).multiplyScalar(k);
-      this.cloudAmbBottom.setRGB(0.09, 0.1, 0.115).multiplyScalar(k);
-      // weather: fair-weather cumulus come and go over the hours
-      this.clouds.coverage = 0.36 + 0.18 * noise1(this.clock.hours / 5 + this.simTime / 3000, 17);
-      this.clouds.step(dt, this.wind.vx, this.wind.vz, shared.uSunColor.value, this.cloudAmbTop, this.cloudAmbBottom, this.camera.position);
-    }
     if (!present) return;
     if (this.clouds.enabled) {
-      const db = this.pipeline.renderer.getDrawingBufferSize(this.tmpV2);
-      this.clouds.setSize(db.x, db.y);
-      this.clouds.render(this.pipeline.renderer, this.camera);
       this.clouds.renderShadow(this.pipeline.renderer, this.camera.position);
-      this.sky.setCloudFrame(this.clouds.texture, db.x, db.y);
     }
     if (this.reflection.enabled) {
       const r = this.pipeline.reflectSize;
@@ -381,6 +436,7 @@ export class Game {
     if (timed) this.pipeline.endGpuTimer();
 
     // audio & UI
+    if (!this.paused) this.audio.rowingEvents(this.ship.rowing, this.ship.time - SIM_DT + alpha * SIM_DT);
     this.audio.update(dt, this);
     if (this.showHud) this.hud.update(this, this.frameMs, dt);
     this.chart.update(this.ship, this.player);

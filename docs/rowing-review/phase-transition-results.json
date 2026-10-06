@@ -1,0 +1,16 @@
+{
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "runtime": "v25.4.0"
+  },
+  "tests": [
+    {
+      "name": "fresh hold, release, zero contact and all order transitions",
+      "status": "passed",
+      "ms": 20911.411416
+    }
+  ],
+  "measured": {}
+}

@@ -2,10 +2,13 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { patchMaterial, shared } from '../gfx/shared';
 import { LAYER_REFRACT } from '../core/pipeline';
-import { makePlankTexture, makeDeckTexture, makeSailTexture, makeEyeTexture } from '../gfx/textures';
+import { makeSailTexture, makeEyeTexture } from '../gfx/textures';
+import type { SurfaceMaps } from '../gfx/assets';
 import { halfBeam, keelDepth, sheer, section, zOf, deckY, DECK_S0, DECK_S1, HULL_LENGTH, RAM_LENGTH } from './hull';
-import { oarSlots, OAR_BANKS, OarSlot } from './oarLayout';
-import { Crew, stroke } from './crew';
+import { OAR_BANKS, type OarSlot } from './oarLayout';
+import { createKinematics } from './rowing';
+import { buildOarGeometry } from './oarGeometry';
+import { Crew } from './crew';
 import type { ShipPhysics } from './physics';
 
 const smooth = (a: number, b: number, x: number) => {
@@ -24,8 +27,10 @@ const mat = (p: THREE.MeshStandardMaterialParameters, key = '') => patchMaterial
  */
 export class Trireme {
   readonly group = new THREE.Group();
-  private oars: THREE.InstancedMesh;
-  private slots: OarSlot[];
+  private oars: THREE.InstancedMesh[] = [];
+  private slots: readonly OarSlot[];
+  private instanceIds: Int16Array;
+  private oarPose = createKinematics();
   private sailMesh: THREE.Mesh;
   private sailUniforms = { uBillow: { value: 0 }, uFurl: { value: 0 }, uFlutter: { value: 0 } };
   private yard: THREE.Group;
@@ -42,13 +47,19 @@ export class Trireme {
   private crewFigures: THREE.InstancedMesh | null = null;
   readonly mastTop = new THREE.Vector3();
 
-  constructor() {
+  constructor(planks: SurfaceMaps, slots: readonly OarSlot[]) {
     const g = this.group;
-    const plank = makePlankTexture();
-    const deckTex = makeDeckTexture();
+    // The scan's grain runs vertically. Hull UVs run lengthwise in U; deck UVs run lengthwise in V.
+    const hullMaps = [planks.color, planks.normal, planks.roughness].map((source) => {
+      const tex = source.clone();
+      tex.center.set(0.5, 0.5);
+      tex.rotation = Math.PI / 2;
+      tex.needsUpdate = true;
+      return tex;
+    });
 
     // ---------- hull ----------
-    const hullMat = mat({ map: plank, vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide }, 'hull');
+    const hullMat = mat({ map: hullMaps[0], normalMap: hullMaps[1], roughnessMap: hullMaps[2], normalScale: new THREE.Vector2(0.4, 0.4), vertexColors: true, roughness: 0.8, metalness: 0, side: THREE.DoubleSide }, 'hull');
     const hull = new THREE.Mesh(this.hullGeometry(), hullMat);
     hull.castShadow = true;
     hull.receiveShadow = true;
@@ -56,14 +67,14 @@ export class Trireme {
     g.add(hull);
 
     // ---------- deck ----------
-    const deckMat = mat({ map: deckTex, roughness: 0.85, color: 0xd8c3a0 }, 'deck');
+    const deckMat = mat({ map: planks.color, normalMap: planks.normal, roughnessMap: planks.roughness, normalScale: new THREE.Vector2(0.45, 0.45), roughness: 1, color: new THREE.Color().setRGB(1.25, 1.14, 1.02) }, 'deck');
     const deck = new THREE.Mesh(this.deckGeometry(), deckMat);
     deck.receiveShadow = true;
     deck.castShadow = true;
     g.add(deck);
 
     // ---------- screens & outrigger ----------
-    const screenMat = mat({ map: plank, color: 0xb08868, roughness: 0.75, side: THREE.DoubleSide }, 'screen');
+    const screenMat = mat({ map: hullMaps[0], normalMap: hullMaps[1], roughnessMap: hullMaps[2], normalScale: new THREE.Vector2(0.4, 0.4), color: 0xd6b290, roughness: 0.9, side: THREE.DoubleSide }, 'screen');
     const screens = new THREE.Mesh(this.screenGeometry(), screenMat);
     screens.castShadow = true;
     screens.receiveShadow = true;
@@ -122,28 +133,18 @@ export class Trireme {
     }
 
     // ---------- oars ----------
-    this.slots = oarSlots();
+    this.slots = slots;
+    this.instanceIds = new Int16Array(slots.length);
     const oarMat = mat({ color: 0x9a7650, roughness: 0.7 }, 'oar');
-    const shaft = new THREE.CylinderGeometry(0.03, 0.04, 1, 6, 1).rotateZ(-Math.PI / 2).translate(0.5, 0, 0);
-    const blade = new THREE.BoxGeometry(0.62, 0.17, 0.025).translate(0.5 - 0.31, 0, 0);
-    // unit oar (length 1 along +x from pivot), scaled per bank below via separate geometry per bank would cost draws;
-    // instead the geometry is built at the longest length and inboard offset is baked.
-    const L = 4.15,
-      inb = 0.9;
-    const shaftG = new THREE.CylinderGeometry(0.03, 0.042, L, 6, 1).rotateZ(-Math.PI / 2).translate(L / 2 - inb, 0, 0);
-    const bladeG = new THREE.BoxGeometry(0.66, 0.17, 0.028).translate(L - inb - 0.33, 0, 0);
-    const oarGeo = mergeGeometries([shaftG, bladeG]);
-    shaft.dispose();
-    blade.dispose();
-    this.oars = new THREE.InstancedMesh(oarGeo, oarMat, this.slots.length);
-    this.oars.castShadow = true;
-    this.oars.frustumCulled = false;
-    this.oars.layers.enable(LAYER_REFRACT);
-    g.add(this.oars);
-    for (let i = 0; i < this.slots.length; i++) {
-      this.bladeWorld.push(new THREE.Vector3());
-      this.bladeIn.push(false);
+    for (let bank = 0; bank < OAR_BANKS.length; bank++) {
+      const bankSlots = slots.filter(slot => slot.bank === bank);
+      const mesh = new THREE.InstancedMesh(buildOarGeometry(bankSlots[0]), oarMat, bankSlots.length);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.castShadow = true; mesh.frustumCulled = false; mesh.layers.enable(LAYER_REFRACT);
+      bankSlots.forEach((slot, index) => { this.instanceIds[slot.id] = index; });
+      this.oars.push(mesh); g.add(mesh);
     }
+    for (const slot of slots) { this.bladeWorld.push(new THREE.Vector3()); this.bladeIn.push(false); }
 
     // ---------- mast, yard, sail ----------
     const sm = 0.42;
@@ -605,50 +606,15 @@ export class Trireme {
   }
 
   /** per-frame visual update from physics/crew state */
-  update(physics: ShipPhysics, crew: Crew, night: number, time: number) {
-    // oars
-    const o = crew.order;
-    const moving = (o.dir !== 0 && crew.rate > 0.5) || crew.holdWater;
-    const ready = crew.readiness;
-    for (let i = 0; i < this.slots.length; i++) {
-      const sl = this.slots[i];
-      const b = OAR_BANKS[sl.bank];
-      let sweep: number, imm: number;
-      if (crew.holdWater) {
-        sweep = 0.05;
-        imm = 1;
-      } else if (moving) {
-        // inner side eases when turning hard (matches physics)
-        const st = stroke(crew.phase + sl.jitter * 0.03, crew.driveFrac, crew.driveTime, crew.period, o.dir);
-        sweep = st.sweep;
-        imm = st.immersion;
-      } else {
-        sweep = 0.1 + sl.jitter * 0.04;
-        imm = 0;
-      }
-      const r = b.length - b.inboard - 0.35;
-      const dipIn = Math.asin(Math.min(0.95, (sl.y + 0.25) / r));
-      const dipOut = Math.asin(Math.min(0.95, Math.max(-0.2, (sl.y - 0.45 - (1 - ready) * 0.9) / r)));
-      const dip = dipOut + (dipIn - dipOut) * imm;
-      const side = sl.side;
-      const cp = Math.cos(dip);
-      this.tmpV.set(side * cp * Math.cos(sweep), -Math.sin(dip), -cp * Math.sin(sweep)).normalize();
-      this.tmpQ.setFromUnitVectors(new THREE.Vector3(1, 0, 0), this.tmpV);
-      // feather: blade flat on recovery, square in the water
-      const feather = (1 - imm) * (Math.PI / 2) * (moving ? 1 : 0.6);
-      this.tmpQ2.setFromAxisAngle(this.tmpV, feather * side);
-      this.tmpQ.premultiply(this.tmpQ2);
-      // pull the oar inboard when stowed
-      const inboardPull = (1 - ready) * 1.2;
-      const px = sl.x - side * inboardPull;
-      this.tmpM.compose(new THREE.Vector3(px, sl.y, sl.z), this.tmpQ, this.tmpS);
-      this.oars.setMatrixAt(i, this.tmpM);
-      // blade world position for splashes
-      const bl = new THREE.Vector3(px, sl.y, sl.z).addScaledVector(this.tmpV, r);
-      this.bladeWorld[i].copy(bl).applyMatrix4(this.group.matrixWorld);
-      this.bladeIn[i] = imm > 0.5;
+  update(physics: ShipPhysics, crew: Crew, night: number, time: number, alpha = 1) {
+    // Only interpolate the same physical joints; no parallel stroke/contact controller.
+    for (const slot of this.slots) {
+      physics.rowing.renderPose(slot.id, alpha, this.oarPose);
+      this.oars[slot.bank].setMatrixAt(this.instanceIds[slot.id], this.oarPose.matrix);
+      this.bladeWorld[slot.id].copy(this.oarPose.center).applyMatrix4(this.group.matrixWorld);
+      this.bladeIn[slot.id] = physics.rowing.current.contact[slot.id] !== 0;
     }
-    this.oars.instanceMatrix.needsUpdate = true;
+    for (const mesh of this.oars) mesh.instanceMatrix.needsUpdate = true;
 
     // sail
     const su = this.sailUniforms;
