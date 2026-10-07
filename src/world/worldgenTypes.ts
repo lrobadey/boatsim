@@ -33,7 +33,8 @@ export interface Sites {
   shore: { x: number; z: number };
   temple: { x: number; z: number; y: number };
   houses: House[];
-  pier: { x: number; z: number; angle: number; length: number };
+  /** mole from the shore (x,z) along angle; berth zone [berthStart, length] lies in dredged water */
+  pier: { x: number; z: number; angle: number; length: number; width: number; top: number; berthStart: number };
   start: { x: number; z: number; heading: number };
 }
 

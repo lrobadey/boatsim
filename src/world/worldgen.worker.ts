@@ -83,7 +83,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   };
 
   // ---------- 1. island layout ----------
-  progress(0.02, 'Charting the islands');
+  progress(0.02, 'Placing islands');
   const islands: Island[] = [];
   const bound = half * 0.78;
   const tryPlace = (r: number, kind: Island['kind'], minGap: number, tries = 400) => {
@@ -137,7 +137,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   }
 
   // ---------- 2. height field ----------
-  progress(0.05, 'Raising the land');
+  progress(0.05, 'Building terrain');
   const H = new Float32Array(N * N);
   const isl = islands.map((i) => ({ ...i, cr: Math.cos(-i.rot), sr: Math.sin(-i.rot), reach: i.r * i.elong * 2.6 }));
 
@@ -197,15 +197,15 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     for (let i = 0; i < N; i++) {
       H[j * N + i] = heightAt(-half + (i + 0.5) * cell, z);
     }
-    if ((j & 63) === 0) progress(0.05 + 0.45 * (j / N), 'Raising the land');
+    if ((j & 63) === 0) progress(0.05 + 0.45 * (j / N), 'Building terrain');
   }
 
   // ---------- 3. hydraulic erosion (droplets) ----------
-  progress(0.5, 'Weathering the hills');
-  erode(H, N, cell, mulberry(seed + 99), Math.floor(N * N * 0.03),(p) => progress(0.5 + 0.25 * p, 'Weathering the hills'));
+  progress(0.5, 'Eroding terrain');
+  erode(H, N, cell, mulberry(seed + 99), Math.floor(N * N * 0.03),(p) => progress(0.5 + 0.25 * p, 'Eroding terrain'));
 
   // ---------- 4. analysis ----------
-  progress(0.76, 'Surveying harbours');
+  progress(0.76, 'Finding the harbour');
   const sample = (x: number, z: number) => {
     const fx = (x + half) / cell - 0.5;
     const fz = (z + half) / cell - 0.5;
@@ -363,7 +363,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   }
 
   // --- temple: prominent, near the harbour, with a sea view, reasonably flat ---
-  progress(0.82, 'Choosing a site for the temple');
+  progress(0.82, 'Placing the temple');
   let tb = { score: -1e9, x: 0, z: 0, h: 0 };
   for (let z = harbour.z - 1800; z < harbour.z + 1800; z += 24)
     for (let x = harbour.x - 1800; x < harbour.x + 1800; x += 24) {
@@ -386,8 +386,55 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   // flatten the temple platform into the heightmap (it is part of the physical world)
   flatten(H, N, cell, half, tb.x, tb.z, 34, 58, tb.h);
 
+  // --- pier: a mole from the shore into the harbour, its berth zone dredged to working depth.
+  // Runs before the village, the start and vegetation so they all sample the dredged heights.
+  const pdx = harbour.x - shore.x,
+    pdz = harbour.z - shore.z;
+  const plen = Math.hypot(pdx, pdz);
+  const ux = pdx / plen,
+    uz = pdz / plen; // shore -> sea
+  const lx = -uz,
+    lz = ux; // lateral
+  const at = (d: number, lat: number) => sample(shore.x + ux * d + lx * lat, shore.z + uz * d + lz * lat);
+  // d0: first point along the axis where the seabed is 3 m deep on the centre line and 9 m either side
+  let d0 = plen;
+  for (let d = 0; d <= plen; d += 1)
+    if (at(d, 0) <= -3 && at(d, 9) <= -3 && at(d, -9) <= -3) {
+      d0 = d;
+      break;
+    }
+  // berth zone [d0, d0 + 48], pier max 170 m; land beyond shortens the mole but keeps 40 m of berth
+  let L = Math.min(d0 + 48, 170);
+  if (L < d0 + 40) L = d0 + 40;
+  for (let d = d0; d <= L; d += 2)
+    if (at(d, 0) > -1.5) {
+      L = Math.max(d0 + 40, d);
+      break;
+    }
+  // dredge: H = min(H, -3.8) over [d0 - 6, L + 14] x ±18 m, smooth falloff over the next 14 m. Never raises.
+  const DREDGE = -3.8;
+  const a0 = d0 - 6,
+    a1 = L + 14;
+  for (let j = 0; j < N; j++) {
+    const z = -half + (j + 0.5) * cell;
+    for (let i = 0; i < N; i++) {
+      const x = -half + (i + 0.5) * cell;
+      const dx = x - shore.x,
+        dz = z - shore.z;
+      const along = dx * ux + dz * uz,
+        lat = dx * lx + dz * lz;
+      const out = Math.hypot(Math.max(0, a0 - along, along - a1), Math.max(0, Math.abs(lat) - 18));
+      const w = 1 - smoothstep(0, 14, out);
+      if (w <= 0) continue;
+      const k = j * N + i;
+      // only the seabed is dug out: beaches and cliffs beside the mole keep their shape
+      H[k] += (Math.min(H[k], DREDGE) - H[k]) * w * (1 - smoothstep(-1.5, 0.5, H[k]));
+    }
+  }
+  const pier = { x: shore.x, z: shore.z, angle: Math.atan2(uz, ux), length: L, width: 6, top: 1.8, berthStart: d0 };
+
   // --- village: houses on gentle slopes around the harbour shore, density falling off with distance ---
-  progress(0.86, 'Founding the village');
+  progress(0.86, 'Building the village');
   const houses: House[] = [];
   const vr = mulberry(seed + 31);
   for (let t = 0; t < 9000 && houses.length < 140; t++) {
@@ -416,12 +463,6 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     houses.push({ x, z, y: minH, w, l, hgt: 3 + vr() * 2.5 + (vr() < 0.25 ? 3 : 0), rot, maxY: Math.max(h, minH) });
   }
 
-  // --- pier: from the shore toward the harbour anchorage ---
-  const pdx = harbour.x - shore.x,
-    pdz = harbour.z - shore.z;
-  const plen = Math.hypot(pdx, pdz);
-  const pier = { x: shore.x, z: shore.z, angle: Math.atan2(pdz, pdx), length: Math.min(90, plen * 0.55) };
-
   // --- player start: out through the harbour mouth, facing in ---
   const oa = harbour.openAngle;
   let sd = 700;
@@ -443,7 +484,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   };
 
   // --- vegetation by biome rules ---
-  progress(0.9, 'Planting olive groves');
+  progress(0.9, 'Planting vegetation');
   const veg: number[] = []; // x, y, z, scale, rot, type
   const pr = mulberry(seed + 77);
   const dens = req.vegetationDensity;
@@ -495,7 +536,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     }
 
   // --- ambient occlusion: horizon-based sky visibility on a coarser grid ---
-  progress(0.95, 'Shading the valleys');
+  progress(0.95, 'Baking ambient occlusion');
   const AO = 512;
   const ao = new Uint8Array(AO * AO);
   const ac = S / AO;
@@ -531,7 +572,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
       ao[j * AO + i] = Math.round(Math.max(0, Math.min(1, vis / dirs)) * 255);
     }
 
-  progress(0.98, 'Launching the ship');
+  progress(0.98, 'Placing the ship');
   const sites: Sites = { harbour, shore, temple: { x: tb.x, z: tb.z, y: tb.h }, houses, pier, start };
   return { heights: H, size: N, worldSize: S, islands: infos, sites, vegetation: new Float32Array(veg), ao, aoSize: AO };
 }

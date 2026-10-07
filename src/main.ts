@@ -5,6 +5,7 @@ import { Wind } from './world/wind';
 import { Game } from './game';
 import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
 import { loadVisualAssets } from './gfx/assets';
+import { loadModels } from './gfx/models';
 
 const params = new URLSearchParams(location.search);
 /** default preset from the GPU: Apple Pro/Max/Ultra silicon and discrete GPUs get ultra */
@@ -31,14 +32,22 @@ const canvas = document.getElementById('gl') as HTMLCanvasElement;
 const loading = document.createElement('div');
 loading.className = 'screen loading';
 loading.innerHTML = `
-  ${EMBLEM_SVG}
-  <div class="title">ΤΡΙΗΡΗΣ</div>
-  <div class="subtitle">an Aegean trireme</div>
-  <div class="bar"><div class="fill"></div></div>
-  <div class="label">Consulting the oracle…</div>`;
+  <div class="stack">
+    ${EMBLEM_SVG}
+    <div class="wordmark">ΤΡΙΗΡΗΣ</div>
+    <div class="sub">Trireme simulator</div>
+    <div class="load-track"><div class="load-fill"></div></div>
+    <div class="load-status">Loading</div>
+  </div>`;
 ui.appendChild(loading);
-const fill = loading.querySelector('.fill') as HTMLElement;
-const label = loading.querySelector('.label') as HTMLElement;
+const fill = loading.querySelector('.load-fill') as HTMLElement;
+const label = loading.querySelector('.load-status') as HTMLElement;
+
+/** quality segmented control: the key is stored in data-q, the label is sentence case */
+const qualitySeg = (seedValue: number | string, current: string) =>
+  `<div class="seg" role="group" aria-label="Quality">${Object.keys(QUALITY)
+    .map((k) => `<a href="?q=${k}&seed=${seedValue}" data-q="${k}" class="${k === current ? 'on' : ''}"${k === current ? ' aria-current="true"' : ''}>${k[0].toUpperCase()}${k.slice(1)}</a>`)
+    .join('')}</div>`;
 
 function generate(): Promise<WorldGenResult> {
   return new Promise((resolve, reject) => {
@@ -47,7 +56,7 @@ function generate(): Promise<WorldGenResult> {
       const m = e.data;
       if (m.type === 'progress') {
         fill.style.width = `${Math.round(m.p * 85)}%`;
-        label.textContent = m.label + '…';
+        label.textContent = m.label;
       } else if (m.type === 'done') {
         worker.terminate();
         resolve(m.result);
@@ -77,11 +86,12 @@ async function boot() {
   const assetsP = loadVisualAssets();
   const gen = await generate();
   const [tex, assets] = await Promise.all([texP, assetsP]);
+  const models = await loadModels(assets);
   if (dev) console.log('[boot] gen done', performance.now().toFixed(0));
-  label.textContent = 'Fitting out the ship…';
+  label.textContent = 'Preparing the ship';
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
-  const game = new Game(canvas, quality, gen, tex, assets);
+  const game = new Game(canvas, quality, gen, tex, assets, models);
   if (dev && params.get('inspect') === 'harbour') {
     const h = gen.sites.harbour;
     const towardShore = gen.sites.pier.angle + Math.PI;
@@ -90,6 +100,14 @@ async function boot() {
     game.player.eagleYaw = Math.atan2(-Math.cos(towardShore), -Math.sin(towardShore));
     game.player.eaglePitch = -0.1;
     game.player.eagleVel.set(0, 0, 0);
+  }
+  // dev: start 70 m off the first berth, bow toward it along the quay, for docking iteration
+  if (dev && params.get('start') === 'berth') {
+    const b = game.harbourLayout.berths[Number(params.get('berth') ?? 0)] ?? game.harbourLayout.berths[0];
+    const off = Number(params.get('off') ?? 70);
+    const x = b.cx + b.ax * off + b.nx * 4, z = b.cz + b.az * off + b.nz * 4;
+    game.ship.place(x, z, Math.atan2(-b.ax, b.az));
+    game.ship.step(1 / 120);
   }
   // Reproducible visual-review scenes; opt-in dev URL only, normal controls are unchanged.
   const rowingReview = dev ? params.get('rowingReview') : null;
@@ -129,20 +147,25 @@ async function boot() {
   const title = document.createElement('div');
   title.className = 'screen title-screen';
   title.innerHTML = `
-    ${EMBLEM_SVG}
-    <div class="title">ΤΡΙΗΡΗΣ</div>
-    <div class="subtitle">You command a trireme off the harbour of ${mainIsland}.</div>
-    ${MEANDER_SVG}
-    <button class="board">Board the ship</button>
-    <div class="essentials">
-      <span><kbd>W</kbd><kbd>S</kbd> stroke order</span>
-      <span><kbd>A</kbd><kbd>D</kbd> steer</span>
-      <span><kbd>E</kbd> helm / deck</span>
-      <span><kbd>?</kbd> all controls</span>
+    <div class="scrim"></div>
+    <div class="stack">
+      <div class="wordmark">ΤΡΙΗΡΗΣ</div>
+      <div class="sub">Trireme simulator</div>
+      ${MEANDER_SVG}
+      <div class="actions">
+        <button class="pill primary board">Set sail</button>
+        <button class="pill ghost open-settings">Settings</button>
+      </div>
     </div>
-    <div class="quality">
-      ${Object.keys(QUALITY).map((k) => `<a href="?q=${k}&seed=${seed}" class="${k === quality.name ? 'on' : ''}">${k}</a>`).join('')}
-      &nbsp;·&nbsp; <a href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}">new archipelago</a>
+    <div class="foot">
+      <div class="keys">
+        <span><kbd>W</kbd><kbd>S</kbd> Speed</span>
+        <span><kbd>A</kbd><kbd>D</kbd> Steer</span>
+        <span><kbd>←</kbd><kbd>→</kbd> Look</span>
+        <span><kbd>?</kbd> Controls</span>
+      </div>
+      ${qualitySeg(seed, quality.name)}
+      <a class="new-island" href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}">New archipelago</a>
     </div>`;
   if (!dev) {
     ui.appendChild(title);
@@ -160,42 +183,99 @@ async function boot() {
   const pause = document.createElement('div');
   pause.className = 'screen pause';
   pause.innerHTML = `
-    <div class="title small">Paused</div>
-    ${MEANDER_SVG}
-    <button class="resume">Resume</button>
-    <div class="settings">
-      <label>Mouse sensitivity <input type="range" min="0.4" max="2.5" step="0.05" value="1" data-k="sens"></label>
-      <label>Volume <input type="range" min="0" max="1" step="0.05" value="0.8" data-k="vol"></label>
-      <label>Horizon leveling <input type="range" min="0" max="1" step="0.05" value="0.6" data-k="level"></label>
-      <label>Field of view <input type="range" min="55" max="95" step="1" value="70" data-k="fov"></label>
-      <label>Adaptive resolution <input type="checkbox" checked data-k="adapt"></label>
-      <label>Invert Y <input type="checkbox" data-k="invert"></label>
-    </div>
-    <div class="quality">Quality:
-      ${Object.keys(QUALITY).map((k) => `<a href="?q=${k}&seed=${seed}" class="${k === quality.name ? 'on' : ''}">${k}</a>`).join(' ')}
+    <div class="scrim"></div>
+    <div class="card glass">
+      <h2 class="sheet-title">Paused</h2>
+      <div class="rows">
+        <label class="row"><span>Mouse look</span><input type="checkbox" class="switch" data-k="mouselook"></label>
+        <label class="row" data-dep="mouselook"><span>Mouse sensitivity</span><input type="range" min="0.4" max="2.5" step="0.05" value="1" data-k="sens"></label>
+        <label class="row"><span>Look speed</span><input type="range" min="0.5" max="2" step="0.05" value="1" data-k="lookspeed"></label>
+        <label class="row"><span>Volume</span><input type="range" min="0" max="1" step="0.05" value="0.8" data-k="vol"></label>
+        <label class="row"><span>Horizon levelling</span><input type="range" min="0" max="1" step="0.05" value="0.75" data-k="level"></label>
+        <label class="row"><span>Field of view</span><input type="range" min="55" max="95" step="1" value="70" data-k="fov"></label>
+        <label class="row"><span>Adaptive resolution</span><input type="checkbox" class="switch" checked data-k="adapt"></label>
+        <label class="row"><span>Invert Y</span><input type="checkbox" class="switch" data-k="invert"></label>
+        <div class="row"><span>Quality</span>${qualitySeg(seed, quality.name)}</div>
+      </div>
+      <div class="card-foot"><button class="pill primary resume">Resume</button></div>
     </div>`;
   pause.style.display = 'none';
   ui.appendChild(pause);
+  // mouse look is opt-in and remembered; the keyboard (arrows) looks by default
+  let mouseLookOn = false;
+  try {
+    mouseLookOn = localStorage.getItem('trieres.mouseLook') === '1';
+  } catch {
+    // storage unavailable: the default stands
+  }
+  game.input.mouseLook = mouseLookOn;
+  const mouseLookBox = pause.querySelector('[data-k="mouselook"]') as HTMLInputElement;
+  mouseLookBox.checked = mouseLookOn;
+  // range fill: --r is the thumb position as a 0..1 fraction, the track gradient reads it
+  const paintRange = (inp: HTMLInputElement) => {
+    const lo = Number(inp.min), hi = Number(inp.max);
+    inp.style.setProperty('--r', String((Number(inp.value) - lo) / (hi - lo)));
+  };
+  // sensitivity only means something with mouse look on, so its row goes dim while it is off
+  const syncMouseDeps = () => {
+    const on = mouseLookBox.checked;
+    pause.querySelectorAll<HTMLElement>('[data-dep="mouselook"]').forEach((row) => {
+      row.classList.toggle('off', !on);
+      row.querySelectorAll('input').forEach((i) => (i.disabled = !on));
+    });
+  };
+  pause.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(paintRange);
+  syncMouseDeps();
   pause.querySelectorAll('input').forEach((inp) => {
     inp.addEventListener('input', () => {
       const k = inp.dataset.k;
       const v = inp.type === 'checkbox' ? (inp.checked ? 1 : 0) : Number(inp.value);
+      if (inp.type === 'range') paintRange(inp);
       if (k === 'sens') game.input.sensitivity = 0.0022 * v;
       if (k === 'vol') game.audio.setVolume(v);
       if (k === 'level') game.player.levelFactor = v;
       if (k === 'fov') game.player.baseFov = v;
       if (k === 'adapt') game.pipeline.adaptive = !!v;
       if (k === 'invert') game.input.invertY = !!v;
+      if (k === 'lookspeed') game.input.lookSpeed = v;
+      if (k === 'mouselook') {
+        game.input.mouseLook = !!v;
+        try {
+          localStorage.setItem('trieres.mouseLook', v ? '1' : '0');
+        } catch {
+          // not persisted
+        }
+        if (!v && game.input.locked) document.exitPointerLock();
+        syncMouseDeps();
+      }
     });
   });
-  document.querySelectorAll('.quality a').forEach((a) => a.addEventListener('click', () => localStorage.setItem('trieres.quality', (a as HTMLAnchorElement).textContent!)));
+  // quality links keep their hrefs and remember the choice; only the data-q links count
+  pause.querySelectorAll<HTMLAnchorElement>('a[data-q]').forEach((a) => a.addEventListener('click', () => localStorage.setItem('trieres.quality', a.dataset.q!)));
+  title.querySelectorAll<HTMLAnchorElement>('a[data-q]').forEach((a) => a.addEventListener('click', () => localStorage.setItem('trieres.quality', a.dataset.q!)));
 
   // Starting the voyage is independent of pointer lock: if the browser refuses the lock, the view
   // follows plain mouse movement (and click-drag) instead.
   let started = false;
+  // one settings card serves two entry points: the pause menu (Resume) and the title (Back)
+  const heading = pause.querySelector('.sheet-title') as HTMLElement;
+  const resumeBtn = pause.querySelector('.resume') as HTMLButtonElement;
+  let settingsFrom: 'pause' | 'title' = 'pause';
+  const showSettings = (from: 'pause' | 'title') => {
+    settingsFrom = from;
+    heading.textContent = from === 'title' ? 'Settings' : 'Paused';
+    resumeBtn.textContent = from === 'title' ? 'Back' : 'Resume';
+    if (from === 'title') title.style.display = 'none';
+    pause.style.display = '';
+  };
+  const closeTitleSettings = () => {
+    pause.style.display = 'none';
+    title.style.display = '';
+  };
   const setPaused = (p: boolean) => {
     game.paused = p;
-    pause.style.display = p ? '' : 'none';
+    if (p) showSettings('pause');
+    else pause.style.display = 'none';
   };
   const begin = () => {
     if (!started) {
@@ -217,21 +297,26 @@ async function boot() {
     game.input.lock();
   };
   title.querySelector('.board')!.addEventListener('click', board);
-  pause.querySelector('.resume')!.addEventListener('click', board);
+  title.querySelector('.open-settings')!.addEventListener('click', () => showSettings('title'));
+  resumeBtn.addEventListener('click', () => (settingsFrom === 'title' ? closeTitleSettings() : board()));
+  // a click starts or resumes the voyage (and retries the lock); while playing without the lock it is
+  // left to the game, where LMB places pieces in build mode and drags the view
   canvas.addEventListener('click', () => {
-    if (!game.input.locked && !game.cinematic) board();
+    if (!game.input.locked && !game.cinematic && (!started || game.paused)) board();
   });
   game.input.onLockChange = (locked) => {
     if (locked) begin();
     else if (started && !game.input.hoverLook) setPaused(true); // Esc released the mouse
   };
   window.addEventListener('keydown', (e) => {
+    if (e.code !== 'Escape') return;
+    if (settingsFrom === 'title' && pause.style.display !== 'none') closeTitleSettings();
     // without pointer lock, Esc toggles the pause menu itself
-    if (e.code === 'Escape' && started && !game.input.locked) setPaused(!game.paused);
+    else if (started && !game.input.locked) setPaused(!game.paused);
   });
 }
 
 boot().catch((e) => {
   console.error(e);
-  label.textContent = 'Failed to start: ' + (e?.message ?? e);
+  label.textContent = 'Could not start: ' + (e?.message ?? e);
 });

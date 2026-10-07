@@ -6,9 +6,10 @@ import { makeSailTexture, makeEyeTexture } from '../gfx/textures';
 import type { SurfaceMaps } from '../gfx/assets';
 import { halfBeam, keelDepth, sheer, section, zOf, deckY, DECK_S0, DECK_S1, HULL_LENGTH, RAM_LENGTH } from './hull';
 import { OAR_BANKS, type OarSlot } from './oarLayout';
-import { createKinematics } from './rowing';
+import { createKinematics, evaluateOar, nominalDip } from './rowing';
 import { buildOarGeometry } from './oarGeometry';
 import { Crew } from './crew';
+import type { ModelKit } from '../gfx/models';
 import type { ShipPhysics } from './physics';
 
 const smooth = (a: number, b: number, x: number) => {
@@ -44,10 +45,14 @@ export class Trireme {
   private tmpS = new THREE.Vector3(1, 1, 1);
   readonly bladeWorld: THREE.Vector3[] = [];
   readonly bladeIn: boolean[] = [];
-  private crewFigures: THREE.InstancedMesh | null = null;
+  private lastTime = 0;
   readonly mastTop = new THREE.Vector3();
+  /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
+  readonly oarStow = [0, 0];
+  readonly oarStowTarget = [0, 0];
+  private stowJoint = { sweep: 0, dip: 0, feather: 0, dSweep: 0, dDip: 0, dFeather: 0 };
 
-  constructor(planks: SurfaceMaps, slots: readonly OarSlot[]) {
+  constructor(planks: SurfaceMaps, slots: readonly OarSlot[], models: ModelKit) {
     const g = this.group;
     // The scan's grain runs vertically. Hull UVs run lengthwise in U; deck UVs run lengthwise in V.
     const hullMaps = [planks.color, planks.normal, planks.roughness].map((source) => {
@@ -280,7 +285,7 @@ export class Trireme {
 
     // ---------- deck clutter & crew ----------
     this.addDeckProps(woodDark);
-    this.addCrew();
+    this.addCrew(models);
 
     g.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).receiveShadow = true;
@@ -551,65 +556,50 @@ export class Trireme {
     this.group.add(bench);
   }
 
-  private addCrew() {
-    // deck crew: marines (epibatai) with bronze helmets, archers, the keleustes and the aulos player
-    const skinParts: THREE.BufferGeometry[] = [];
-    const clothParts: THREE.BufferGeometry[] = [];
-    const legL = new THREE.CylinderGeometry(0.07, 0.06, 0.85, 6).translate(-0.1, 0.43, 0);
-    const legR = new THREE.CylinderGeometry(0.07, 0.06, 0.85, 6).translate(0.1, 0.43, 0);
-    const armL = new THREE.CylinderGeometry(0.05, 0.045, 0.62, 6).rotateZ(0.12).translate(-0.27, 1.12, 0);
-    const armR = new THREE.CylinderGeometry(0.05, 0.045, 0.62, 6).rotateZ(-0.12).translate(0.27, 1.12, 0);
-    const neck = new THREE.CylinderGeometry(0.05, 0.06, 0.1, 6).translate(0, 1.5, 0);
-    const head = new THREE.SphereGeometry(0.115, 10, 8).scale(1, 1.12, 1.05).translate(0, 1.64, 0.01);
-    skinParts.push(legL, legR, armL, armR, neck, head);
-    // chiton: flared tunic to the knee, belted torso, shoulders
-    const skirt = new THREE.CylinderGeometry(0.19, 0.27, 0.5, 10).translate(0, 0.8, 0);
-    const torso = new THREE.CylinderGeometry(0.22, 0.18, 0.55, 10).scale(1, 1, 0.72).translate(0, 1.28, 0);
-    const shoulders = new THREE.SphereGeometry(0.22, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1.05, 0.45, 0.72).translate(0, 1.44, 0);
-    clothParts.push(skirt, torso, shoulders);
-    const skinGeo = mergeGeometries(skinParts.map((g) => g.toNonIndexed()));
-    const clothGeo = mergeGeometries(clothParts.map((g) => g.toNonIndexed()));
-    const helmetGeo = new THREE.SphereGeometry(0.14, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(0, 1.66, 0);
-    const crestGeo = new THREE.BoxGeometry(0.035, 0.12, 0.34).translate(0, 1.84, -0.02);
-    const spots: [number, number, number, boolean][] = [
-      // x, s, facing, helmet
-      // marines along the rails, archers forward, the keleustes amidships facing the rowers' benches,
-      // the aulos player beside him; the view forward from the helm stays clear
-      [1.05, 0.5, 1.3, true], [-1.1, 0.53, -1.6, true], [0.95, 0.38, 1.1, true], [-1.0, 0.33, -1.2, true],
-      [0.8, 0.2, 0.2, true], [-0.75, 0.17, -0.3, true], [0.2, 0.12, 0.0, false], [0.9, 0.66, 2.2, false],
+  private addCrew(models: ModelKit) {
+    // deck crew from the kit: marines along the rails with their helmets facing outboard, archers at the bow
+    // facing forward, a sailor on the centreline and the keleustes amidships calling the stroke to the helm
+    // (model -z is facing, so yaw -pi/2 faces +x (starboard) and +pi/2 faces -x (port))
+    const spots: [string, number, number, number][] = [
+      ['fig_marine', 1.05, 0.5, -Math.PI / 2],
+      ['fig_marine', -1.1, 0.53, Math.PI / 2],
+      ['fig_marine', 0.95, 0.38, -Math.PI / 2],
+      ['fig_marine', -1.0, 0.33, Math.PI / 2],
+      ['fig_archer', 0.8, 0.2, 0],
+      ['fig_archer', -0.75, 0.17, 0],
+      ['fig_sailor_idle', 0.2, 0.12, 0],
+      ['fig_keleustes', 0.9, 0.66, Math.PI],
     ];
-    const tunic = [0xe8e0cc, 0x8f2a1c, 0xd8c8a8, 0x3a4a6a, 0xc9b18a, 0xa33a22, 0xe0d6c0, 0x5a6a3a];
-    const skinMat = mat({ color: 0xb07a5a, roughness: 0.75 }, 'skin');
-    const clothMat = mat({ color: 0xffffff, roughness: 0.9 }, 'cloth');
-    const bronze = mat({ color: 0xb8863e, metalness: 0.85, roughness: 0.35 }, 'helm');
-    const crest = mat({ color: 0x7a1c14, roughness: 0.9 }, 'crest');
-    const n = spots.length;
-    const skin = new THREE.InstancedMesh(skinGeo, skinMat, n);
-    const cloth = new THREE.InstancedMesh(clothGeo, clothMat, n);
-    const helm = new THREE.InstancedMesh(helmetGeo, bronze, n);
-    const crests = new THREE.InstancedMesh(crestGeo, crest, n);
-    const M = new THREE.Matrix4();
-    const hidden = new THREE.Matrix4().makeScale(0, 0, 0);
-    spots.forEach(([x, s, face, hasHelm], i) => {
-      const sc = 0.95 + ((i * 37) % 10) * 0.012;
-      M.makeRotationY(face).scale(new THREE.Vector3(sc, sc, sc)).setPosition(x, deckY(s), zOf(s));
-      skin.setMatrixAt(i, M);
-      cloth.setMatrixAt(i, M);
-      cloth.setColorAt(i, new THREE.Color(tunic[i % tunic.length]));
-      helm.setMatrixAt(i, hasHelm ? M : hidden);
-      crests.setMatrixAt(i, hasHelm ? M : hidden);
-    });
-    for (const m of [skin, cloth, helm, crests]) {
-      m.castShadow = true;
-      this.group.add(m);
+    for (const [name, x, s, yaw] of spots) {
+      const fig = models.get(name);
+      fig.position.set(x, deckY(s), zOf(s));
+      fig.rotation.y = yaw;
+      this.group.add(fig);
     }
   }
 
   /** per-frame visual update from physics/crew state */
   update(physics: ShipPhysics, crew: Crew, night: number, time: number, alpha = 1) {
     // Only interpolate the same physical joints; no parallel stroke/contact controller.
+    // shipping oars: the crew draws each loom inboard through its port, rippling from bow to stern
+    const dtv = this.lastTime > 0 ? Math.min(0.1, Math.max(0, time - this.lastTime)) : 0;
+    this.lastTime = time;
+    for (let i = 0; i < 2; i++) this.oarStow[i] += Math.max(-dtv * 0.45, Math.min(dtv * 0.45, this.oarStowTarget[i] - this.oarStow[i]));
     for (const slot of this.slots) {
       physics.rowing.renderPose(slot.id, alpha, this.oarPose);
+      const st = this.oarStow[slot.side < 0 ? 0 : 1];
+      if (st > 0) {
+        // boated: from the rest pose each oar swings aft and levels off, lying fore-and-aft along
+        // the outrigger, clear of a quay alongside
+        const lag = (slot.z + HULL_LENGTH / 2) / HULL_LENGTH;
+        const k = smooth(0, 1, st * 1.6 - lag * 0.6);
+        const j = this.stowJoint;
+        const dip0 = nominalDip(slot, false);
+        j.sweep = 0.07 + (-1.48 - 0.07) * k;
+        j.dip = dip0 + (0.04 - dip0) * k;
+        j.feather = Math.PI / 2;
+        evaluateOar(slot, j, this.oarPose);
+      }
       this.oars[slot.bank].setMatrixAt(this.instanceIds[slot.id], this.oarPose.matrix);
       this.bladeWorld[slot.id].copy(this.oarPose.center).applyMatrix4(this.group.matrixWorld);
       this.bladeIn[slot.id] = physics.rowing.current.contact[slot.id] !== 0;

@@ -5,6 +5,7 @@ import { Input } from './core/input';
 import { shared } from './gfx/shared';
 import { dataTexture } from './gfx/textures';
 import type { VisualAssets } from './gfx/assets';
+import type { ModelKit } from './gfx/models';
 import { AstroClock } from './world/astro';
 import { Wind } from './world/wind';
 import { WaveField } from './world/waves';
@@ -18,8 +19,15 @@ import { Birds } from './world/birds';
 import type { WorldGenResult } from './world/worldgenTypes';
 import { ShipPhysics } from './ship/physics';
 import { Trireme } from './ship/trireme';
-import { Crew, ORDERS } from './ship/crew';
-import { hullWidthTable, HULL_LENGTH } from './ship/hull';
+import { Crew, ORDERS, ORDER_STOP } from './ship/crew';
+import { hullWidthTable, HULL_LENGTH, deckY, zOf } from './ship/hull';
+import { buildHarbour, type HarbourLayout } from './world/harbour';
+import { WalkGeometry } from './world/walkable';
+import type { ShipPose } from './player/walker';
+import { HarbourRig } from './world/harbourRig';
+import { BerthMarker } from './world/berthMarker';
+import { DockPanel, Crosshair } from './ui/dock';
+import { DeckBuilder } from './build/deckBuilder';
 import { PlayerController } from './player/controller';
 import { Hud } from './ui/hud';
 import { Chart } from './ui/chart';
@@ -43,7 +51,6 @@ export class Game {
   readonly sky: SkySystem;
   readonly ocean: Ocean;
   readonly fft: OceanFFT;
-  private hoverHinted = false;
   readonly minimap: Minimap;
   readonly reflection: PlanarReflection;
   private sunBake: SunShadowBake;
@@ -68,6 +75,18 @@ export class Game {
   readonly hud: Hud;
   readonly chart: Chart;
   readonly audio = new AudioEngine();
+  readonly harbourLayout: HarbourLayout;
+  /** world walk geometry (terrain + quay, houses, temple) and ship-local deck solids */
+  readonly walk: WalkGeometry;
+  readonly shipSolids = new WalkGeometry(null);
+  private shipPose: ShipPose;
+  readonly harbourRig: HarbourRig;
+  readonly berthMarker: BerthMarker;
+  readonly dock = new DockPanel();
+  readonly crosshair = new Crosshair();
+  readonly builder: DeckBuilder;
+  private invShip = new THREE.Matrix4();
+  private steeringInput = false;
   private acc = 0;
   private last = performance.now();
   private simTime = 0;
@@ -95,7 +114,7 @@ export class Game {
     return best;
   }
 
-  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets) {
+  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit) {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 60000);
     this.pipeline = new Pipeline(canvas, this.scene, this.camera, quality);
     this.input = new Input(canvas);
@@ -165,15 +184,28 @@ export class Game {
     this.ocean.uniforms.uFoamSize.value = this.foam.size;
     this.ocean.uniforms.uFoamCenter.value = this.foam.center;
 
-    this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets);
+    this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets, this.models);
     this.scene.add(this.props.group);
     this.birds = new Birds(gen);
     this.scene.add(this.birds.group);
 
     T('props');
     this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew);
-    this.model = new Trireme(assets.planks, this.ship.rowing.slots);
+    this.model = new Trireme(assets.planks, this.ship.rowing.slots, this.models);
     this.scene.add(this.model.group);
+    this.harbourLayout = buildHarbour(gen, this.terrain);
+    this.ship.mooring.setHarbour(this.harbourLayout);
+    this.walk = new WalkGeometry(this.terrain);
+    for (const sol of this.harbourLayout.solids) this.walk.add(sol);
+    for (const sol of this.props.solids) this.walk.add(sol);
+    this.buildShipSolids();
+    this.shipPose = { origin: new THREE.Vector3(), quat: new THREE.Quaternion(), cgWorld: new THREE.Vector3(), vel: new THREE.Vector3(), angVel: new THREE.Vector3(), plank: null, solids: this.shipSolids };
+    this.harbourRig = new HarbourRig();
+    this.harbourRig.setPlankModel(this.models.get('gangplank'), 3);
+    this.harbourRig.setAnchorModel(this.models.get('anchor'));
+    this.scene.add(this.harbourRig.group);
+    this.berthMarker = new BerthMarker(this.harbourLayout);
+    this.scene.add(this.berthMarker.group);
     this.ship.place(gen.sites.start.x, gen.sites.start.z, gen.sites.start.heading);
     // settle on the water before the player arrives
     for (let i = 0; i < 240; i++) this.ship.step(SIM_DT);
@@ -186,6 +218,12 @@ export class Game {
     this.chart = new Chart(gen, this.terrain);
     this.minimap = new Minimap(this.chart, gen);
     this.hud.mount(this.minimap.root);
+    this.hud.mount(this.dock.root);
+    this.hud.mount(this.crosshair.root);
+    this.builder = new DeckBuilder(this.models, this.model.group, this.ship.payload, this.shipSolids, this.player.interactions, this.crew);
+    this.hud.mount(this.builder.ui.root);
+    this.minimap.setBerths(this.harbourLayout.berths);
+    this.chart.setBerths(this.harbourLayout.berths);
     // named places, described from their terrain
     for (const i of gen.islands) {
       if (!i.name) continue;
@@ -204,6 +242,18 @@ export class Game {
     // sky irradiance relative to the sun (~1:4-5 on a clear Aegean day)
     this.scene.environmentIntensity = 0.85;
     T('done');
+  }
+
+  /** fixed deck furniture people bump into (ship-local) */
+  private buildShipSolids() {
+    const add = (x: number, s: number, r: number, h: number) =>
+      this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r, y0: deckY(s), y1: deckY(s) + h, surface: 'wood', walkTop: false });
+    add(0, 0.42, 0.25, 11.5); // mast
+    for (let i = 0; i < 8; i++) add((i < 4 ? -1 : 1) * 0.7, 0.47 + (i % 4) * 0.012, 0.2, 0.9); // amphorae
+    // deck crew
+    for (const [x, s] of [[1.05, 0.5], [-1.1, 0.53], [0.95, 0.38], [-1.0, 0.33], [0.8, 0.2], [-0.75, 0.17], [0.2, 0.12], [0.9, 0.66]]) add(x, s, 0.25, 1.75);
+    const s = 0.905;
+    this.shipSolids.add({ kind: 'box', cx: 0, cz: zOf(s), hx: 0.8, hz: 0.25, rot: 0, y0: deckY(0.9), y1: deckY(0.9) + 0.45, surface: 'wood', walkTop: true });
   }
 
   resize() {
@@ -282,14 +332,17 @@ export class Game {
     const inp = this.input;
     const p = this.player;
     if (inp.hit('KeyE')) p.toggleHelm();
-    if (inp.hit('KeyC')) p.cycleCamera();
+    if (inp.hit('KeyB')) {
+      if (p.mode === 'build') p.mode = 'foot';
+      else if (p.mode === 'foot' && p.walker.frame === 'ship') p.mode = 'build';
+      else if (p.mode === 'foot') this.hud.showToast('Build on the ship deck');
+    }
+    if (p.mode === 'build' && p.walker.frame !== 'ship') p.mode = 'foot';
+    if (inp.hit('KeyC') && p.mode !== 'build') p.cycleCamera();
     if (inp.hit('KeyQ')) p.toggleEagle(this.shipPos);
     if (inp.hit('KeyM')) this.chart.toggle();
     if (inp.hit('Slash') || inp.hit('F1')) this.hud.toggleHelp();
-    if (inp.hit('KeyH')) {
-      this.showHud = !this.showHud;
-      this.hud.setVisible(this.showHud);
-    }
+    if (inp.hit('KeyH')) this.hud.cycleDensity();
     if (inp.hit('F3') || inp.hit('Backquote')) this.hud.toggleDebug();
     if (inp.hit('KeyN')) this.audio.toggleMute();
     if (inp.hit('BracketRight')) this.clock.timeScale = Math.min(480, this.clock.timeScale * 2);
@@ -305,19 +358,126 @@ export class Game {
     }
     // helm controls (orders are shouted from the helm; also allowed in chase view)
     const commanding = p.mode === 'helm' || (p.mode === 'chase' && p.prevShipMode === 'helm');
+    const moor = this.ship.mooring;
     if (commanding) {
-      if (inp.hit('KeyW')) this.crew.setOrder(this.crew.orderIndex + 1);
-      if (inp.hit('KeyS')) this.crew.setOrder(this.crew.orderIndex - 1);
+      if (inp.hit('KeyW') || inp.hit('KeyS')) {
+        if (moor.state === 'moored' || moor.state === 'warping') this.hud.showToast('Cast off first (R)');
+        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
+        else this.crew.setOrder(this.crew.orderIndex + (inp.hit('KeyW') ? 1 : -1));
+      }
+      if (inp.hit('KeyR')) {
+        if (moor.state === 'moored' || moor.state === 'warping') moor.castOff();
+        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
+        else if (!moor.approach) this.hud.showToast('No berth in range');
+        else moor.makeFast();
+      }
+      if (inp.hit('KeyZ')) {
+        if (moor.state === 'anchored') moor.weighAnchor();
+        else if (moor.state === 'free') moor.dropAnchor();
+      }
       if (inp.hit('KeyF')) this.ship.sailTarget = this.ship.sailTarget > 0.5 ? 0 : 1;
       const steer = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0);
+      this.steeringInput = steer !== 0 || inp.hit('KeyW') || inp.hit('KeyS');
       if (steer !== 0) this.ship.helm = clamp(this.ship.helm + steer * dt * 0.9, -1, 1);
       else if (inp.down('KeyX')) this.ship.helm *= Math.exp(-dt * 4);
       this.crew.holdWater = inp.down('Space');
     } else {
+      this.steeringInput = false;
       this.crew.holdWater = false;
     }
     // helm self-centres slowly when not held (the steering oars trail in the flow)
     if (!(commanding && (inp.down('KeyA') || inp.down('KeyD')))) this.ship.helm *= Math.exp(-dt * 0.25);
+  }
+
+  /** mooring events, crew reactions, shipped oars, lines and plank visuals, harbour audio */
+  private updateMooring(dt: number) {
+    const moor = this.ship.mooring;
+    for (const e of moor.drain()) {
+      if (e.type === 'made-fast') {
+        this.audio.ropeThrow();
+        this.crew.setOrder(ORDER_STOP);
+        this.crew.holdWater = false;
+        this.ship.sailTarget = 0;
+        this.hud.showToast('Lines out');
+      } else if (e.type === 'moored') this.dock.showRating(e.rating, e.contactSpeed);
+      else if (e.type === 'cast-off') {
+        this.audio.ropeThrow();
+        this.hud.showToast('Cast off');
+      } else if (e.type === 'bump') {
+        this.audio.hullBump(clamp(e.speed / 2, 0.1, 1));
+        this.player.addTrauma(e.speed / 2.5);
+        this.dock.flashBump(e.speed);
+      } else if (e.type === 'anchor-down') {
+        this.audio.anchorDrop();
+        this.crew.setOrder(ORDER_STOP);
+        this.hud.showToast('Anchor down');
+      } else if (e.type === 'anchor-up') {
+        this.audio.anchorWeigh(3);
+        this.hud.showToast('Anchor up');
+      } else if (e.type === 'plank') this.audio.plank(e.down);
+      else if (e.type === 'denied') {
+        this.audio.buildDeny();
+        this.hud.showToast(e.reason);
+      }
+    }
+    // the crew won't let the ship wander off with the captain ashore or overboard
+    if (this.player.walker.frame === 'world' && moor.state === 'free') {
+      if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
+      if (Math.hypot(this.ship.vel.x, this.ship.vel.z) < 1.2 && moor.dropAnchor()) this.hud.showNote('Anchor dropped while you are off the ship', 5);
+    }
+    // ship oars on the quay side for the last metres, both sides once she's tied up
+    const a = moor.approach;
+    const tied = moor.state === 'warping' || moor.state === 'moored';
+    const side = tied ? moor.plank?.side ?? 1 : a?.side ?? 1;
+    const quaySide = tied || (!!a && a.dist < 30 && Math.abs(a.lateral) < 6 && this.crew.orderIndex === ORDER_STOP);
+    const si = side < 0 ? 0 : 1;
+    this.model.oarStowTarget[si] = quaySide ? 1 : 0;
+    this.model.oarStowTarget[1 - si] = moor.state === 'moored' ? 1 : 0;
+    this.harbourRig.update(moor, this.model.group);
+    const t = this.ship.time;
+    this.berthMarker.exposure = this.sky.exposure;
+    this.berthMarker.update(dt, moor, (x, z) => this.waves.heightAt(x, z, t), this.camera.position);
+    const commanding = this.player.mode === 'helm' || (this.player.mode === 'chase' && this.player.prevShipMode === 'helm');
+    this.dock.update(dt, moor, commanding, this.ship.heading);
+    const onFoot = this.player.mode === 'foot' || this.player.mode === 'build';
+    this.crosshair.update(onFoot && this.player.zoom < 0.3, !!this.player.interactions.target);
+    this.updateBuilder(dt);
+    let tension = 0;
+    for (const l of moor.lines) tension = Math.max(tension, l.tension);
+    this.audio.lineCreak(tension);
+    const h = this.harbourLayout;
+    const mx = h.root.x + h.dir.x * h.length * 0.6,
+      mz = h.root.y + h.dir.y * h.length * 0.6;
+    this.audio.setHarbourProximity(clamp(1 - (Math.hypot(this.camera.position.x - mx, this.camera.position.z - mz) - 60) / 400, 0, 1));
+    for (const e of this.player.feel.events) {
+      if (e.type === 'step') this.audio.footstep(e.kind, e.intensity);
+      else if (e.type === 'land') this.audio.land(e.kind, e.speed);
+      else if (e.type === 'splash') this.audio.splash(e.size);
+      else if (e.type === 'stroke') this.audio.swimStroke();
+    }
+  }
+
+  private updateBuilder(dt: number) {
+    const b = this.builder;
+    const on = this.player.mode === 'build';
+    if (b.active !== on) b.setActive(on);
+    this.invShip.copy(this.model.group.matrixWorld).invert();
+    const eye = this.camera.getWorldPosition(new THREE.Vector3());
+    const dir = this.camera.getWorldDirection(new THREE.Vector3()).add(eye);
+    b.update(dt, {
+      input: this.input,
+      eyeLocal: eye.clone().applyMatrix4(this.invShip),
+      dirLocal: dir.applyMatrix4(this.invShip).sub(eye.clone().applyMatrix4(this.invShip)).normalize(),
+      night: this.sky.night,
+      dayCount: this.clock.dayCount,
+      cameraWorld: eye,
+    });
+    for (const e of b.events) {
+      if (e.type === 'place') this.audio.buildPlace();
+      else if (e.type === 'remove') this.audio.buildRemove();
+      else if (e.type === 'deny') this.audio.buildDeny();
+      else if (e.type === 'offering') this.hud.showToast('Crew stamina restored');
+    }
   }
 
   /** dev/testing: run the whole game forward at a fixed step without presenting frames */
@@ -386,11 +546,25 @@ export class Game {
     this.player.shipSpeed = this.ship.speed;
     this.player.autoCenter = !this.cinematic;
     this.input.lookEnabled = !this.paused && !this.cinematic;
-    if (this.input.hoverLook && !this.hoverHinted && !this.cinematic) {
-      this.hoverHinted = true;
-      this.hud.showNote('No mouse capture here — rest the cursor at a screen edge, or use the arrow keys, to keep turning', 9);
-    }
-    this.player.update(dt, this.model.group.position, this.shipQuat, this.terrain, this.waves, this.ship.time);
+    // chase camera framing hints: steering input, turn rate (+ = to starboard), berth proximity
+    const hints = this.player.chaseHints;
+    hints.steering = this.steeringInput;
+    hints.yawRate = -this.ship.angVel.y;
+    const ap = this.ship.mooring.approach;
+    const st = this.ship.mooring.state;
+    hints.docking = ap && (st === 'free' || st === 'warping') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
+    // felt contact: shake only for real contact (grounding here, quay bumps in updateMooring); the
+    // swell already moves the ship, and bowSlam is a column sum that runs high in an ordinary sea
+    if (!this.paused && !this.cinematic && this.ship.grounding > 0.02) this.player.addTrauma(Math.min(0.6, this.ship.grounding) * dt * 3);
+    const sp = this.shipPose;
+    sp.origin.copy(this.model.group.position);
+    sp.quat.copy(this.shipQuat);
+    sp.cgWorld.copy(this.shipPos);
+    sp.vel.copy(this.ship.vel);
+    sp.angVel.copy(this.ship.angVel);
+    sp.plank = this.ship.mooring.plank;
+    this.player.update(dt, sp, this.walk, this.terrain, this.waves, this.ship.time);
+    if (!this.paused) this.updateMooring(dt);
     // world systems
     this.sky.updateLighting(dt, this.camera, this.lightingJump);
     this.model.update(this.ship, this.crew, this.sky.night, this.ship.time, alpha);

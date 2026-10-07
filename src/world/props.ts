@@ -5,28 +5,15 @@ import { patchMaterial, shared } from '../gfx/shared';
 import { rng } from '../core/util';
 import type { WorldGenResult } from './worldgenTypes';
 import type { Terrain } from './terrain';
+import { QUAY, berthBollards, pierFrame, houseFootprint } from './harbour';
 import type { WaveField } from './waves';
 import type { Quality } from '../core/quality';
 import type { VisualAssets } from '../gfx/assets';
+import type { ModelKit } from '../gfx/models';
+import type { Solid } from './walkable';
 import { LAYER_REFRACT } from '../core/pipeline';
 
 const BLOCK = 1500;
-
-/** Keep masonry blocks near the scan's two metre physical scale on every face. */
-function stoneUvs(g: THREE.BoxGeometry) {
-  const p = g.getAttribute('position');
-  const n = g.getAttribute('normal');
-  const uv = g.getAttribute('uv');
-  for (let i = 0; i < p.count; i++) {
-    const ax = Math.abs(n.getX(i));
-    const ay = Math.abs(n.getY(i));
-    if (ax > 0.5) uv.setXY(i, p.getZ(i) / 2, p.getY(i) / 2);
-    else if (ay > 0.5) uv.setXY(i, p.getX(i) / 2, p.getZ(i) / 2);
-    else uv.setXY(i, p.getX(i) / 2, p.getY(i) / 2);
-  }
-  uv.needsUpdate = true;
-  return g;
-}
 
 function colorize(g: THREE.BufferGeometry, c: THREE.Color, jitter: number, r: () => number, heightDarken = 0) {
   const n = g.attributes.position.count;
@@ -72,6 +59,43 @@ function strip(g: THREE.BufferGeometry) {
   const ng = g.index ? g.toNonIndexed() : g;
   for (const k of Object.keys(ng.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'color') ng.deleteAttribute(k);
   return ng;
+}
+
+const UP = new THREE.Vector3(0, 1, 0);
+const RAD_X = new THREE.Vector3(1, 0, 0);
+
+/** objects visible through the water surface (seabed, hull) also draw in the refraction pass */
+function refract(o: THREE.Object3D) {
+  o.traverse((c) => {
+    if (c instanceof THREE.Mesh) {
+      c.castShadow = true;
+      c.receiveShadow = true;
+      c.layers.enable(LAYER_REFRACT);
+    }
+  });
+  return o;
+}
+
+/** one InstancedMesh per sub-mesh of the named kit objects; every instance shares geometry and slot materials */
+class KitBatch {
+  readonly meshes: THREE.InstancedMesh[] = [];
+  constructor(models: ModelKit, names: string | string[], readonly count: number) {
+    if (count > 0) for (const p of models.parts(names)) this.meshes.push(new THREE.InstancedMesh(p.geometry, p.material, count));
+  }
+  set(i: number, M: THREE.Matrix4) {
+    for (const m of this.meshes) m.setMatrixAt(i, M);
+    return M;
+  }
+  /** call after the matrices are set so the bounding spheres cover every instance */
+  addTo(group: THREE.Group, refractive = false) {
+    for (const m of this.meshes) {
+      m.castShadow = true;
+      m.receiveShadow = true;
+      if (refractive) m.layers.enable(LAYER_REFRACT);
+      m.computeBoundingSphere();
+      group.add(m);
+    }
+  }
 }
 
 /** Tree / bush / rock archetypes (low-poly, vertex coloured) */
@@ -138,13 +162,17 @@ export class Props {
   private beaconLight: THREE.PointLight;
   private beaconMat: THREE.MeshStandardMaterial;
   private flame: THREE.Mesh;
-  private windowMat = new THREE.MeshStandardMaterial();
+  private fireMat: THREE.MeshStandardMaterial;
+  /** blocking solids for people on the quay and village dock (world): props and standing figures */
+  readonly solids: Solid[] = [];
 
-  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets) {
+  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets, private models: ModelKit) {
+    this.fireMat = models.material('fire');
     this.buildVegetation(gen);
     this.buildVillage(gen);
     this.buildTemple(gen);
-    this.buildPier(gen, assets);
+    this.buildPier(gen);
+    this.buildDockLife(gen);
     this.buildRockFaces(gen, assets);
     this.buildBoats(gen);
     // beacon fire in front of the temple (east side)
@@ -238,59 +266,32 @@ export class Props {
   private buildVillage(gen: WorldGenResult) {
     const houses = gen.sites.houses;
     if (!houses.length) return;
-    const r = rng(17);
-    const walls = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-    // low gable roof prism
-    const roofShape = new THREE.Shape();
-    roofShape.moveTo(-0.5, 0);
-    roofShape.lineTo(0.5, 0);
-    roofShape.lineTo(0, 0.28);
-    roofShape.closePath();
-    const roof = new THREE.ExtrudeGeometry(roofShape, { depth: 1, bevelEnabled: false }).translate(0, 0, -0.5);
-    const wallMat = patchMaterial(new THREE.MeshStandardMaterial({ color: 0xf2eee4, roughness: 0.92 }), undefined, 'wall');
-    const roofMat = patchMaterial(new THREE.MeshStandardMaterial({ color: 0xa4553a, roughness: 0.8 }), undefined, 'roof');
-    this.windowMat = new THREE.MeshStandardMaterial({ color: 0x1a120c, emissive: 0xffb060, emissiveIntensity: 0, roughness: 0.9 });
-    patchMaterial(this.windowMat, undefined, 'window');
-    const wi = new THREE.InstancedMesh(walls, wallMat, houses.length);
-    const ri = new THREE.InstancedMesh(roof, roofMat, houses.length);
-    const openings = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.windowMat, houses.length * 3);
-    const M = new THREE.Matrix4();
-    const Q = new THREE.Quaternion();
-    const up = new THREE.Vector3(0, 1, 0);
-    let oi = 0;
-    houses.forEach((h, i) => {
-      Q.setFromAxisAngle(up, h.rot);
-      const baseY = h.y - 1.5; // foundation into the slope
-      const totalH = h.maxY - baseY + h.hgt;
-      M.compose(new THREE.Vector3(h.x, baseY, h.z), Q, new THREE.Vector3(h.w, totalH, h.l));
-      wi.setMatrixAt(i, M);
-      const flat = r() < 0.35; // some flat roofs (terraces)
-      M.compose(new THREE.Vector3(h.x, baseY + totalH, h.z), Q, new THREE.Vector3(h.w + 0.5, flat ? 0.2 : h.w * 0.9, h.l + 0.5));
-      ri.setMatrixAt(i, M);
-      ri.setColorAt(i, flat ? new THREE.Color(0xe8e2d4) : new THREE.Color().setHSL(0.04, 0.45, 0.35 + r() * 0.1));
-      // door + two windows on the downhill face (local +z)
-      const fz = h.l / 2 + 0.03;
-      const top = h.maxY + 0.1;
-      const items: [number, number, number, number][] = [
-        [0, top + 1.0, 1.1, 2.0],
-        [-h.w * 0.3, top + h.hgt * 0.6, 0.6, 0.7],
-        [h.w * 0.3, top + h.hgt * 0.6, 0.6, 0.7],
-      ];
-      for (const [lx, y, w, hh] of items) {
-        const off = new THREE.Vector3(lx, 0, fz).applyQuaternion(Q);
-        M.compose(new THREE.Vector3(h.x + off.x, y, h.z + off.z), Q, new THREE.Vector3(w, hh, 0.08));
-        openings.setMatrixAt(oi, M);
-        const lit = r() < 0.55;
-        openings.setColorAt(oi, lit ? new THREE.Color(1, 1, 1) : new THREE.Color(0.02, 0.02, 0.02));
-        oi++;
-      }
+    // modelled footprints (m); a house takes the smallest variant that holds its area
+    const variants = [
+      { name: 'house_c', w: 4, l: 4 },
+      { name: 'house_a', w: 5, l: 6 },
+      { name: 'house_b', w: 6, l: 8 },
+    ];
+    const byVariant = variants.map(() => [] as typeof houses);
+    // same choice as the collision boxes in harbour.ts
+    for (const h of houses) byVariant[variants.findIndex((v) => v.w === houseFootprint(h.w * h.l)[0])].push(h);
+    // footprints stretch to the village plan but keep the modelled proportions within 0.8..1.25
+    const fit = (k: number) => Math.min(1.25, Math.max(0.8, k));
+    const M = new THREE.Matrix4(),
+      Q = new THREE.Quaternion(),
+      P = new THREE.Vector3(),
+      S = new THREE.Vector3();
+    variants.forEach((v, k) => {
+      const list = byVariant[k];
+      const batch = new KitBatch(this.models, [v.name, v.name + '_windows'], list.length);
+      list.forEach((h, i) => {
+        Q.setFromAxisAngle(UP, h.rot);
+        // the footing reaches 1.5 m below ground, so the model only needs its ground at the lowest corner
+        P.set(h.x, h.y + 0.05, h.z);
+        batch.set(i, M.compose(P, Q, S.set(fit(h.w / v.w), 1, fit(h.l / v.l))));
+      });
+      batch.addTo(this.group);
     });
-    for (const m of [wi, ri, openings]) {
-      m.castShadow = true;
-      m.receiveShadow = true;
-      m.computeBoundingSphere();
-      this.group.add(m);
-    }
   }
 
   private buildTemple(gen: WorldGenResult) {
@@ -358,26 +359,120 @@ export class Props {
     this.group.add(frieze);
   }
 
-  private buildPier(gen: WorldGenResult, assets: VisualAssets) {
-    const p = gen.sites.pier;
-    const segs = Math.max(2, Math.floor(p.length / 6));
-    const stone = patchMaterial(new THREE.MeshStandardMaterial({ map: assets.stone.color, normalMap: assets.stone.normal, roughnessMap: assets.stone.roughness, normalScale: new THREE.Vector2(0.5, 0.5), roughness: 1 }), undefined, 'pier');
-    const dx = Math.cos(p.angle),
-      dz = Math.sin(p.angle);
-    for (let i = 0; i < segs; i++) {
-      const d = (i + 0.5) * (p.length / segs);
-      const x = p.x + dx * d,
-        z = p.z + dz * d;
-      const ground = this.terrain.heightAt(x, z);
-      const top = 1.3;
-      const h = top - ground + 1;
-      const b = new THREE.Mesh(stoneUvs(new THREE.BoxGeometry(p.length / segs + 0.1, h, 5.5)), stone);
-      b.position.set(x, top - h / 2, z);
-      b.rotation.y = -p.angle;
-      b.castShadow = true;
-      b.receiveShadow = true;
-      b.layers.enable(LAYER_REFRACT);
-      this.group.add(b);
+  /** the mole from the kit: quay_head at the sea end, quay_segment tiles back to the shore, bollards and fenders at the berth */
+  private buildPier(gen: WorldGenResult) {
+    const f = pierFrame(gen.sites.pier);
+    // model +z runs shore → sea
+    const Q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(f.ux, f.uz));
+    const at = (a: number, lat: number, y: number) => new THREE.Vector3(f.x0 + f.ux * a + f.lx * lat, y, f.z0 + f.uz * a + f.lz * lat);
+    const M = new THREE.Matrix4(),
+      S = new THREE.Vector3();
+
+    // body: tiles of 6 m, stretched so they meet exactly at the head
+    const body = f.length - 6;
+    const n = Math.max(1, Math.round(body / 6));
+    const seg = body / n;
+    const tiles = new KitBatch(this.models, 'quay_segment', n);
+    for (let i = 0; i < n; i++) tiles.set(i, M.compose(at((i + 0.5) * seg, 0, f.top), Q, S.set(1, 1, seg / 6)));
+    tiles.addTo(this.group, true);
+
+    // head: its +z end (the stair end) sits at the pier length
+    const head = this.models.get('quay_head');
+    head.position.copy(at(f.length - 3, 0, f.top));
+    head.quaternion.copy(Q);
+    this.group.add(refract(head));
+
+    const bollards = new KitBatch(this.models, 'bollard', 6);
+    let bi = 0;
+    for (const side of [-1, 1] as const) for (const v of berthBollards(f, side)) bollards.set(bi++, M.makeTranslation(v.x, v.y, v.z));
+    bollards.addTo(this.group, true);
+
+    // fenders hang just outside both faces of the berth, every 5 m, long axis vertical
+    const F = new THREE.Quaternion().setFromAxisAngle(RAD_X, Math.PI / 2);
+    const fenders: THREE.Matrix4[] = [];
+    for (const side of [-1, 1])
+      for (let a = f.berthStart + 2.5; a < f.length - 3; a += 5)
+        fenders.push(new THREE.Matrix4().compose(at(a, side * (f.width / 2 + 0.2), f.top - 1), F, S.set(1, 1, 1)));
+    const fb = new KitBatch(this.models, 'fender', fenders.length);
+    fenders.forEach((m, i) => fb.set(i, m));
+    fb.addTo(this.group, true);
+  }
+
+  /**
+   * Life on the shore half of the mole: a cluster of goods on one side, a porter on the other, a fisher
+   * sitting on the edge and a sailor by a bollard. Everything blocks people except the fisher, whose
+   * legs hang over the face.
+   */
+  private buildDockLife(gen: WorldGenResult) {
+    const f = pierFrame(gen.sites.pier);
+    const a0 = 4,
+      a1 = f.berthStart - 2;
+    if (a1 - a0 < 8) return;
+    const r = rng(41);
+    const top = f.top;
+    const hw = f.width / 2;
+    const at = (a: number, lat: number) => ({ x: f.x0 + f.ux * a + f.lx * lat, z: f.z0 + f.uz * a + f.lz * lat });
+    // yaw that points a model's -z (its facing) along (dx, dz)
+    const face = (dx: number, dz: number) => Math.atan2(-dx, -dz);
+    const placed: { x: number; z: number; rad: number }[] = [];
+    const clear = (x: number, z: number, rad: number) => placed.every((p) => Math.hypot(p.x - x, p.z - z) >= p.rad + rad + 0.1);
+    const figure = (name: string, x: number, y: number, z: number, yaw: number, blocks: boolean) => {
+      const o = this.models.get(name);
+      o.position.set(x, y, z);
+      o.rotation.y = yaw;
+      this.group.add(o);
+      if (blocks) {
+        this.solids.push({ kind: 'cyl', cx: x, cz: z, r: 0.3, y0: top, y1: top + 1.8, surface: 'stone', walkTop: false });
+        placed.push({ x, z, rad: 0.3 });
+      }
+    };
+
+    const side = r() < 0.5 ? -1 : 1; // goods cluster side; the figures stand on the other
+    const fs = -side;
+    // fisher on the edge, seated (hips on the quay top), knees over the face, facing the water
+    const fp = at(7, fs * (hw - 0.6));
+    figure('fig_fisher_sit', fp.x, top - 0.47, fp.z, face(fs * f.lx, fs * f.lz), false);
+    placed.push({ x: fp.x, z: fp.z, rad: 0.6 });
+    // porter walking seaward, toward the berth
+    const dp = at(a1 - 4, fs * 1.8);
+    figure('fig_dockworker_carry', dp.x, top, dp.z, face(f.ux, f.uz), true);
+    // sailor standing by the berth bollard, facing the ship
+    const sl = at(f.mid - QUAY.bollardSpacing + 1, fs * (hw - QUAY.bollardInset));
+    figure('fig_sailor_idle', sl.x, top, sl.z, face(fs * f.lx, fs * f.lz), true);
+
+    // goods: crates and racks are boxes, jars and coils are cylinders; each stays out of the walkway (|lateral| < 1.3)
+    type Item = { name: string; hx?: number; hz?: number; rad?: number; h: number };
+    const items: Item[] = [
+      { name: 'crate', hx: 0.4, hz: 0.4, h: 0.7 },
+      { name: 'amphora', rad: 0.25, h: 0.86 },
+      { name: 'amphora_rack', hx: 0.75, hz: 0.39, h: 1.0 },
+      { name: 'pithos', rad: 0.44, h: 1.3 },
+      { name: 'net_pile', rad: 0.45, h: 0.34 },
+      { name: 'basket', rad: 0.25, h: 0.42 },
+      { name: 'rope_coil', rad: 0.33, h: 0.13 },
+    ];
+    const want = 8 + Math.floor(r() * 5);
+    const ac = a0 + 2 + r() * (a1 - a0 - 4);
+    let made = 0;
+    for (let tries = 0; tries < 400 && made < want; tries++) {
+      const it = items[Math.floor(r() * items.length)];
+      const yaw = r() * Math.PI * 2;
+      // lateral half-extent under this yaw (box axes: (cos, -sin) and (sin, cos)), circumscribed radius for spacing
+      const circ = it.rad ?? Math.hypot(it.hx!, it.hz!);
+      const ext = it.rad ?? it.hx! * Math.abs(Math.cos(yaw) * f.lx - Math.sin(yaw) * f.lz) + it.hz! * Math.abs(Math.sin(yaw) * f.lx + Math.cos(yaw) * f.lz);
+      const a = Math.min(a1 - ext, Math.max(a0 + ext, ac + (r() - 0.5) * 8));
+      const lat = side * (1.3 + ext + r() * 0.9);
+      if (Math.abs(lat) + ext > hw - 0.1) continue;
+      const p = at(a, lat);
+      if (!clear(p.x, p.z, circ)) continue;
+      const o = this.models.get(it.name);
+      o.position.set(p.x, top, p.z);
+      o.rotation.y = yaw;
+      this.group.add(o);
+      if (it.rad) this.solids.push({ kind: 'cyl', cx: p.x, cz: p.z, r: it.rad, y0: top, y1: top + it.h, surface: 'stone', walkTop: false });
+      else this.solids.push({ kind: 'box', cx: p.x, cz: p.z, hx: it.hx!, hz: it.hz!, rot: yaw, y0: top, y1: top + it.h, surface: 'stone', walkTop: false });
+      placed.push({ x: p.x, z: p.z, rad: circ });
+      made++;
     }
   }
 
@@ -430,12 +525,21 @@ export class Props {
     hull.computeVertexNormals();
     const mats = [0x2b5a8a, 0xe8e2d4, 0x8f2a1c, 0x3a6a4a].map((c) => patchMaterial(new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, side: THREE.DoubleSide }), undefined, 'boat'));
     const r = rng(8);
+    // keep clear of the mole and its berth zone
+    const pier = gen.sites.pier;
+    const pux = Math.cos(pier.angle),
+      puz = Math.sin(pier.angle);
+    const pierDist = (x: number, z: number) => {
+      const t = Math.max(0, Math.min(pier.length, (x - pier.x) * pux + (z - pier.z) * puz));
+      return Math.hypot(x - (pier.x + pux * t), z - (pier.z + puz * t));
+    };
     for (let i = 0; i < 4; i++) {
       const a = r() * Math.PI * 2;
       const d = 40 + r() * 120;
       const x = h.x + Math.cos(a) * d,
         z = h.z + Math.sin(a) * d;
       if (this.terrain.heightAt(x, z) > -1.5) continue;
+      if (pierDist(x, z) < 30) continue;
       const g = new THREE.Group();
       const m = new THREE.Mesh(hull, mats[i % mats.length]);
       m.castShadow = true;
@@ -466,6 +570,6 @@ export class Props {
     this.beaconLight.intensity = (0.3 + night) * 400 * flick;
     this.beaconMat.emissiveIntensity = 3 + 4 * night * flick;
     this.flame.scale.set(1 + 0.1 * Math.sin(time * 9), 0.9 + 0.2 * flick, 1 + 0.1 * Math.cos(time * 7));
-    this.windowMat.emissiveIntensity = night * 3.5;
+    this.fireMat.emissiveIntensity = night * 3;
   }
 }

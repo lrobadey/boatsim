@@ -1,29 +1,47 @@
 import * as THREE from 'three';
 import { clamp, damp } from '../core/util';
 import type { Input } from '../core/input';
-import { deckY, sOf, zOf, DECK_S0, DECK_S1 } from '../ship/hull';
-import { deckHalfWidth } from '../ship/trireme';
+import { deckY, halfBeam, sOf, zOf, HULL_LENGTH } from '../ship/hull';
+import { outrigger } from '../ship/trireme';
 import type { Terrain } from '../world/terrain';
 import type { WaveField } from '../world/waves';
+import type { WalkGeometry } from '../world/walkable';
+import { Walker, shipYaw, type ShipPose, type WalkFrame, type WalkInput } from './walker';
+import { CameraFeel } from './cameraFeel';
+import { Interactions, type Interactable } from './interact';
+import { CameraRig, newPose, type Pose } from './cameraRig';
+import { ChaseCamera } from './chaseCamera';
 
-export type CamMode = 'deck' | 'helm' | 'chase' | 'eagle';
+export type CamMode = 'foot' | 'helm' | 'chase' | 'eagle' | 'build';
+
+/** what the game knows about the ship for the chase camera's automatic framing (spec §9.3 addendum) */
+export interface ChaseHints {
+  /** A/D held or the order changed this frame */
+  steering: boolean;
+  /** ship yaw rate, rad/s; + = turning to starboard */
+  yawRate: number;
+  /** 0..1: 1 within 40 m of a berth, 0 beyond 90 m */
+  docking: number;
+}
 
 const HELM_S = 0.885;
 const EYE = 1.66;
+const CLIMB_RANGE = 2.2;
+const LEVEL_TIME = 0.6; // frame-switch ramp inside foot mode (WS-A)
+const PITCH_MAX = (85 * Math.PI) / 180;
+const SPYGLASS_KEEP = 0.3; // head bob and shake at this share while the spyglass is up
 
 /**
- * First-person crew member walking the deck in the ship's moving frame, taking the helm,
- * AC-style chase camera, Ikaros (eagle) free flight, and the spyglass.
+ * Crew member on foot (walker + camera feel + interactions), taking the helm, AC-style chase camera,
+ * Ikaros (eagle) free flight, and the spyglass. 'build' walks exactly like 'foot'.
+ * Each mode produces a live target pose; `rig` blends between modes and owns the final camera (spec §9).
  */
 export class PlayerController {
   mode: CamMode = 'helm';
   prevShipMode: CamMode = 'helm';
-  // deck-local state
-  lx = 0;
-  lz = zOf(HELM_S);
-  yaw = 0; // relative to ship forward
+  /** view yaw in the walker's frame: relative to the ship on deck, absolute in the world */
+  yaw = 0;
   pitch = -0.05;
-  private bob = 0;
   // chase
   chaseYaw = Math.PI * 0.85;
   chasePitch = 0.28;
@@ -33,9 +51,17 @@ export class PlayerController {
   /** chase camera swings back behind the ship after the player stops looking around */
   autoCenter = true;
   shipSpeed = 0;
+  /** automatic framing inputs from the game; zeros = none */
+  chaseHints: ChaseHints = { steering: false, yawRate: 0, docking: 0 };
+  /** the automatic look into turns: an orbit yaw offset, eased in while the view is idle (rad) */
+  chaseAutoYaw = 0;
+  /** eased docking factor 0..1 (framing toward the berth) */
+  chaseDocking = 0;
+  private distBoost = 0; // eased speed widening of the distance, fraction
   private lookIdle = 0;
   private chaseHeading = NaN; // smoothed ship heading the chase camera trails
   private distS = 42; // smoothed zoom
+  private readonly chase = new ChaseCamera();
   // eagle
   eaglePos = new THREE.Vector3();
   eagleVel = new THREE.Vector3();
@@ -44,32 +70,109 @@ export class PlayerController {
   eagleBank = 0;
   // spyglass
   zoom = 0;
-  levelFactor = 0.6; // how much the inner ear keeps the horizon level (0 = locked to ship)
+  /** how much the inner ear keeps the horizon level (0 = locked to ship, 1 = level) */
+  levelFactor = 0.75;
   baseFov = 70;
+
+  /** foot movement, camera feel and interactions */
+  readonly walker = new Walker();
+  readonly feel = new CameraFeel();
+  readonly interactions = new Interactions();
+  /** the camera rig: transitions between modes and trauma shake (spec §9) */
+  readonly rig = new CameraRig();
+  /** HTML hint for the HUD, or null */
+  prompt: string | null = null;
+
+  /** the live target pose of the current mode, before the rig */
+  private readonly live: Pose = newPose();
+  private lastMode: CamMode = 'helm';
+  /**
+   * Foot-mode frame switches (WS-A): 0 = the ship-referenced view, 1 = a pure world yaw/pitch view.
+   * Ramps over LEVEL_TIME after a switch; both ends share the view direction at the switch.
+   */
+  private worldBlend = 0;
+  private footActive = false;
+  /** the view in the frame the walker is not in: yaw/pitch as the other frame expresses them */
+  private altYaw = 0;
+  private altPitch = 0;
+  private qDisp = new THREE.Quaternion();
+  private fNow = new THREE.Vector3();
+  private lastShip: ShipPose | null = null;
+  private climbDist = Infinity;
+  private walkIn: WalkInput = { fwd: 0, strafe: 0, run: false, jump: false, yaw: 0 };
+  private readonly helm: Interactable;
+  private readonly climb: Interactable;
 
   private tmpQ = new THREE.Quaternion();
   private tmpQ2 = new THREE.Quaternion();
+  private tmpQ3 = new THREE.Quaternion();
+  private tmpQ4 = new THREE.Quaternion();
+  private tmpQ5 = new THREE.Quaternion();
   private tmpV = new THREE.Vector3();
+  private tmpV2 = new THREE.Vector3();
+  private tmpV3 = new THREE.Vector3();
+  private tmpV4 = new THREE.Vector3();
   private m = new THREE.Matrix4();
+  private readonly zero = new THREE.Vector3();
+  private readonly up = new THREE.Vector3(0, 1, 0);
+  private readonly zAxis = new THREE.Vector3(0, 0, 1);
 
-  constructor(private camera: THREE.PerspectiveCamera, private input: Input) {}
+  constructor(private camera: THREE.PerspectiveCamera, private input: Input) {
+    this.helm = {
+      id: 'helm',
+      label: 'Take helm',
+      frame: 'ship',
+      pos: new THREE.Vector3(0, deckY(HELM_S) + 1.0, zOf(HELM_S)),
+      radius: 2.5,
+      enabled: () => this.onFoot && this.walker.frame === 'ship' && !this.walker.scripted,
+      act: () => {
+        this.mode = 'helm';
+        this.yaw = 0;
+      },
+    };
+    this.climb = {
+      id: 'climb',
+      label: 'Climb aboard',
+      frame: 'world',
+      pos: new THREE.Vector3(),
+      // the hull point is 3 m away at most; the walker's own 2.2 m check gates the prompt
+      radius: 3,
+      enabled: () => this.onFoot && this.walker.frame === 'world' && this.walker.swimming && !this.walker.scripted && this.climbDist <= CLIMB_RANGE,
+      act: () => {
+        if (this.lastShip) this.walker.climbAboard(this.lastShip);
+      },
+    };
+    this.interactions.list.push(this.helm, this.climb);
+  }
 
   get atHelm() {
     return this.mode === 'helm';
   }
-  get nearHelm() {
-    return this.mode === 'deck' && Math.abs(sOf(this.lz) - HELM_S) < 0.04 && Math.abs(this.lx) < 1.2;
+
+  /** the current mode's live target pose, before the rig blends it (read-only, for tests and debug) */
+  get livePose(): Pose {
+    return this.live;
   }
 
+  private get onFoot() {
+    return this.mode === 'foot' || this.mode === 'build';
+  }
+
+  /** a shake impulse for the camera rig (spec §9.5): quay bump, grounding, bow slam */
+  addTrauma(x: number) {
+    this.rig.addTrauma(x);
+  }
+
+  /** leave the helm, or act on the targeted interactable (E) */
   toggleHelm() {
     if (this.mode === 'helm') {
-      this.mode = 'deck';
-      this.lz = zOf(HELM_S - 0.02);
-      this.lx = 0;
-    } else if (this.nearHelm) {
-      this.mode = 'helm';
-      this.yaw = 0;
+      this.mode = 'foot';
+      const z = zOf(HELM_S - 0.02);
+      this.walker.placeOnDeck(new THREE.Vector3(0, deckY(sOf(z)), z));
+      return;
     }
+    const t = this.interactions.target;
+    if (t && t.enabled()) t.act();
   }
 
   cycleCamera() {
@@ -81,122 +184,260 @@ export class PlayerController {
   }
 
   toggleEagle(shipPos: THREE.Vector3) {
+    void shipPos;
     if (this.mode === 'eagle') {
       this.mode = this.prevShipMode;
     } else {
       if (this.mode !== 'chase') this.prevShipMode = this.mode;
       this.mode = 'eagle';
-      this.eaglePos.copy(this.camera.position).add(new THREE.Vector3(0, 6, 0));
-      const d = this.camera.getWorldDirection(this.tmpV);
+      this.eaglePos.copy(this.rig.pose.position).add(new THREE.Vector3(0, 6, 0));
+      const d = new THREE.Vector3(0, 0, -1).applyQuaternion(this.rig.pose.quaternion);
       this.eagleYaw = Math.atan2(-d.x, -d.z);
       this.eaglePitch = 0.1;
       this.eagleVel.set(-Math.sin(this.eagleYaw), 0.4, -Math.cos(this.eagleYaw)).multiplyScalar(18);
     }
   }
 
-  update(dt: number, shipPos: THREE.Vector3, shipQuat: THREE.Quaternion, terrain: Terrain, waves: WaveField, time: number) {
+  update(dt: number, ship: ShipPose, world: WalkGeometry, terrain: Terrain, waves: WaveField, time: number) {
     const inp = this.input;
     const sensK = 1 / (1 + this.zoom * 5);
-    // mouse deltas plus continuous look (arrow keys / screen-edge hover without pointer lock)
-    const mdx = (inp.mouseDX * inp.sensitivity + inp.lookX * 2.1 * dt) * sensK;
-    const mdy = (inp.mouseDY * inp.sensitivity + inp.lookY * 1.3 * dt) * sensK * (inp.invertY ? -1 : 1);
-    this.lookIdle = Math.abs(mdx) + Math.abs(mdy) > 1e-6 ? 0 : this.lookIdle + dt;
+    // arrow keys (tap = fine, hold = sweep), plus mouse deltas when mouse look is on; the spyglass slows both
+    const look = inp.look(dt);
+    const mdx = (inp.mouseDX * inp.sensitivity + look.yaw) * sensK;
+    const mdy = (inp.mouseDY * inp.sensitivity + look.pitch) * sensK * (inp.invertY ? -1 : 1);
+    const manualNow = inp.mouseDX !== 0 || inp.mouseDY !== 0 || inp.lookX !== 0 || inp.lookY !== 0;
+    this.lookIdle = manualNow ? 0 : this.lookIdle + dt;
+    this.lastShip = ship;
 
-    // spyglass
-    const wantZoom = inp.rmb && this.mode !== 'eagle' ? 1 : 0;
+    // spyglass: right button or hold V
+    const wantZoom = (inp.rmb || inp.down('KeyV')) && this.mode !== 'eagle' ? 1 : 0;
     this.zoom = damp(this.zoom, wantZoom, 10, dt);
-    this.camera.fov = this.baseFov / (1 + this.zoom * 5.5);
 
-    if (this.mode === 'deck' || this.mode === 'helm') {
+    const live = this.live;
+    if (this.mode === 'helm') {
+      this.yaw = clamp(this.yaw - mdx, -2.6, 2.6);
+      this.pitch = clamp(this.pitch - mdy, -PITCH_MAX, PITCH_MAX);
+      this.helmPose(ship, live);
+      this.interactions.target = null;
+      this.prompt = null;
+    } else if (this.onFoot) {
       this.yaw -= mdx;
-      this.pitch = clamp(this.pitch - mdy, -1.35, 1.35);
-      if (this.mode === 'helm') this.yaw = clamp(this.yaw, -2.6, 2.6);
-      let eyeLocal: THREE.Vector3;
-      if (this.mode === 'deck') {
-        // walk in the ship frame
-        const fwd = (inp.down('KeyW') ? 1 : 0) - (inp.down('KeyS') ? 1 : 0);
-        const str = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0);
-        const run = inp.down('ShiftLeft') || inp.down('ShiftRight');
-        const sp = (run ? 4.2 : 1.9) * dt;
-        const len = Math.hypot(fwd, str);
-        if (len > 0) {
-          const f = fwd / len,
-            s = str / len;
-          const sy = Math.sin(this.yaw),
-            cy = Math.cos(this.yaw);
-          this.lx += (s * cy - f * sy) * sp;
-          this.lz += (-s * sy - f * cy) * sp;
-          this.bob += dt * (run ? 11 : 7.5);
-        }
-        const s = clamp(sOf(this.lz), DECK_S0 + 0.01, DECK_S1 - 0.01);
-        this.lz = zOf(s);
-        const hw = Math.max(0.2, deckHalfWidth(s));
-        this.lx = clamp(this.lx, -hw, hw);
-        const bobY = Math.sin(this.bob) * 0.035 * (len > 0 ? 1 : 0);
-        eyeLocal = this.tmpV.set(this.lx, deckY(s) + EYE + bobY, this.lz);
-      } else {
-        eyeLocal = this.tmpV.set(0, deckY(HELM_S) + EYE + 0.1, zOf(HELM_S) + 0.25);
-      }
-      // world transform: ship pose (CoG-based pose passed as mesh transform)
-      this.camera.position.copy(eyeLocal).applyQuaternion(shipQuat).add(shipPos);
-      // look orientation in ship frame, then partially re-level to the horizon
-      const look = this.tmpQ.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
-      const qShip = this.tmpQ2.copy(shipQuat).multiply(look);
-      const f = new THREE.Vector3(0, 0, -1).applyQuaternion(qShip);
-      const level = new THREE.Quaternion().setFromRotationMatrix(this.m.lookAt(new THREE.Vector3(), f, new THREE.Vector3(0, 1, 0)));
-      this.camera.quaternion.copy(qShip).slerp(level, this.levelFactor);
-    } else if (this.mode === 'chase') {
-      // third-person orbit (AC style): mouse orbits, wheel zooms smoothly, the rig trails the ship's
-      // heading with a lag (turns swing the view instead of snapping it), and after a few idle
-      // seconds under way it settles back behind the stern
-      this.chaseYaw = wrapAngle(this.chaseYaw - mdx);
-      this.chasePitch = clamp(this.chasePitch + mdy, -0.05, 1.3);
-      this.chaseDist = clamp(this.chaseDist * (1 + inp.wheel * 0.1), 14, 160);
-      this.distS = damp(this.distS, this.chaseDist, 8, dt);
-      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(shipQuat);
-      const heading = Math.atan2(-fwd.x, -fwd.z);
-      if (Number.isNaN(this.chaseHeading) || dt > 0.5) this.chaseHeading = heading;
-      else this.chaseHeading = wrapAngle(this.chaseHeading + wrapAngle(heading - this.chaseHeading) * (1 - Math.exp(-dt * 1.8)));
-      if (this.autoCenter && this.lookIdle > 4.5 && Math.abs(this.shipSpeed) > 1.2) {
-        const k = 1 - Math.exp(-dt * 0.6);
-        this.chaseYaw = wrapAngle(this.chaseYaw - this.chaseYaw * k);
-        this.chasePitch += (0.24 - this.chasePitch) * k * 0.6;
-      }
-      const yaw = this.chaseHeading + this.chaseYaw;
-      const target = shipPos.clone().add(new THREE.Vector3(0, 4 + this.chaseLift, 0));
-      const d = this.distS;
-      const off = new THREE.Vector3(Math.sin(yaw) * Math.cos(this.chasePitch), Math.sin(this.chasePitch), Math.cos(yaw) * Math.cos(this.chasePitch)).multiplyScalar(d);
-      const pos = target.clone().add(off);
-      // keep above the sea and pull in front of terrain between camera and ship
-      const minY = Math.max(waves.heightAt(pos.x, pos.z, time), terrain.heightAt(pos.x, pos.z)) + 1.5;
-      if (pos.y < minY) pos.y = minY;
-      this.camera.position.copy(pos);
-      this.camera.lookAt(target);
-    } else if (this.mode === 'eagle') {
-      // Ikaros: bank to turn, dive to gain speed, climb to trade it
-      this.eagleYaw -= mdx * 1.2;
-      this.eaglePitch = clamp(this.eaglePitch - mdy, -1.2, 1.1);
-      const boost = inp.down('KeyW') ? 1 : 0;
-      const brake = inp.down('KeyS') ? 1 : 0;
-      const dir = new THREE.Vector3(-Math.sin(this.eagleYaw) * Math.cos(this.eaglePitch), Math.sin(this.eaglePitch), -Math.cos(this.eagleYaw) * Math.cos(this.eaglePitch));
-      let speed = this.eagleVel.length();
-      speed += (-Math.sin(this.eaglePitch) * 9.81 * 0.6 + boost * 14 - brake * 12 - (speed - 22) * 0.15) * dt;
-      speed = clamp(speed, 8, 75);
-      this.eagleVel.copy(dir).multiplyScalar(speed);
-      this.eaglePos.addScaledVector(this.eagleVel, dt);
-      const ground = Math.max(terrain.heightAt(this.eaglePos.x, this.eaglePos.z), waves.heightAt(this.eaglePos.x, this.eaglePos.z, time)) + 2;
-      if (this.eaglePos.y < ground) {
-        this.eaglePos.y = ground;
-        this.eaglePitch = Math.max(this.eaglePitch, 0.1);
-      }
-      this.eaglePos.y = Math.min(this.eaglePos.y, 1600);
-      this.eagleBank = damp(this.eagleBank, clamp(-inp.mouseDX * 0.02, -0.7, 0.7), 4, dt);
-      this.camera.position.copy(this.eaglePos);
-      this.camera.quaternion.setFromEuler(new THREE.Euler(this.eaglePitch, this.eagleYaw, this.eagleBank, 'YXZ'));
+      this.pitch = clamp(this.pitch - mdy, -PITCH_MAX, PITCH_MAX);
+      this.footPose(dt, ship, world, waves, time, live);
+    } else {
+      this.interactions.target = null;
+      this.prompt = null;
     }
-    this.camera.updateProjectionMatrix();
-    this.camera.updateMatrixWorld();
+    if (!this.onFoot) this.footActive = false;
+
+    if (this.mode === 'chase') this.chasePose(dt, ship, mdx, mdy, terrain, waves, time, live);
+    else if (this.mode === 'eagle') this.eaglePose(dt, mdx, mdy, terrain, waves, time, live);
+
+    // spyglass narrows the FOV for every mode
+    live.fov /= 1 + this.zoom * 5.5;
+
+    if (this.mode !== this.lastMode) {
+      if (this.rig.started) this.rig.transition(transitionTime(this.lastMode, this.mode));
+      this.lastMode = this.mode;
+    }
+    // head bob and shake drop to 30% through the spyglass
+    this.rig.update(dt, this.camera, live, 1 - (1 - SPYGLASS_KEEP) * this.zoom);
   }
+
+  /** on foot: walk, feel, look, and the nearby prompts */
+  private footPose(dt: number, ship: ShipPose, world: WalkGeometry, waves: WaveField, time: number, live: Pose) {
+    const inp = this.input;
+    const w = this.walkIn;
+    w.fwd = (inp.down('KeyW') ? 1 : 0) - (inp.down('KeyS') ? 1 : 0);
+    w.strafe = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0);
+    w.run = inp.down('ShiftLeft') || inp.down('ShiftRight');
+    w.jump = inp.hit('Space');
+    w.yaw = this.yaw;
+
+    const before = this.walker.frame;
+    if (!this.footActive) {
+      // entering on foot: start from the view's own frame, no ramp
+      this.footActive = true;
+      this.worldBlend = before === 'world' ? 1 : 0;
+    }
+    // the direction on screen right now; it must survive a frame switch unchanged
+    this.displayOrientation(ship, before, this.qDisp);
+    this.fNow.set(0, 0, -1).applyQuaternion(this.qDisp);
+
+    this.walker.update(dt, w, ship, world, waves, time);
+    if (this.walker.frame !== before) this.handOverView(this.fNow, ship, this.walker.frame);
+    this.feel.update(dt, this.walker, w, ship);
+
+    const target = this.walker.frame === 'world' ? 1 : 0;
+    const step = dt / LEVEL_TIME;
+    if (target > this.worldBlend) this.worldBlend = Math.min(target, this.worldBlend + step);
+    else if (target < this.worldBlend) this.worldBlend = Math.max(target, this.worldBlend - step);
+
+    this.displayOrientation(ship, this.walker.frame, live.quaternion);
+    const sg = 1 - (1 - SPYGLASS_KEEP) * this.zoom;
+    live.quaternion.multiply(this.tmpQ4.setFromAxisAngle(this.zAxis, this.feel.roll * sg));
+
+    const eye = this.walker.eye(ship, this.tmpV2);
+    live.position.copy(eye).add(this.tmpV3.copy(this.feel.offset).multiplyScalar(sg).applyQuaternion(live.quaternion));
+    live.fov = this.baseFov + this.feel.fovAdd;
+
+    this.updateClimb(ship);
+    const viewDir = this.tmpV4.set(0, 0, -1).applyQuaternion(live.quaternion);
+    this.interactions.update(eye, viewDir, ship.origin, ship.quat);
+    const t = this.interactions.target;
+    if ((this.walker.touchingRail !== 0 || this.walker.touchingEnd !== 0) && !this.walker.swimming) this.prompt = '<kbd>Space</kbd> Jump overboard';
+    else if (t) this.prompt = `<kbd>E</kbd> ${t.label}`;
+    else this.prompt = null;
+  }
+
+  /**
+   * Orientation of the on-foot view. The ship-referenced part is the ship's attitude times the
+   * look, levelled by levelFactor; the world part is a pure yaw/pitch view. `worldBlend` mixes them.
+   * Each side reads the view in its own frame: the active one from yaw/pitch, the other from alt.
+   */
+  private displayOrientation(ship: ShipPose, frame: WalkFrame, out: THREE.Quaternion): THREE.Quaternion {
+    const onShip = frame === 'ship';
+    const yS = onShip ? this.yaw : this.altYaw;
+    const pS = onShip ? this.pitch : this.altPitch;
+    const yW = onShip ? this.altYaw : this.yaw;
+    const pW = onShip ? this.altPitch : this.pitch;
+    const look = this.tmpQ.setFromEuler(new THREE.Euler(pS, yS, 0, 'YXZ'));
+    const base = this.tmpQ2.copy(ship.quat).multiply(look);
+    const f = this.tmpV.set(0, 0, -1).applyQuaternion(base);
+    const level = this.tmpQ3.setFromRotationMatrix(this.m.lookAt(this.zero, f, this.up));
+    const shipCam = this.tmpQ4.copy(base).slerp(level, this.levelFactor);
+    const worldCam = this.tmpQ5.setFromEuler(new THREE.Euler(pW, yW, 0, 'YXZ'));
+    return out.copy(shipCam).slerp(worldCam, this.worldBlend);
+  }
+
+  /**
+   * A frame switch: both representations are rewritten from the view direction on screen, so the
+   * orientation is continuous at the switch whatever the blend is at that moment.
+   */
+  private handOverView(f: THREE.Vector3, ship: ShipPose, to: WalkFrame) {
+    const wy = Math.atan2(-f.x, -f.z);
+    const wp = Math.asin(clamp(f.y, -1, 1));
+    const fl = this.tmpV2.copy(f).applyQuaternion(this.tmpQ.copy(ship.quat).invert());
+    const ly = Math.atan2(-fl.x, -fl.z);
+    const lp = Math.asin(clamp(fl.y, -1, 1));
+    if (to === 'world') {
+      this.yaw = wy;
+      this.pitch = wp;
+      this.altYaw = ly;
+      this.altPitch = lp;
+    } else {
+      this.yaw = ly;
+      this.pitch = lp;
+      this.altYaw = wy;
+      this.altPitch = wp;
+    }
+  }
+
+  /** the nearest point of the hull side at the walker's station, and the distance to it */
+  private updateClimb(ship: ShipPose) {
+    const w = this.walker;
+    if (w.frame !== 'world' || !w.swimming) {
+      this.climbDist = Infinity;
+      return;
+    }
+    const local = this.tmpV4.copy(w.world).sub(ship.origin).applyQuaternion(this.tmpQ.copy(ship.quat).invert());
+    const s = clamp(sOf(local.z), 0, 1);
+    const side = local.x < 0 ? -1 : 1;
+    const outer = halfBeam(s) + outrigger(s);
+    this.climbDist = Math.abs(local.x) - outer;
+    this.climb.pos.set(side * outer, 0.3, clamp(local.z, -HULL_LENGTH / 2, HULL_LENGTH / 2)).applyQuaternion(ship.quat).add(ship.origin);
+  }
+
+  /** at the helm: fixed eye, ship-referenced look (the earlier deck camera, unchanged) */
+  private helmPose(ship: ShipPose, live: Pose) {
+    const eyeLocal = this.tmpV.set(0, deckY(HELM_S) + EYE + 0.1, zOf(HELM_S) + 0.25);
+    live.position.copy(eyeLocal).applyQuaternion(ship.quat).add(ship.origin);
+    const look = this.tmpQ.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
+    const qShip = this.tmpQ2.copy(ship.quat).multiply(look);
+    const f = this.tmpV2.set(0, 0, -1).applyQuaternion(qShip);
+    const level = this.tmpQ3.setFromRotationMatrix(this.m.lookAt(this.zero, f, this.up));
+    live.quaternion.copy(qShip).slerp(level, this.levelFactor);
+    live.fov = this.baseFov;
+  }
+
+  /**
+   * AC-style chase: mouse orbits, wheel zooms, the orbit trails the ship's heading with a lag. With no
+   * look input for a while the view comes back behind the ship, looks into turns, and frames speed and
+   * docking. Manual look always wins: it folds any automatic turn offset into the user's yaw first.
+   */
+  private chasePose(dt: number, ship: ShipPose, mdx: number, mdy: number, terrain: Terrain, waves: WaveField, time: number, live: Pose) {
+    const inp = this.input;
+    const hints = this.chaseHints;
+    if (this.lookIdle === 0) {
+      this.chaseYaw += this.chaseAutoYaw;
+      this.chaseAutoYaw = 0;
+    }
+    this.chaseYaw = wrapAngle(this.chaseYaw - mdx);
+    this.chasePitch = clamp(this.chasePitch + mdy, -0.05, 1.3);
+    // wheel, or Minus (out) / Equal (in) held: smooth zoom
+    const zoomKey = (inp.down('Minus') || inp.down('NumpadSubtract') ? 1 : 0) - (inp.down('Equal') || inp.down('NumpadAdd') ? 1 : 0);
+    this.chaseDist = clamp(this.chaseDist * (1 + inp.wheel * 0.1) * Math.exp(zoomKey * 0.9 * dt), 14, 160);
+    const sp = clamp(Math.abs(this.shipSpeed) / 5, 0, 1);
+    const delay = hints.steering ? 0.6 : 2.0;
+    const auto = this.autoCenter && this.lookIdle > delay;
+    this.chaseDocking += (clamp(hints.docking, 0, 1) - this.chaseDocking) * (1 - Math.exp(-dt * 2.5));
+    // look into turns: swing the orbit to the outside of the turn, so the bow and the water it turns toward are in frame
+    const turnGoal = auto ? -clamp(hints.yawRate * 2.2, -0.35, 0.35) : 0;
+    this.chaseAutoYaw += (turnGoal - this.chaseAutoYaw) * (1 - Math.exp(-dt * 1.2));
+    // recentre behind the stern, and ease the pitch toward its speed/docking goal
+    const recentre = auto && (Math.abs(this.shipSpeed) > 0.8 || this.chaseDocking > 0);
+    if (recentre) {
+      const k = 1 - Math.exp(-dt * 0.9);
+      this.chaseYaw = wrapAngle(this.chaseYaw - this.chaseYaw * k);
+      const pitchSpeed = 0.24 + (0.18 - 0.24) * sp;
+      const pitchGoal = pitchSpeed + (0.62 - pitchSpeed) * this.chaseDocking;
+      this.chasePitch += (pitchGoal - this.chasePitch) * k;
+    }
+    // distance: speed opens the view by up to 15%, docking widens it toward 48 m; both multiply the user's choice
+    this.distBoost += (0.15 * sp - this.distBoost) * (1 - Math.exp(-dt));
+    const distBase = this.chaseDist + (Math.max(this.chaseDist, 48) - this.chaseDist) * this.chaseDocking;
+    this.distS = damp(this.distS, clamp(distBase * (1 + this.distBoost), 14, 200), 8, dt);
+
+    const fwd = this.tmpV.set(0, 0, -1).applyQuaternion(ship.quat);
+    const heading = Math.atan2(-fwd.x, -fwd.z);
+    if (Number.isNaN(this.chaseHeading) || dt > 0.5) this.chaseHeading = heading;
+    else this.chaseHeading = wrapAngle(this.chaseHeading + wrapAngle(heading - this.chaseHeading) * (1 - Math.exp(-dt * 1.8)));
+    this.chase.solve(dt, ship, terrain, waves, time, this.chaseHeading + this.chaseYaw + this.chaseAutoYaw, this.chasePitch, this.distS, this.chaseLift, this.shipSpeed, this.baseFov, live);
+  }
+
+  /** Ikaros: bank to turn, dive to gain speed, climb to trade it */
+  private eaglePose(dt: number, mdx: number, mdy: number, terrain: Terrain, waves: WaveField, time: number, live: Pose) {
+    const inp = this.input;
+    this.eagleYaw -= mdx * 1.2;
+    this.eaglePitch = clamp(this.eaglePitch - mdy, -1.2, 1.1);
+    const boost = inp.down('KeyW') ? 1 : 0;
+    const brake = inp.down('KeyS') ? 1 : 0;
+    const dir = new THREE.Vector3(-Math.sin(this.eagleYaw) * Math.cos(this.eaglePitch), Math.sin(this.eaglePitch), -Math.cos(this.eagleYaw) * Math.cos(this.eaglePitch));
+    let speed = this.eagleVel.length();
+    speed += (-Math.sin(this.eaglePitch) * 9.81 * 0.6 + boost * 14 - brake * 12 - (speed - 22) * 0.15) * dt;
+    speed = clamp(speed, 8, 75);
+    this.eagleVel.copy(dir).multiplyScalar(speed);
+    this.eaglePos.addScaledVector(this.eagleVel, dt);
+    const ground = Math.max(terrain.heightAt(this.eaglePos.x, this.eaglePos.z), waves.heightAt(this.eaglePos.x, this.eaglePos.z, time)) + 2;
+    if (this.eaglePos.y < ground) {
+      this.eaglePos.y = ground;
+      this.eaglePitch = Math.max(this.eaglePitch, 0.1);
+    }
+    this.eaglePos.y = Math.min(this.eaglePos.y, 1600);
+    this.eagleBank = damp(this.eagleBank, clamp(-(mdx / Math.max(dt, 1e-3)) * 0.3, -0.7, 0.7), 4, dt);
+    live.position.copy(this.eaglePos);
+    live.quaternion.setFromEuler(new THREE.Euler(this.eaglePitch, this.eagleYaw, this.eagleBank, 'YXZ'));
+    live.fov = this.baseFov;
+  }
+}
+
+/** how long a mode change takes to blend (spec §9.1) */
+function transitionTime(a: CamMode, b: CamMode): number {
+  if (a === b) return 0;
+  if ((a === 'foot' && b === 'build') || (a === 'build' && b === 'foot')) return 0;
+  if (a === 'eagle' || b === 'eagle') return 0.6;
+  if (a === 'chase' || b === 'chase') return 0.7;
+  return 0.45;
 }
 
 function wrapAngle(a: number) {

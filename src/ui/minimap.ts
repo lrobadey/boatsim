@@ -1,23 +1,37 @@
-import type { Chart } from './chart';
+import { drawAnchorGlyph, type Chart } from './chart';
 import type { WorldGenResult } from '../world/worldgenTypes';
 
+const PX = 132; // CSS size of the round minimap
+const RANGE = 1100; // m, centre to rim
+const TAU = Math.PI * 2;
+const BONE = '243,238,228';
+const BRONZE = '#d2a65e';
+const TERRA = '#d0693e';
+
 /**
- * Small camera-up minimap in the corner: a rotating window onto the parchment sea chart, the ship
- * as a red arrow in the middle, north marked on the rim. Redrawn at ~20 Hz.
+ * Round minimap, top right: a camera-up window onto the sea chart over the night glass. Land and
+ * shallows come from the chart raster, the ship is a terracotta arrow at the centre, berths are
+ * bronze anchors, and "N" sits on the rim at true north. Redrawn at ~20 Hz.
  */
 export class Minimap {
   readonly root = document.createElement('div');
   private canvas = document.createElement('canvas');
   private ctx: CanvasRenderingContext2D;
-  private px = 150; // CSS size
-  private range = 1100; // m, centre to rim
+  private dpr: number;
   private acc = 0;
+  private berths: { cx: number; cz: number }[] = [];
+
+  /** berth positions (world xz) for the anchor icons; redraws on the next frame */
+  setBerths(berths: { cx: number; cz: number }[]) {
+    this.berths = berths;
+    this.acc = 1;
+  }
 
   constructor(private chart: Chart, private gen: WorldGenResult) {
     this.root.className = 'minimap';
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    this.canvas.width = this.canvas.height = Math.round(this.px * dpr);
-    this.canvas.style.width = this.canvas.style.height = `${this.px}px`;
+    this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.canvas.width = this.canvas.height = Math.round(PX * this.dpr);
+    this.canvas.style.width = this.canvas.style.height = `${PX}px`;
     this.root.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d')!;
   }
@@ -28,69 +42,81 @@ export class Minimap {
     if (this.acc < 0.05) return;
     this.acc = 0;
     const g = this.ctx;
-    const W = this.canvas.width;
-    const c = W / 2;
-    const r = c - W * 0.045;
+    const d = this.dpr;
+    g.setTransform(d, 0, 0, d, 0, 0);
+    g.clearRect(0, 0, PX, PX);
+    const c = PX / 2;
+    const r = c - 0.5;
     const base = this.chart.canvas;
     const S = this.gen.worldSize;
-    const k = base.width / S; // chart px per metre
-    const scale = r / (this.range * k); // canvas px per chart px
-    g.clearRect(0, 0, W, W);
+    const k = base.width / S; // chart raster px per metre
+    const s = r / (RANGE * k); // chart raster px -> minimap CSS px
+    const cs = Math.cos(-camHeading);
+    const sn = Math.sin(-camHeading);
+    // world xz -> minimap CSS px, camera-up
+    const toMini = (wx: number, wz: number): [number, number] => {
+      const dx = (wx - x) * k * s;
+      const dz = (wz - z) * k * s;
+      return [c + dx * cs - dz * sn, c + dx * sn + dz * cs];
+    };
+
     g.save();
     g.beginPath();
-    g.arc(c, c, r, 0, Math.PI * 2);
+    g.arc(c, c, r, 0, TAU);
     g.clip();
-    g.fillStyle = '#d6c8a0';
-    g.fillRect(0, 0, W, W);
     g.translate(c, c);
     g.rotate(-camHeading);
-    g.scale(scale, scale);
+    g.scale(s, s);
     g.imageSmoothingQuality = 'high';
     g.drawImage(base, -(x + S / 2) * k, -(z + S / 2) * k);
     g.restore();
-    // vignette toward the rim
-    const vg = g.createRadialGradient(c, c, r * 0.55, c, c, r);
-    vg.addColorStop(0, 'rgba(60,40,20,0)');
-    vg.addColorStop(1, 'rgba(60,40,20,0.35)');
+
+    // the glass darkens slightly toward the rim
+    const vg = g.createRadialGradient(c, c, r * 0.6, c, c, r);
+    vg.addColorStop(0, 'rgba(6,10,16,0)');
+    vg.addColorStop(1, 'rgba(6,10,16,0.4)');
     g.fillStyle = vg;
     g.beginPath();
-    g.arc(c, c, r, 0, Math.PI * 2);
+    g.arc(c, c, r, 0, TAU);
     g.fill();
-    // ship arrow (relative to the camera-up map)
-    const sx = c + ((shipX - x) * k * scale * Math.cos(-camHeading) - (shipZ - z) * k * scale * Math.sin(-camHeading));
-    const sy = c + ((shipX - x) * k * scale * Math.sin(-camHeading) + (shipZ - z) * k * scale * Math.cos(-camHeading));
+
+    for (const b of this.berths) {
+      const [bx, by] = toMini(b.cx, b.cz);
+      if (Math.hypot(bx - c, by - c) > r - 8) continue;
+      drawAnchorGlyph(g, bx, by, 0.8, BRONZE);
+    }
+
+    const [sx, sy] = toMini(shipX, shipZ);
     g.save();
     g.translate(sx, sy);
     g.rotate(shipHeading - camHeading);
-    const u = W / 150;
-    g.fillStyle = '#9a2c1c';
-    g.strokeStyle = 'rgba(40,20,10,0.7)';
-    g.lineWidth = u;
+    g.fillStyle = TERRA;
+    g.strokeStyle = 'rgba(10,16,24,0.6)';
+    g.lineWidth = 0.7;
+    g.shadowColor = 'rgba(208,105,62,0.55)';
+    g.shadowBlur = 6;
     g.beginPath();
-    g.moveTo(0, -9 * u);
-    g.lineTo(5 * u, 7 * u);
-    g.lineTo(0, 4 * u);
-    g.lineTo(-5 * u, 7 * u);
+    g.moveTo(0, -5.6);
+    g.lineTo(3.6, 4.4);
+    g.lineTo(0, 2.2);
+    g.lineTo(-3.6, 4.4);
     g.closePath();
     g.fill();
+    g.shadowBlur = 0;
     g.stroke();
     g.restore();
-    // bronze rim
-    g.lineWidth = W * 0.035;
-    const rg = g.createLinearGradient(0, 0, W, W);
-    rg.addColorStop(0, '#e6c681');
-    rg.addColorStop(0.5, '#8a6a34');
-    rg.addColorStop(1, '#d4b06a');
-    g.strokeStyle = rg;
+
+    g.strokeStyle = `rgba(${BONE},0.16)`;
+    g.lineWidth = 1;
     g.beginPath();
-    g.arc(c, c, r + g.lineWidth * 0.5, 0, Math.PI * 2);
+    g.arc(c, c, r, 0, TAU);
     g.stroke();
-    // north marker on the rim
-    const na = -camHeading;
-    const nx = c + Math.sin(na) * (r - 11 * u),
-      ny = c - Math.cos(na) * (r - 11 * u);
-    g.fillStyle = '#7a2616';
-    g.font = `600 ${11 * u}px Cinzel, serif`;
+
+    // north on the rim: same projection as the map (north is -z in world, up at zero heading)
+    const nx = c - Math.sin(camHeading) * (r - 10);
+    const ny = c - Math.cos(camHeading) * (r - 10);
+    g.fillStyle = `rgba(${BONE},0.72)`;
+    g.font = '600 8px "Inter Tight", system-ui, sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText('N', nx, ny);

@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { buildColumns, Column, halfBeam, sheer, zOf, deckY, HULL_LENGTH, RAM_LENGTH } from './hull';
 import { Crew } from './crew';
 import { RowingSystem } from './rowing';
+import { Mooring, outriggerOf } from './mooring';
+import type { BoxSolid } from '../world/walkable';
 import { createFlowSample } from '../world/waves';
 import type { WaveField } from '../world/waves';
 import type { Wind } from '../world/wind';
@@ -19,6 +21,11 @@ const _v3 = new THREE.Vector3();
 const _p = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const _q = new THREE.Quaternion();
+const _h = new THREE.Vector3();
+// quay (pier face) contact: fendered spring + damper along the face normal, Coulomb friction
+const QUAY_K = 3e5;
+const QUAY_C = 8e4;
+const QUAY_MU = 0.25;
 
 /**
  * 6-DOF rigid-body trireme. All hydrostatic/hydrodynamic forces are sampled over columns derived
@@ -42,8 +49,13 @@ export class ShipPhysics {
   private force = new THREE.Vector3();
   private torque = new THREE.Vector3();
   readonly rowing: RowingSystem;
+  readonly mooring = new Mooring();
+  /** deck cargo / built pieces: weight acting at ship-local points (spec §8) */
+  readonly payload: { mass: number; local: THREE.Vector3 }[] = [];
   private flow = createFlowSample();
   private contactPts: THREE.Vector3[] = [];
+  /** outrigger edge points that meet the pier face when she is alongside (harbour boxes only) */
+  private quayPts: THREE.Vector3[] = [];
   // controls
   helm = 0; // -1..1 (positive = turn to starboard)
   rudderAngle = 0;
@@ -94,6 +106,10 @@ export class ShipPhysics {
     for (const c of this.columns) this.contactPts.push(new THREE.Vector3(c.x, c.bottom, c.z));
     this.contactPts.push(new THREE.Vector3(0, -0.2, -HULL_LENGTH / 2 - RAM_LENGTH));
     this.contactPts.push(new THREE.Vector3(0, 0.3, -HULL_LENGTH / 2 - RAM_LENGTH * 0.5));
+    for (let i = 0; i <= 6; i++) {
+      const s = 0.2 + i * 0.1;
+      for (const sg of [-1, 1]) this.quayPts.push(new THREE.Vector3(sg * (halfBeam(s) + outriggerOf(s)), sheer(s), zOf(s)));
+    }
     for (let i = 0; i <= 10; i++) {
       const s = 0.05 + (i / 10) * 0.9;
       for (const sg of [-1, 1]) {
@@ -123,6 +139,15 @@ export class ShipPhysics {
     _v3.copy(world).sub(this.pos);
     return out.copy(this.angVel).cross(_v3).add(this.vel);
   }
+  /** for subsystems stepping inside step() (mooring lines, anchor) */
+  addForceAtPublic(f: THREE.Vector3, world: THREE.Vector3) {
+    this.addForceAt(f, world);
+  }
+  get payloadMass() {
+    let m = 0;
+    for (const p of this.payload) m += p.mass;
+    return m;
+  }
   private addForceAt(f: THREE.Vector3, world: THREE.Vector3) {
     this.force.add(f);
     _v3.copy(world).sub(this.pos).cross(f);
@@ -142,11 +167,13 @@ export class ShipPhysics {
     this.oarThrust = this.rowing.telemetry.oarThrust;
     this.rudders(dt, invQ);
     this.sail(dt, invQ);
+    for (const p of this.payload) this.addForceAt(_v.set(0, -p.mass * G, 0), this.toWorld(p.local, _p));
+    this.mooring.step(dt, this);
     this.ground();
     this.boundary();
 
     // integrate (semi-implicit Euler)
-    this.vel.addScaledVector(this.force, dt / this.mass);
+    this.vel.addScaledVector(this.force, dt / (this.mass + this.payloadMass));
     const tb = _v.copy(this.torque).applyQuaternion(invQ);
     const wb = _v2.copy(this.angVel).applyQuaternion(invQ);
     const I = this.inertia;
@@ -344,6 +371,54 @@ export class ShipPhysics {
       g += Fn;
     }
     this.grounding = g / (this.mass * G);
+    const quays = this.mooring.layout?.shipColliders;
+    if (quays && quays.length) this.quayContacts(quays);
+  }
+
+  /** outrigger edge against the harbour boxes: spring + damper on the nearest face, friction, bump reports */
+  private quayContacts(boxes: BoxSolid[]) {
+    for (const lp of this.quayPts) {
+      const w = this.toWorld(lp, _h);
+      for (const b of boxes) {
+        if (w.y < b.y0 || w.y > b.y1) continue;
+        const dx = w.x - b.cx,
+          dz = w.z - b.cz;
+        const c = Math.cos(b.rot),
+          sn = Math.sin(b.rot);
+        const u = dx * c - dz * sn, // box-local coordinates
+          v = dx * sn + dz * c;
+        const su = b.hx - Math.abs(u),
+          sv = b.hz - Math.abs(v);
+        if (su <= 0 || sv <= 0) continue;
+        // outward normal of the nearest face (local x = (c, -sn), local z = (sn, c))
+        let nx: number, nz: number, pen: number;
+        if (su < sv) {
+          const g = u >= 0 ? 1 : -1;
+          nx = g * c;
+          nz = -g * sn;
+          pen = su;
+        } else {
+          const g = v >= 0 ? 1 : -1;
+          nx = g * sn;
+          nz = g * c;
+          pen = sv;
+        }
+        const vel = this.pointVel(w, _v);
+        const vn = vel.x * nx + vel.z * nz; // + = moving out of the box
+        const Fn = Math.max(0, QUAY_K * pen - QUAY_C * vn);
+        const F = _v2.set(Fn * nx, 0, Fn * nz);
+        const tx = vel.x - vn * nx,
+          tz = vel.z - vn * nz;
+        const tl = Math.hypot(tx, tz);
+        if (tl > 1e-4) {
+          const k = (-QUAY_MU * Fn * Math.min(1, tl / 0.3)) / tl;
+          F.x += k * tx;
+          F.z += k * tz;
+        }
+        this.addForceAt(F, w);
+        if (vn < 0) this.mooring.noteContact(-vn);
+      }
+    }
   }
 
   private boundary() {

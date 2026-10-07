@@ -1,0 +1,117 @@
+/* ==========================================================================
+   Panels: docking card, rating title, bump, crosshair (WS-D) and the build
+   palette (WS-F). Built only from the style.css tokens (night glass, bone
+   hairlines, Cormorant for names, Inter Tight for numbers and labels).
+   Mirrors the "Docking" and "Building on deck" mocks in docs/ui-explore.
+   ========================================================================== */
+
+/* ---------- docking ---------- */
+.dock-root { position: absolute; inset: 0; pointer-events: none; }
+.dock { position: absolute; left: 50%; bottom: calc(var(--safe) + 56px); transform: translateX(-50%) translateY(4px);
+  width: min(420px, calc(100vw - 32px)); padding: 16px 18px 14px; display: grid; grid-template-columns: 136px 1fr; gap: 12px 18px; align-items: center;
+  opacity: 0; transition: opacity 0.24s ease, transform 0.24s var(--ease-out); }
+.dock.on { opacity: 1; transform: translateX(-50%); transition-duration: 0.18s; }
+.hud.spy .dock, .hud.spy .dock.on { opacity: 0.12; }
+
+.dock-plan { grid-column: 1; grid-row: 1; display: block; width: 100%; height: auto; border-radius: 6px; overflow: hidden; background: rgba(60, 110, 140, 0.22); }
+.dock-plan .pier { fill: rgba(243, 238, 228, 0.24); }
+.dock-plan .bol { fill: var(--t2); }
+.dock-plan .slot { fill: none; stroke: rgba(210, 166, 94, 0.7); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.dock-plan .hull { fill: rgba(243, 238, 228, 0.16); stroke: var(--t1); stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke; transition: stroke 0.3s, fill 0.3s; }
+.dock.ok .dock-plan .hull { stroke: var(--fair); fill: rgba(143, 203, 155, 0.28); }
+
+.dock-side { grid-column: 2; grid-row: 1; min-width: 0; }
+.dock-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; white-space: nowrap; }
+.dock-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 500 19px/1.2 var(--f-name); color: var(--t1); }
+.dock-dist { flex: none; font: 500 13px/1 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+.dock-gauges { display: grid; gap: 9px; }
+.dock .g { display: grid; grid-template-columns: 80px 1fr 52px; align-items: center; gap: 8px; font-size: 13px; }
+.dock .g-l { color: var(--t2); white-space: nowrap; }
+.dock .g-t { position: relative; height: 10px; }
+.dock .g-t::before { content: ''; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: var(--t3); }
+.dock .g-band { position: absolute; top: 2px; height: 6px; border-radius: 3px; background: rgba(143, 203, 155, 0.35); }
+.dock .g-n { position: absolute; top: 0; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--t1); transition: left 0.1s linear; }
+.dock .g-v { text-align: right; white-space: nowrap; color: var(--t1); font-variant-numeric: tabular-nums; }
+.dock .g.bad .g-n { background: var(--caution); }
+.dock .g.bad .g-v { color: var(--caution); }
+
+.dock-foot { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 12px; min-height: 22px; padding-top: 11px; border-top: 1px solid var(--hair);
+  font-size: 13px; white-space: nowrap; }
+.dock-reason { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--t2); }
+.dock-reason:empty { display: none; }
+.dock-prog { flex: 1; height: 2px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); display: none; }
+.dock-prog.on { display: block; }
+.dock-prog i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--bronze); box-shadow: 0 0 6px var(--bronze-glow); transition: width 0.15s linear; }
+.dock-cta { margin-left: auto; font-weight: 500; color: var(--t1); }
+.dock-cta:empty { display: none; }
+.dock-cta.pulse { color: var(--fair-soft); animation: dock-pulse 1.6s ease-in-out infinite; }
+.dock-cta.pulse kbd { color: var(--fair-soft); border-color: rgba(183, 230, 192, 0.5); }
+@keyframes dock-pulse { 0%, 100% { opacity: 0.62; } 50% { opacity: 1; } }
+
+/* moored or anchored with no berth in reach: one compact line */
+.dock.noapp { grid-template-columns: 1fr; width: auto; min-width: 200px; padding: 10px 18px; }
+.dock.noapp .dock-plan, .dock.noapp .dock-side { display: none; }
+.dock.noapp .dock-foot { grid-row: auto; grid-column: auto; padding-top: 0; border-top: 0; min-height: 0; }
+
+/* rating title card: no box, centred high on the screen */
+.dock-rating { position: absolute; top: 24%; left: 50%; transform: translateX(-50%); text-align: center; white-space: nowrap; opacity: 0; transition: opacity 1.2s ease; }
+.dock-rating.on { opacity: 1; }
+.hud.spy .dock-rating { opacity: 0; }
+.dock-rating .r-name { font: 500 44px/1 var(--f-name); color: var(--t1); }
+.dock-rating .r-name::after { content: ''; display: block; width: 96px; height: 1px; margin: 14px auto 12px; background: linear-gradient(90deg, transparent, var(--bronze), transparent); }
+.dock-rating.rough .r-name { color: var(--danger); }
+.dock-rating .r-sub { margin-right: -0.24em; font: 600 11px/1 var(--f-ui); letter-spacing: 0.24em; text-transform: uppercase; color: var(--t2); }
+
+.dock-bump { position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at 50% 50%, rgba(227, 106, 75, 0) 50%, rgba(227, 106, 75, 0.6) 100%); }
+
+/* ---------- crosshair ---------- */
+.crosshair { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; transition: opacity 0.12s; }
+.crosshair.on { opacity: 1; }
+.crosshair i { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; border: 1.5px solid transparent; background: rgba(243, 238, 228, 0.55);
+  transition: left 0.12s, top 0.12s, width 0.12s, height 0.12s, background 0.12s, border-color 0.12s; }
+.crosshair.target i { left: -7px; top: -7px; width: 14px; height: 14px; background: transparent; border-color: var(--terra); }
+.hud.spy .crosshair, .hud.spy .crosshair.on { opacity: 0; }
+
+/* ---------- build palette ---------- */
+.build-root { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.build-root.on { opacity: 1; }
+.build { position: absolute; left: 50%; bottom: var(--safe); transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.build-blurb { min-height: 1.3em; font: 400 13px/1.3 var(--f-ui); color: var(--t2); white-space: nowrap; text-shadow: var(--text-shadow); }
+.build-hint { min-height: 1.4em; font: 500 13px/1.3 var(--f-ui); color: var(--t2); white-space: nowrap; text-shadow: var(--text-shadow); }
+.build-hint.bad { color: var(--caution); }
+
+.build-bar { display: flex; align-items: stretch; max-width: 100%; padding: 10px; border-radius: 12px; }
+.build-cards { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.build-cards::-webkit-scrollbar { display: none; }
+.build-card { position: relative; flex: 0 0 auto; width: 84px; padding: 7px 7px 8px; border-radius: 8px; border: 1px solid transparent; display: flex; flex-direction: column;
+  transition: background 0.18s, border-color 0.18s; }
+.build-card.on { background: rgba(243, 238, 228, 0.08); border-color: var(--terra); }
+.build-card-key { position: absolute; top: 2px; left: 3px; font: 600 10px/1 var(--f-ui); color: var(--t3); }
+.build-card-key:empty { display: none; }
+.build-card-ic { height: 40px; border-radius: 6px; background: rgba(243, 238, 228, 0.06); display: grid; place-items: center; }
+.build-card-ic svg { display: block; width: 24px; height: 24px; }
+.build-card-name { order: 1; margin-top: 7px; font: 500 12px/1.2 var(--f-ui); color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.build-card-mass { order: 2; margin-top: 2px; font: 400 11px/1.2 var(--f-ui); color: var(--t3); font-variant-numeric: tabular-nums; }
+
+.build-load { flex: 0 0 auto; width: 152px; margin-left: 14px; padding: 2px 0 2px 16px; border-left: 1px solid var(--hair); display: flex; flex-direction: column; justify-content: center; }
+.build-load-v { margin-top: 7px; font: 300 22px/1 var(--f-ui); color: var(--t1); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.build-load-v small { margin-left: 4px; font: 400 12px var(--f-ui); color: var(--t3); }
+.build-load-track { height: 2px; margin-top: 10px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); overflow: hidden; }
+.build-load-fill { display: block; height: 100%; width: 0; background: var(--bronze); transition: width 0.2s linear; }
+.build-load.over .build-load-fill { background: var(--danger); }
+.build-load.over .build-load-v { color: var(--danger); }
+
+/* phone widths: tighter plan and gauge columns so the gauge track keeps its length */
+@media (max-width: 600px) {
+  .dock { grid-template-columns: 104px 1fr; column-gap: 14px; padding: 14px 14px 12px; }
+  .dock .g { grid-template-columns: 64px 1fr 44px; gap: 8px; }
+}
+
+/* narrower screens: smaller cards, no mass line; the bar scrolls once it no longer fits */
+@media (max-width: 1200px) {
+  .build-cards { gap: 5px; }
+  .build-card { width: 64px; }
+  .build-card-mass { display: none; }
+  .build-load { width: 124px; margin-left: 12px; }
+}
