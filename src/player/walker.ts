@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import type { WalkGeometry, SurfaceKind, Support } from '../world/walkable';
 import type { Gangplank } from '../ship/mooring';
 import type { WaveField } from '../world/waves';
-import { deckY, halfBeam, sOf, zOf, DECK_S0, DECK_S1, HULL_LENGTH } from '../ship/hull';
-import { deckHalfWidth, outrigger } from '../ship/trireme';
+import { TRIREME, type ShipDesign } from '../ship/design';
 
 /**
  * Frame-aware first-person character controller (spec §3). CONTRACT (lead-owned public API):
@@ -93,11 +92,6 @@ const MIN_HALF = 0.35;
 
 const _fwd = new THREE.Vector3();
 
-/** walkable half-width at a station: the deck's, never narrower than MIN_HALF */
-function halfWidthAt(s: number): number {
-  return Math.max(MIN_HALF, deckHalfWidth(Math.min(1, Math.max(0, s))));
-}
-
 /** heading of a ship as the Euler-Y yaw of its forward (−z) vector, same convention as the view yaw */
 export function shipYaw(q: THREE.Quaternion): number {
   _fwd.set(0, 0, -1).applyQuaternion(q);
@@ -164,6 +158,18 @@ export class Walker {
   private tb = new THREE.Vector3();
   private tc = new THREE.Vector3();
   private td = new THREE.Vector3();
+  private readonly hull: ShipDesign['hull'];
+  private readonly deck: ShipDesign['deck'];
+
+  constructor(design: ShipDesign = TRIREME) {
+    this.hull = design.hull;
+    this.deck = design.deck;
+  }
+
+  /** walkable half-width at a station: the deck's, never narrower than MIN_HALF */
+  private walkHalfWidth(s: number): number {
+    return Math.max(MIN_HALF, this.deck.deckHalfWidth(Math.min(1, Math.max(0, s))));
+  }
 
   update(dt: number, input: WalkInput, ship: ShipPose, world: WalkGeometry, waves: WaveField, time: number): void {
     this.events.length = 0;
@@ -205,15 +211,15 @@ export class Walker {
   climbAboard(ship: ShipPose): boolean {
     if (this.frame !== 'world' || this.script) return false;
     const local = this.toLocal(ship, this.world, this.ta);
-    const s = sOf(local.z);
+    const s = this.hull.sOf(local.z);
     if (s < 0.02 || s > 0.98) return false;
     const side = local.x < 0 ? -1 : 1;
-    const outer = halfBeam(s) + outrigger(s);
+    const outer = this.deck.outerHalfWidth(s);
     if (Math.abs(local.x) - outer > CLIMB_RANGE) return false;
-    const zt = Math.min(zOf(DECK_S1), Math.max(zOf(DECK_S0), local.z));
-    const st = sOf(zt);
-    const xt = side * Math.max(0, halfWidthAt(st) - RAIL_IN);
-    this.script = { kind: 'climb', t: 0, p0: this.pos.clone(), dir: new THREE.Vector3(), local: new THREE.Vector3(xt, deckY(st), zt) };
+    const zt = Math.min(this.hull.zOf(this.deck.s1), Math.max(this.hull.zOf(this.deck.s0), local.z));
+    const st = this.hull.sOf(zt);
+    const xt = side * Math.max(0, this.walkHalfWidth(st) - RAIL_IN);
+    this.script = { kind: 'climb', t: 0, p0: this.pos.clone(), dir: new THREE.Vector3(), local: new THREE.Vector3(xt, this.deck.deckY(st), zt) };
     this.scripted = true;
     this.swimming = false;
     this.grounded = false;
@@ -268,9 +274,9 @@ export class Walker {
       nz = this.col.z;
     }
 
-    // end rails at DECK_S0 / DECK_S1, like the side rails: the foot never passes them
-    const zLo = zOf(DECK_S0);
-    const zHi = zOf(DECK_S1);
+    // end rails at the deck's s0 / s1, like the side rails: the foot never passes them
+    const zLo = this.hull.zOf(this.deck.s0);
+    const zHi = this.hull.zOf(this.deck.s1);
     const oldZ = this.pos.z;
     if (nz < zLo && nz < oldZ) {
       nz = oldZ >= zLo ? zLo : oldZ;
@@ -281,7 +287,7 @@ export class Walker {
     }
 
     // side rails at the deck edge; the plank opening lets the foot out past it
-    const hw = halfWidthAt(sOf(nz));
+    const hw = this.walkHalfWidth(this.hull.sOf(nz));
     const opening = this.plankOpen(nx, nz, ship.plank);
     const lim = Math.max(0, hw - RADIUS);
     const outLim = opening ? hw + CROSSING : lim;
@@ -312,7 +318,7 @@ export class Walker {
       this.startVault(ship, this.tb.set(0, 0, this.touchingEnd));
       return;
     }
-    if (this.leavesDeck(this.pos.x, sOf(this.pos.z))) {
+    if (this.leavesDeck(this.pos.x, this.hull.sOf(this.pos.z))) {
       this.toWorld(ship);
       return;
     }
@@ -330,15 +336,15 @@ export class Walker {
 
   /** the foot is past the deck edge (only possible through the plank opening) */
   private leavesDeck(x: number, s: number): boolean {
-    return Math.abs(x) > halfWidthAt(s);
+    return Math.abs(x) > this.walkHalfWidth(s);
   }
 
   private shipFloor(x: number, z: number, maxY: number, ship: ShipPose): boolean {
     const f = this.fl;
     let found = false;
-    const s = sOf(z);
-    if (s >= DECK_S0 && s <= DECK_S1 && Math.abs(x) < halfWidthAt(s)) {
-      f.y = deckY(s);
+    const s = this.hull.sOf(z);
+    if (s >= this.deck.s0 && s <= this.deck.s1 && Math.abs(x) < this.walkHalfWidth(s)) {
+      f.y = this.deck.deckY(s);
       f.nx = 0;
       f.ny = 1;
       f.nz = 0;
@@ -579,16 +585,16 @@ export class Walker {
   }
 
   private plankOpen(x: number, z: number, p: Gangplank | null): boolean {
-    return !!p && p.deployed > 0.95 && Math.sign(x) === p.side && Math.abs(z - zOf(p.station)) <= PLANK_HALF;
+    return !!p && p.deployed > 0.95 && Math.sign(x) === p.side && Math.abs(z - this.hull.zOf(p.station)) <= PLANK_HALF;
   }
 
   /** pushes a foot out of the hull's side zone; writes the new xz to `col` and returns true if moved */
   private hullPush(x: number, y: number, z: number, ship: ShipPose): boolean {
     const d = this.toLocal(ship, this.tc.set(x, y, z), this.tb);
-    const s = sOf(d.z);
+    const s = this.hull.sOf(d.z);
     if (s < 0 || s > 1) return false;
-    const side = halfBeam(s) + outrigger(s) + HULL_CLEAR;
-    if (Math.abs(d.x) >= side || d.y >= deckY(s)) return false;
+    const side = this.deck.outerHalfWidth(s) + HULL_CLEAR;
+    if (Math.abs(d.x) >= side || d.y >= this.deck.deckY(s)) return false;
     const target = d.x < 0 ? -side : side;
     const w = this.ta.set(target - d.x, 0, 0).applyQuaternion(ship.quat);
     this.col.x = x + w.x;
@@ -644,10 +650,10 @@ export class Walker {
   private tryBoard(ship: ShipPose) {
     if (this.frame !== 'world' || this.swimming) return;
     const local = this.toLocal(ship, this.pos, this.ta);
-    const s = sOf(local.z);
-    if (local.z < zOf(DECK_S0) + 0.05 || local.z > zOf(DECK_S1) - 0.05) return;
-    if (Math.abs(local.x) >= halfWidthAt(s) - 0.05) return;
-    if (local.y < deckY(Math.min(1, Math.max(0, s))) - 0.25) return;
+    const s = this.hull.sOf(local.z);
+    if (local.z < this.hull.zOf(this.deck.s0) + 0.05 || local.z > this.hull.zOf(this.deck.s1) - 0.05) return;
+    if (Math.abs(local.x) >= this.walkHalfWidth(s) - 0.05) return;
+    if (local.y < this.deck.deckY(Math.min(1, Math.max(0, s))) - 0.25) return;
     if (!this.grounded && this.vel.y > 0) return;
     this.toShip(ship);
   }

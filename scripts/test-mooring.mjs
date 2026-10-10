@@ -9,6 +9,7 @@ const { buildHarbour } = await import('../src/world/harbour.ts');
 const { WalkGeometry } = await import('../src/world/walkable.ts');
 const { halfBeam, sheer, zOf } = await import('../src/ship/hull.ts');
 const { outriggerOf } = await import('../src/ship/mooring.ts');
+const { MERCHANT } = await import('../src/ship/design.ts');
 
 const dt = 1 / 120, DEG = Math.PI / 180;
 let failures = 0;
@@ -197,10 +198,69 @@ test('anchored ship in 15 kn of wind stays within rode + 3 m', () => {
   assert.ok(worst <= sh.mooring.rode + 3, `bow drift ${worst}`);
   assert.ok(worst > sh.mooring.rode - 1, `never reached the rode: ${worst}`);
   sh.mooring.weighAnchor();
+  let tw = 0;
+  while (sh.mooring.anchorPhase !== 'stowed' && tw < 60) { sh.step(dt); tw += dt; }
+  assert.equal(sh.mooring.anchorPhase, 'stowed', `still ${sh.mooring.anchorPhase} after ${tw.toFixed(1)} s`);
   assert.equal(sh.mooring.state, 'free');
   const ev = sh.mooring.drain().map((e) => e.type);
-  assert.ok(ev.includes('anchor-down') && ev.includes('anchor-up'));
-  report.anchor = { maxBowDistance: worst, rode: sh.mooring.rode };
+  assert.ok(ev.includes('anchor-down') && ev.includes('anchor-weighing') && ev.includes('anchor-up'), `events ${ev}`);
+  report.anchor = { maxBowDistance: worst, rode: sh.mooring.rode, weighSeconds: tw };
+});
+
+test('anchor falls to the seabed, holds, and comes back up', () => {
+  const sh = makeShip(flat(), { vx: 0, vz: 0 }, null);
+  sh.mooring.setHarbour({ berths: [], solids: [], shipColliders: [], root: null, dir: null, length: 0, width: 0, top: 0, berthStart: 0, steps: null });
+  settle(sh, 0, 0, 0);
+  assert.equal(sh.mooring.dropAnchor(), true);
+  assert.equal(sh.mooring.anchorPhase, 'dropping');
+  for (let i = 0; i < 10 / dt; i++) sh.step(dt);
+  const m = sh.mooring;
+  assert.equal(m.anchorPhase, 'holding', `phase ${m.anchorPhase}`);
+  assert.equal(m.anchorProgress, 1);
+  assert.ok(Math.abs(m.anchorPos.y + 6) < 1e-9, `anchor y ${m.anchorPos.y}`);
+  m.weighAnchor();
+  assert.equal(m.anchorPhase, 'weighing');
+  let t = 0;
+  while (m.anchorPhase !== 'stowed' && t < 40) { sh.step(dt); t += dt; }
+  assert.equal(m.anchorPhase, 'stowed', `still ${m.anchorPhase} after ${t.toFixed(1)} s`);
+  assert.equal(m.state, 'free');
+  report.anchorCycle = { weighSeconds: t };
+});
+
+test('too deep to anchor', () => {
+  const deep = { heightAt: () => -40, normalAt: (x, z, o) => o.set(0, 1, 0) };
+  const sh = new ShipPhysics(flat(), { vx: 0, vz: 0 }, deep, new Crew());
+  sh.mooring.setHarbour({ berths: [], solids: [], shipColliders: [], root: null, dir: null, length: 0, width: 0, top: 0, berthStart: 0, steps: null });
+  settle(sh, 0, 0, 0);
+  sh.mooring.drain();
+  assert.equal(sh.mooring.dropAnchor(), false);
+  const denied = sh.mooring.drain().find((e) => e.type === 'denied');
+  assert.ok(denied && denied.reason.startsWith('Too deep to anchor'), `reason ${denied?.reason}`);
+  assert.equal(sh.mooring.dropAnchor(true), false);
+  assert.equal(sh.mooring.drain().length, 0);
+  assert.equal(sh.mooring.anchorPhase, 'stowed');
+});
+
+test('merchant ship anchors in 15 kn of wind', () => {
+  const sh = new ShipPhysics(flat(), { vx: 15 * 0.5144, vz: 0 }, terrain, new Crew(), MERCHANT);
+  sh.mooring.setHarbour({ berths: [], solids: [], shipColliders: [], root: null, dir: null, length: 0, width: 0, top: 0, berthStart: 0, steps: null });
+  settle(sh, 0, 0, 0);
+  assert.equal(sh.mooring.dropAnchor(), true);
+  const anchor = sh.mooring.anchorAt.clone();
+  const bowLocal = new THREE.Vector3(0, 0, MERCHANT.hull.zOf(MERCHANT.anchor.s));
+  const bow = new THREE.Vector3();
+  let worst = 0;
+  for (let i = 0; i < 240 / dt; i++) {
+    sh.step(dt);
+    sh.toWorld(bowLocal, bow);
+    worst = Math.max(worst, Math.hypot(bow.x - anchor.x, bow.z - anchor.z));
+  }
+  assert.ok(worst <= sh.mooring.rode + 3, `bow drift ${worst}`);
+  assert.ok(worst > sh.mooring.rode - 1, `never reached the rode: ${worst}`);
+  sh.mooring.drain();
+  assert.equal(sh.mooring.makeFast(), false);
+  assert.ok(sh.mooring.drain().some((e) => e.type === 'denied'));
+  report.merchantAnchor = { maxBowDistance: worst, rode: sh.mooring.rode };
 });
 
 test('castOff releases the lines, shoves her off the quay and stows the plank', () => {

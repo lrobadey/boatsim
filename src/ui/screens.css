@@ -54,6 +54,7 @@
 .screen .seg a { padding: 6px 13px; border-radius: 999px; font: 500 13px/1.2 var(--f-ui); color: var(--t2); text-decoration: none; transition: background-color 160ms ease, color 160ms ease; }
 .screen .seg a:hover { color: var(--t1); }
 .screen .seg a.on { background: rgba(243, 238, 228, 0.14); color: var(--t1); }
+.title-screen .ship-seg { margin: 14px 0 4px; }
 
 /* ---------- settings / pause card ---------- */
 .screen.pause .scrim { background: rgba(6, 10, 16, 0.56); }

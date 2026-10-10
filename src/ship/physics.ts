@@ -1,8 +1,12 @@
 import * as THREE from 'three';
-import { buildColumns, Column, halfBeam, sheer, zOf, deckY, HULL_LENGTH, RAM_LENGTH } from './hull';
+import type { Column } from './hull';
+import { TRIREME, type ShipDesign } from './design';
+import { dragCoefficient } from './resistance';
 import { Crew } from './crew';
 import { RowingSystem } from './rowing';
-import { Mooring, outriggerOf } from './mooring';
+import { hullLateralForce } from './hullLateral';
+import { SailingSystem } from './sailing';
+import { Mooring } from './mooring';
 import type { BoxSolid } from '../world/walkable';
 import { createFlowSample } from '../world/waves';
 import type { WaveField } from '../world/waves';
@@ -13,7 +17,6 @@ import { clamp } from '../core/util';
 const RHO = 1025;
 const RHO_AIR = 1.225;
 const G = 9.81;
-const RUDDER_AREA = 0.85;
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -22,21 +25,25 @@ const _p = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _h = new THREE.Vector3();
+const _hullHorizontalForce = new THREE.Vector3();
+const _windSample = new THREE.Vector3();
+const _windPointVelocity = new THREE.Vector3();
 // quay (pier face) contact: fendered spring + damper along the face normal, Coulomb friction
 const QUAY_K = 3e5;
 const QUAY_C = 8e4;
 const QUAY_MU = 0.25;
 
 /**
- * 6-DOF rigid-body trireme. All hydrostatic/hydrodynamic forces are sampled over columns derived
+ * 6-DOF rigid-body ship. All hydrostatic/hydrodynamic forces are sampled over columns derived
  * from the hull geometry; propulsion from oar blades, steering oars and the sail is computed from
- * the relative flow at each surface. Nothing is a "max speed" constant.
+ * the relative flow at each surface. Nothing is a "max speed" constant. The ship's hull and
+ * coefficients come from its ShipDesign (the trireme by default).
  */
 export class ShipPhysics {
   readonly columns: Column[];
   readonly mass: number;
   readonly inertia = new THREE.Vector3();
-  readonly cg = new THREE.Vector3(0, 0.3, 0); // local centre of gravity
+  readonly cg: THREE.Vector3; // local centre of gravity
   // state
   readonly pos = new THREE.Vector3(); // world CoG
   readonly quat = new THREE.Quaternion();
@@ -49,7 +56,8 @@ export class ShipPhysics {
   private force = new THREE.Vector3();
   private torque = new THREE.Vector3();
   readonly rowing: RowingSystem;
-  readonly mooring = new Mooring();
+  readonly sailing: SailingSystem;
+  readonly mooring: Mooring;
   /** deck cargo / built pieces: weight acting at ship-local points (spec §8) */
   readonly payload: { mass: number; local: THREE.Vector3 }[] = [];
   private flow = createFlowSample();
@@ -59,19 +67,12 @@ export class ShipPhysics {
   // controls
   helm = 0; // -1..1 (positive = turn to starboard)
   rudderAngle = 0;
-  sailSet = 0; // 0 furled .. 1 set (animated)
-  sailTarget = 0;
-  yardAngle = 0;
-  private yardTarget = 0;
-  private trimTimer = 0;
   // telemetry
   speed = 0; // forward speed through water (m/s)
+  leeway = 0; // signed water-relative drift angle (rad; positive = starboard)
   heading = 0; // compass bearing (rad)
   heel = 0;
   pitch = 0;
-  sailForce = 0; // forward N
-  sailPressure = 0; // normalised billow for visuals (+ = full, - = aback)
-  apparentWind = new THREE.Vector3(); // local
   grounding = 0; // contact intensity
   oarThrust = 0;
   bowImmersion = 0;
@@ -79,9 +80,16 @@ export class ShipPhysics {
   displacement = 0;
   time = 0;
 
-  constructor(private waves: WaveField, private wind: Wind, private terrain: Terrain, public crew: Crew) {
-    this.columns = buildColumns(20, 4);
-    this.rowing = new RowingSystem(crew);
+  constructor(private waves: WaveField, private wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
+    this.cg = new THREE.Vector3(0, design.mass.cgY, design.mass.cgZ);
+    this.mooring = new Mooring(design.dockingEnabled, design.anchoringEnabled,
+      new THREE.Vector3(0, design.deck.deckY(design.anchor.s), design.hull.zOf(design.anchor.s)), design.anchor.stiffnessScale);
+    this.mooring.seabed = (x, z) => terrain.heightAt(x, z);
+    const hull = design.hull;
+    this.columns = hull.buildColumns(design.columns.stations, design.columns.strips);
+    this.rowing = new RowingSystem(crew, design.oars);
+    this.sailing = new SailingSystem(design.rig, design.aero);
+    crew.maxOrder = design.oars.maxOrder;
     // mass from displacement at the design waterline: the ship floats where it was designed to
     let vol = 0;
     for (const c of this.columns) vol += c.area * Math.max(0, -c.bottom);
@@ -101,20 +109,17 @@ export class ShipPhysics {
       iy += m * (c.x * c.x + c.z * c.z);
       iz += m * (c.x * c.x + y * y + h * h / 12);
     }
-    this.inertia.set(ix * 1.1, iy * 1.05, iz * 1.25);
-    // contact points for grounding: column bottoms + ram + stern + sides
+    const [sx, sy, sz] = design.mass.inertiaScale;
+    this.inertia.set(ix * sx, iy * sy, iz * sz);
+    // contact points for grounding: column bottoms + design extras (ram, stern) + sides
     for (const c of this.columns) this.contactPts.push(new THREE.Vector3(c.x, c.bottom, c.z));
-    this.contactPts.push(new THREE.Vector3(0, -0.2, -HULL_LENGTH / 2 - RAM_LENGTH));
-    this.contactPts.push(new THREE.Vector3(0, 0.3, -HULL_LENGTH / 2 - RAM_LENGTH * 0.5));
-    for (let i = 0; i <= 6; i++) {
-      const s = 0.2 + i * 0.1;
-      for (const sg of [-1, 1]) this.quayPts.push(new THREE.Vector3(sg * (halfBeam(s) + outriggerOf(s)), sheer(s), zOf(s)));
-    }
+    for (const [x, y, z] of design.contactExtras) this.contactPts.push(new THREE.Vector3(x, y, z));
+    for (const s of design.quayStations) for (const sg of [-1, 1]) this.quayPts.push(new THREE.Vector3(sg * design.deck.outerHalfWidth(s), hull.sheer(s), hull.zOf(s)));
     for (let i = 0; i <= 10; i++) {
       const s = 0.05 + (i / 10) * 0.9;
       for (const sg of [-1, 1]) {
-        this.contactPts.push(new THREE.Vector3(sg * halfBeam(s), 0.3, zOf(s)));
-        this.contactPts.push(new THREE.Vector3(sg * halfBeam(s), sheer(s) * 0.8, zOf(s)));
+        this.contactPts.push(new THREE.Vector3(sg * hull.halfBeam(s), 0.3, hull.zOf(s)));
+        this.contactPts.push(new THREE.Vector3(sg * hull.halfBeam(s), hull.sheer(s) * 0.8, hull.zOf(s)));
       }
     }
   }
@@ -128,6 +133,7 @@ export class ShipPhysics {
     this.prevPos.copy(this.pos);
     this.prevQuat.copy(this.quat);
     this.rowing.reset(this, this.time);
+    this.sailing.reset();
   }
 
   /** local hull point -> world */
@@ -148,6 +154,16 @@ export class ShipPhysics {
     for (const p of this.payload) m += p.mass;
     return m;
   }
+  /** Legacy sail fields proxy the coupled sailing subsystem. */
+  get sailSet() { return this.sailing.current.deployment; }
+  set sailSet(value: number) { this.sailing.current.deployment = clamp(value, 0, 1); }
+  get sailTarget() { return this.sailing.deploymentTarget; }
+  set sailTarget(value: number) { this.sailing.deploymentTarget = clamp(value, 0, 1); }
+  get yardAngle() { return this.sailing.current.yardAngle; }
+  set yardAngle(value: number) { this.sailing.current.yardAngle = clamp(value, -this.sailing.rig.maxYardAngle, this.sailing.rig.maxYardAngle); }
+  get sailForce() { return this.sailing.telemetry.forwardForce; }
+  get sailPressure() { return this.sailing.telemetry.pressure; }
+  get apparentWind() { return this.sailing.telemetry.apparentWind; }
   private addForceAt(f: THREE.Vector3, world: THREE.Vector3) {
     this.force.add(f);
     _v3.copy(world).sub(this.pos).cross(f);
@@ -166,7 +182,8 @@ export class ShipPhysics {
     this.rowing.step(dt, this.time, this, this.helm, this.waves, this.force, this.torque);
     this.oarThrust = this.rowing.telemetry.oarThrust;
     this.rudders(dt, invQ);
-    this.sail(dt, invQ);
+    this.sailing.step(dt, this.time, this, this.wind, this.force, this.torque);
+    this.windage(invQ);
     for (const p of this.payload) this.addForceAt(_v.set(0, -p.mass * G, 0), this.toWorld(p.local, _p));
     this.mooring.step(dt, this);
     this.ground();
@@ -199,6 +216,8 @@ export class ShipPhysics {
     this.speed = _v2.set(this.vel.x - flow.vx, this.vel.y - flow.vy, this.vel.z - flow.vz).dot(fwd);
     this.heading = Math.atan2(fwd.x, -fwd.z);
     const right = _v2.set(1, 0, 0).applyQuaternion(this.quat);
+    const waterVelocity = _v3.set(this.vel.x - flow.vx, this.vel.y - flow.vy, this.vel.z - flow.vz);
+    this.leeway = Math.atan2(waterVelocity.dot(right), waterVelocity.dot(fwd));
     this.heel = Math.asin(clamp(right.y, -1, 1));
     this.pitch = Math.asin(clamp(fwd.y, -1, 1));
     this.rowing.refreshWorld(this);
@@ -207,6 +226,7 @@ export class ShipPhysics {
   private hydrostatics(dt: number, invQ: THREE.Quaternion) {
     const t = this.time;
     const cols = this.columns;
+    const d = this.design, hull = d.hull, hy = d.hydro;
     let bowImm = 0;
     for (let i = 0; i < cols.length; i++) {
       const c = cols[i];
@@ -223,7 +243,7 @@ export class ShipPhysics {
       // buoyancy
       const Fb = _v.set(0, RHO * G * vol, 0);
       this.addForceAt(Fb, cp);
-      if (c.z < -HULL_LENGTH * 0.3) bowImm += subLen;
+      if (c.z < -hull.length * 0.3) bowImm += subLen;
 
       // hydrodynamic drag in hull frame, relative to the water (vertical orbital velocity included)
       const pv = this.pointVel(cp, _v);
@@ -231,49 +251,48 @@ export class ShipPhysics {
       pv.x -= flow.vx; pv.y -= flow.vy; pv.z -= flow.vz;
       const lv = pv.applyQuaternion(invQ); // local velocity
       const subDepth = Math.min(subLen, 2.5);
-      // lateral: flat-plate-like resistance of the hull side (keel effect)
-      const Alat = subDepth * c.dz / 4; // 4 strips share the section
-      const Fx = -0.5 * RHO * 1.1 * Alat * lv.x * Math.abs(lv.x) - 400 * Alat * lv.x;
-      // longitudinal: skin friction + form/wave-making (Froude-dependent)
-      const Swet = c.area * 1.35;
-      const Fr = Math.abs(lv.z) / Math.sqrt(G * HULL_LENGTH);
-      // ITTC-like friction (~0.0022 at Re~1e8) x form factor, plus parasitic drag of the oars'
-      // looms/ports and a wave-making term that climbs steeply toward hull speed
-      const Cw = 0.003 * Math.pow(Fr / 0.33, 4);
-      // going astern the up-swept stern and steering oars lead: much higher form drag
-      const astern = lv.z > 0 ? 2.4 : 1;
-      const Fz = -0.5 * RHO * (0.006 * astern + Cw) * Swet * lv.z * Math.abs(lv.z);
+      // Coupled shallow-hull sideforce and its induced drag, with the existing crossflow loss.
+      // lateral plane: the station's submerged profile depth (keel to water) shared by beam fraction,
+      // or (trireme calibration) each column's own submerged depth with the strips sharing the section
+      const Alat = hy.lateralFromProfile
+        ? Math.min(subLen + c.bottom - c.keel!, 2.5) * c.dz * c.latW!
+        : subDepth * c.dz / d.columns.strips;
+      hullLateralForce(lv.x, lv.z, Alat, _hullHorizontalForce);
+      const Fx = _hullHorizontalForce.x;
+      // longitudinal: skin friction + form and wave-making drag (see resistance.ts)
+      const Swet = c.area * hy.wettedFactor;
+      const Fz = -0.5 * RHO * dragCoefficient(hy.resistance, lv.z, hull.length) * Swet * lv.z * Math.abs(lv.z) + _hullHorizontalForce.z;
       // vertical: radiation/viscous damping
-      const Fy = -0.5 * RHO * 0.9 * c.area * lv.y * Math.abs(lv.y) - 1800 * c.area * lv.y;
+      const Fy = -0.5 * RHO * hy.heaveDampQuad * c.area * lv.y * Math.abs(lv.y) - hy.heaveDampLin * c.area * lv.y;
       const Fl = _v.set(Fx, Fy, Fz).applyQuaternion(this.quat);
       this.addForceAt(Fl, cp);
     }
     this.bowSlam = Math.max(0, bowImm - this.bowImmersion) / dt;
     this.bowImmersion = bowImm;
     // weak angular damping (added-mass, appendages)
-    this.torque.addScaledVector(this.angVel, -this.mass * 0.6);
+    this.torque.addScaledVector(this.angVel, -this.mass * hy.angularDamp);
     // roll damping: bilge/keel eddy-making plus 170 oar blades acting as outriggers when in the
     // water (much stronger with the oars run out than with them shipped)
     const fwdAxis = _v.set(0, 0, -1).applyQuaternion(this.quat);
     const rollRate = this.angVel.dot(fwdAxis);
     // Blade forces now supply actual oar roll damping; retain only hull damping here.
-    const cRoll = 22000;
-    this.torque.addScaledVector(fwdAxis, -cRoll * rollRate - 40000 * rollRate * Math.abs(rollRate));
+    this.torque.addScaledVector(fwdAxis, -hy.rollDampLin * rollRate - hy.rollDampQuad * rollRate * Math.abs(rollRate));
   }
 
   private rudders(dt: number, invQ: THREE.Quaternion) {
     // helmsman moves the tillers at a finite rate
-    const target = -this.helm * 0.6; // positive rudder angle turns to port
-    this.rudderAngle += clamp(target - this.rudderAngle, -0.9 * dt, 0.9 * dt);
+    const r = this.design.rudder, hull = this.design.hull;
+    const target = -this.helm * r.maxAngle; // positive rudder angle turns to port
+    this.rudderAngle += clamp(target - this.rudderAngle, -r.rate * dt, r.rate * dt);
     const d = this.rudderAngle;
     for (const side of [-1, 1]) {
-      const s = 0.93;
-      const local = _p.set(side * (halfBeam(s) + 0.45), -0.7, zOf(s) + 0.8);
+      const s = r.s;
+      const local = _p.set(side * (hull.halfBeam(s) + r.xOut), r.y, hull.zOf(s) + r.dz);
       const w = this.toWorld(local, _v2.copy(local));
       const water = this.waves.heightAt(w.x, w.z, this.time);
       const depth = water - w.y;
       if (depth < 0) continue; // blade lifted clear (heel)
-      const sub = clamp(depth / 0.8, 0, 1);
+      const sub = clamp(depth / r.depthNorm, 0, 1);
       const v = this.pointVel(w, _v);
       const flow = this.waves.sampleFlowAt(w.x, w.y, w.z, this.time, this.flow);
       v.x -= flow.vx; v.y -= flow.vy; v.z -= flow.vz;
@@ -286,66 +305,29 @@ export class ShipPhysics {
       const vn = v.dot(n);
       // thin-plate normal force: C_N ~ 2*pi*sin(alpha), stalls ~1.2
       const CN = clamp((2 * Math.PI * vn) / sp, -1.2, 1.2);
-      const Fn = -0.5 * RHO * RUDDER_AREA * sub * sp * sp * CN;
+      const Fn = -0.5 * RHO * r.area * sub * sp * sp * CN;
       const F = n.multiplyScalar(Fn);
       // profile drag
-      F.addScaledVector(v, -0.5 * RHO * RUDDER_AREA * sub * 0.02 * sp);
+      F.addScaledVector(v, -0.5 * RHO * r.area * sub * 0.02 * sp);
       F.applyQuaternion(this.quat);
       this.addForceAt(F, w);
     }
   }
 
-  private sail(dt: number, invQ: THREE.Quaternion) {
-    this.sailSet += clamp(this.sailTarget - this.sailSet, -dt / 6, dt / 6);
-    // apparent wind at the sail (wind shear: stronger aloft)
-    const shear = 1.12;
-    const aw = _v.set(this.wind.vx * shear, 0, this.wind.vz * shear).sub(_v2.set(this.vel.x, 0, this.vel.z));
-    const awl = aw.applyQuaternion(invQ);
-    awl.y = 0;
-    this.apparentWind.copy(awl);
-    const W2 = awl.lengthSq();
-    const area = 58 * this.sailSet;
-    // crew trims the yard to maximise forward drive (re-evaluated a few times per second)
-    this.trimTimer -= dt;
-    const forceFor = (g: number, out: THREE.Vector3) => {
-      const nx = -Math.sin(g),
-        nz = Math.cos(g); // sail normal (local)
-      const W = Math.sqrt(W2) + 1e-6;
-      const dn = (awl.x * nx + awl.z * nz) / W; // sin(alpha) signed
-      const alpha = Math.asin(clamp(Math.abs(dn), 0, 1));
-      const CN = 1.3 * Math.sin(Math.min(1, alpha / 0.95) * Math.PI * 0.5) * (alpha < 0.12 ? alpha / 0.12 : 1);
-      const F = 0.5 * RHO_AIR * area * W2 * CN * Math.sign(dn);
-      return out.set(nx * F, 0, nz * F);
-    };
-    if (this.sailTarget < 0.5 && this.sailSet < 0.1) {
-      this.yardTarget = 0; // sail brailed: yard squared away
-    } else if (this.trimTimer <= 0) {
-      this.trimTimer = 0.25;
-      let best = -1e9;
-      for (let k = 0; k <= 16; k++) {
-        const g = -0.78 + (k / 16) * 1.56;
-        const f = forceFor(g, _p);
-        if (-f.z > best) {
-          best = -f.z;
-          this.yardTarget = g;
-        }
-      }
-    }
-    this.yardAngle += clamp(this.yardTarget - this.yardAngle, -0.25 * dt, 0.25 * dt);
-    const Fl = forceFor(this.yardAngle, _p);
-    this.sailForce = -Fl.z;
-    const maxF = 0.5 * RHO_AIR * 58 * 100;
-    this.sailPressure = (this.sailSet > 0.05 ? Math.sign(-Fl.z + 1e-6) : 0) * Math.min(1, Fl.length() / maxF + 0.15 * this.sailSet);
-    if (area > 0.5) {
-      const ce = _n.set(0, deckY(0.42) + 6.5, zOf(0.42));
-      const Fw = Fl.applyQuaternion(this.quat);
-      this.addForceAt(Fw, this.toWorld(ce, _v2.copy(ce)));
-    }
-    // windage on hull and rig
-    const Fx = 0.5 * RHO_AIR * 1.0 * 45 * awl.x * Math.abs(awl.x);
-    const Fz = 0.5 * RHO_AIR * 0.6 * 9 * awl.z * Math.abs(awl.z);
-    const Fwd = _v.set(Fx, 0, Fz).applyQuaternion(this.quat);
-    this.addForceAt(Fwd, this.toWorld(_n.set(0, 2.6, 2), _v2));
+  private windage(invQ: THREE.Quaternion) {
+    // Keep hull/rig windage independent from sail telemetry. Sample it at its own physical point
+    // and include rigid-body point velocity, so rotation contributes to local apparent air.
+    const w = this.design.windage;
+    const local = _n.set(w.point[0], w.point[1], w.point[2]);
+    const world = this.toWorld(local, _p);
+    if (this.wind.sampleAt) this.wind.sampleAt(world.x, world.y, world.z, this.time, _windSample);
+    else _windSample.set(this.wind.vx, 0, this.wind.vz);
+    this.pointVel(world, _windPointVelocity);
+    const apparent = _windSample.sub(_windPointVelocity).applyQuaternion(invQ);
+    const Fx = 0.5 * RHO_AIR * w.lateralCd * w.lateralArea * apparent.x * Math.abs(apparent.x);
+    const Fz = 0.5 * RHO_AIR * w.frontalCd * w.frontalArea * apparent.z * Math.abs(apparent.z);
+    const force = _v.set(Fx, 0, Fz).applyQuaternion(this.quat);
+    this.addForceAt(force, world);
   }
 
   private ground() {

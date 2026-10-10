@@ -230,6 +230,7 @@ export class DeckBuilder {
     private shipSolids: WalkGeometry,
     private interactions: { list: Interactable[] },
     private crew: { stamina: number },
+    private enabled = true,
   ) {
     this.ui = new BuildUi();
     for (let i = 0; i < LIGHTS_MAX; i++) {
@@ -241,10 +242,11 @@ export class DeckBuilder {
     }
     this.ui.select(this.sel);
     this.rebuildGhost();
-    this.load();
+    if (this.enabled) this.load();
   }
 
   setActive(on: boolean): void {
+    if (!this.enabled) on = false;
     this.active = on;
     this.ui.setVisible(on);
     if (on) {

@@ -1,0 +1,340 @@
+{
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "runtime": "v25.4.0"
+  },
+  "tests": [
+    {
+      "name": "layout, real bank geometry, orthonormal basis and endpoints",
+      "status": "passed",
+      "ms": 39.85500000000002
+    },
+    {
+      "name": "analytic material velocities including dip and feather",
+      "status": "passed",
+      "ms": 0.7843330000000037
+    },
+    {
+      "name": "actual cyclic derivatives and C1 interrupted-controller boundaries",
+      "status": "passed",
+      "ms": 49.786333999999954
+    },
+    {
+      "name": "continuous area clipping, exact dry force and dissipative power identity",
+      "status": "passed",
+      "ms": 4.119874999999979
+    },
+    {
+      "name": "flow particle velocity, inverse coordinates and depth decay",
+      "status": "passed",
+      "ms": 0.40049999999996544
+    },
+    {
+      "name": "budgets, reservoirs, recovery contact and interrupted commands",
+      "status": "passed",
+      "ms": 317.41670799999997
+    },
+    {
+      "name": "continuous human limits at hold entry and interrupted commands",
+      "status": "passed",
+      "ms": 109.23608300000001
+    },
+    {
+      "name": "actual locked-body drive directions and fully dry rowing work",
+      "status": "passed",
+      "ms": 174.35404199999994
+    },
+    {
+      "name": "fresh hold, release, zero contact and all order transitions",
+      "status": "passed",
+      "ms": 22520.98
+    },
+    {
+      "name": "distributed short-wave loading and tangent-plane error",
+      "status": "passed",
+      "ms": 1955.9436249999999
+    },
+    {
+      "name": "fallback clipping versus independent curved corner samples",
+      "status": "passed",
+      "ms": 540.3672079999997
+    },
+    {
+      "name": "speed envelopes, work stamina and sprint",
+      "status": "passed",
+      "ms": 10488.111792000003
+    },
+    {
+      "name": "hold stops passively and differential steering mirrors",
+      "status": "passed",
+      "ms": 2156.8556249999965
+    },
+    {
+      "name": "events, interpolation and fixed-step schedule independence",
+      "status": "passed",
+      "ms": 207.15458399999625
+    },
+    {
+      "name": "audio contact grouping and event epoch reset",
+      "status": "passed",
+      "ms": 0.9719590000022436
+    },
+    {
+      "name": "turning envelope, passive empty-reservoir hold and low-load recovery",
+      "status": "passed",
+      "ms": 4029.2227920000005
+    },
+    {
+      "name": "numerical convergence including hold and single-wave contacts",
+      "status": "passed",
+      "ms": 4001.7643339999995
+    },
+    {
+      "name": "10 minute default-sea stability and CPU cost",
+      "status": "passed",
+      "ms": 77613.085666
+    }
+  ],
+  "measured": {
+    "humanLimitContinuity": {
+      "boundaryDeltaN": 1949.2006879500877,
+      "microDeltaN": 0.4800803599318897
+    },
+    "waveComparison": {
+      "maxAreaError": 0.0001731940653027829,
+      "maxForceError": 0.0001925662227007525
+    },
+    "curvedCorners": {
+      "maxError": 0.023410984604204765,
+      "fallbackQueries": 401880
+    },
+    "speeds": {
+      "0": {
+        "meanKn": -3.600522611110702,
+        "speedKn": -3.5735741082694163,
+        "stamina": 1,
+        "load": 90.6686083172628,
+        "order": "Back Water",
+        "impulse": -445528.67885706597
+      },
+      "2": {
+        "meanKn": 3.9727616304703335,
+        "speedKn": 3.951754040235268,
+        "stamina": 1,
+        "load": 66.88399515944126,
+        "order": "Slow",
+        "impulse": 290780.57291371253
+      },
+      "3": {
+        "meanKn": 5.631443511889341,
+        "speedKn": 5.659182797829608,
+        "stamina": 1,
+        "load": 145.86919964066473,
+        "order": "Half",
+        "impulse": 499409.8901342615
+      },
+      "4": {
+        "meanKn": 6.673313393942183,
+        "speedKn": 6.608659002597676,
+        "stamina": 0.9826645639169058,
+        "load": 183.3578718186757,
+        "order": "Full",
+        "impulse": 677823.5687040008
+      }
+    },
+    "sprint": {
+      "base": 6.608659002597676,
+      "max": 7.910784822441804,
+      "demoted": 135.375,
+      "meanPowerW": 41781.01000510151,
+      "peakPowerW": 237945.8522741177,
+      "trace": [
+        {
+          "seconds": 0,
+          "stamina": 1,
+          "order": 5,
+          "power": 0,
+          "load": 182.94245496525716
+        },
+        {
+          "seconds": 10,
+          "stamina": 0.9314312388685495,
+          "order": 5,
+          "power": 235095.87705688752,
+          "load": 330.16549522468745
+        },
+        {
+          "seconds": 20,
+          "stamina": 0.8391260552057075,
+          "order": 5,
+          "power": 0,
+          "load": 358.7673122431528
+        },
+        {
+          "seconds": 30,
+          "stamina": 0.7515924430315776,
+          "order": 5,
+          "power": 52255.459678515355,
+          "load": 383.3357845405637
+        },
+        {
+          "seconds": 40,
+          "stamina": 0.6675369268406904,
+          "order": 5,
+          "power": 222761.09141649472,
+          "load": 315.97620891333935
+        },
+        {
+          "seconds": 50,
+          "stamina": 0.5859232773833557,
+          "order": 5,
+          "power": 0,
+          "load": 341.9906466905721
+        },
+        {
+          "seconds": 60,
+          "stamina": 0.5088628036989947,
+          "order": 5,
+          "power": 49585.131814051696,
+          "load": 365.3261564302058
+        },
+        {
+          "seconds": 70,
+          "stamina": 0.43520422051597435,
+          "order": 5,
+          "power": 209655.6870800957,
+          "load": 301.1644511783512
+        },
+        {
+          "seconds": 80,
+          "stamina": 0.3641691340721957,
+          "order": 5,
+          "power": 0,
+          "load": 325.1217379776106
+        },
+        {
+          "seconds": 90,
+          "stamina": 0.29788568284996436,
+          "order": 5,
+          "power": 46203.96854470037,
+          "load": 346.2867981524247
+        },
+        {
+          "seconds": 100,
+          "stamina": 0.23542402477878982,
+          "order": 5,
+          "power": 195120.4815233241,
+          "load": 284.7246660285582
+        },
+        {
+          "seconds": 110,
+          "stamina": 0.1764038294744463,
+          "order": 5,
+          "power": 0,
+          "load": 305.5775656682931
+        },
+        {
+          "seconds": 120,
+          "stamina": 0.12281896304201338,
+          "order": 5,
+          "power": 42295.61770168276,
+          "load": 323.54880358764945
+        },
+        {
+          "seconds": 130,
+          "stamina": 0.07400380506596342,
+          "order": 5,
+          "power": 177364.20281527884,
+          "load": 264.7775552685974
+        },
+        {
+          "seconds": 140,
+          "stamina": 0.04354111880384189,
+          "order": 4,
+          "power": 124690.30442959101,
+          "load": 172.7439302341842
+        },
+        {
+          "seconds": 150,
+          "stamina": 0.057158353439212425,
+          "order": 4,
+          "power": 53203.4743578452,
+          "load": 190.22535084281756
+        },
+        {
+          "seconds": 160,
+          "stamina": 0.07019795794780946,
+          "order": 4,
+          "power": 28648.759174906663,
+          "load": 197.72677505153317
+        },
+        {
+          "seconds": 170,
+          "stamina": 0.08244066266103953,
+          "order": 4,
+          "power": 0,
+          "load": 192.91362479422642
+        }
+      ]
+    },
+    "hold": {
+      "holdStopSeconds": 12.225,
+      "coastStopSeconds": null
+    },
+    "pivot": [
+      {
+        "heading": -0.6109504812327206,
+        "speed": 0.3064951604982982
+      },
+      {
+        "heading": 0.6109504812327206,
+        "speed": 0.30649516049829806
+      }
+    ],
+    "turning": {
+      "t90": 66.44166666666666,
+      "t180": null,
+      "maxDistanceFromTurnStart": 63.731719108730566
+    },
+    "isolatedHold": {
+      "workJ": -452552.8356382772,
+      "initialSpeed": 4,
+      "finalSpeed": 0.17041424609660052
+    },
+    "convergence": [
+      {
+        "scenario": "full",
+        "speedError": 0.000050449267492869154,
+        "impulseError": 0.000031562028991793944,
+        "contactError": 0
+      },
+      {
+        "scenario": "back",
+        "speedError": 0.00006220069966733632,
+        "impulseError": 0.000026642699233248024,
+        "contactError": 0
+      },
+      {
+        "scenario": "hold",
+        "speedError": 0.0010043181231224052,
+        "impulseError": 0.00013233511759258576,
+        "contactError": 0
+      },
+      {
+        "scenario": "wave",
+        "speedError": 0.00033635705106871416,
+        "impulseError": 0.000010981741213944574,
+        "contactError": 2
+      }
+    ],
+    "cpu": {
+      "mean": 0.9883464530001628,
+      "p50": 0.9645840000011958,
+      "p95": 1.2235409999993863,
+      "maxHeelDegrees": 22.370627273630642,
+      "fallbackQueries": 0
+    }
+  }
+}

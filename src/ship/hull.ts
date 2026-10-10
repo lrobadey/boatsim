@@ -103,6 +103,10 @@ export interface Column {
   area: number; // plan area (m^2)
   dz: number; // length along hull
   dx: number; // width across
+  /** keel bottom of this column's station (ship local y); set by hulls that take lateral area from the profile */
+  keel?: number;
+  /** this column's share of its station's lateral area (its fraction of the beam) */
+  latW?: number;
 }
 
 /** Buoyancy/drag columns sampled from the hull shape. */

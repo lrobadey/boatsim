@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { Crew } from './crew';
-import { oarSlots, type OarSlot } from './oarLayout';
+import { type OarSlot } from './oarLayout';
+import { TRIREME, type ShipDesign } from './design';
 import { createFlowSample, type WaveField } from '../world/waves';
 import { clamp, smoothstep } from '../core/util';
+
+type OarParams = ShipDesign['oars'];
 
 export type RowSide = -1 | 1;
 export type RowMode = 'rest' | 'row' | 'exit' | 'transfer' | 'enter' | 'hold';
@@ -89,9 +92,7 @@ export class RowEventRing {
   }
 }
 
-const A = 0.72, Z = -0.58;
 export const ROWING_CONSTANTS = { normalDrag: 1.8, profileDrag: 0.025, wetDepth: 0.23, powerMultiplier: 1, handleMultiplier: 1 };
-const MEAN_POWER = [90, 20, 70, 120, 190, 320];
 const Q = (x: number) => x * x * x * (10 + x * (-15 + 6 * x));
 const dQ = (x: number) => 30 * x * x * (x - 1) * (x - 1);
 export function interpolateJoint(q0: number, v0: number, q1: number, t: number, duration: number, out: Float64Array, offset = 0) {
@@ -148,12 +149,12 @@ export function bladeDrag(area: number, slip: THREE.Vector3, normal: THREE.Vecto
 }
 
 export class RowingSystem {
-  readonly slots: readonly OarSlot[] = Object.freeze(oarSlots().map(s => Object.freeze(s)));
-  readonly previous = new BladeFrame(this.slots.length); readonly current = new BladeFrame(this.slots.length);
-  readonly events = new RowEventRing(); readonly energy = new Float64Array(this.slots.length).fill(640);
-  readonly handleCaps = new Float64Array(this.slots.length); readonly powerCaps = new Float64Array(this.slots.length);
-  readonly replenishedEnergy = new Float64Array(this.slots.length); readonly spentEnergy = new Float64Array(this.slots.length);
-  readonly sides = [new SideController(this.slots.length), new SideController(this.slots.length)];
+  readonly slots: readonly OarSlot[];
+  readonly previous: BladeFrame; readonly current: BladeFrame;
+  readonly events = new RowEventRing(); readonly energy: Float64Array;
+  readonly handleCaps: Float64Array; readonly powerCaps: Float64Array;
+  readonly replenishedEnergy: Float64Array; readonly spentEnergy: Float64Array;
+  readonly sides: SideController[];
   readonly telemetry = { portThrust: 0, starboardThrust: 0, oarThrust: 0, yawMoment: 0, wetArea: 0, wetBlades: 0,
     positivePower: 0, dissipatedPower: 0, crewLoad: 0, forceCapFraction: 0, powerCapFraction: 0,
     missedDriveFraction: 0, fallbackQueries: 0, guardedQueries: 0 };
@@ -168,9 +169,19 @@ export class RowingSystem {
   private slip = new THREE.Vector3(); private f = new THREE.Vector3(); private moment = new THREE.Vector3(); private offset = new THREE.Vector3();
   private patchForce = new Float64Array(12); private patchPosition = new Float64Array(12); private patchPower = new Float64Array(4);
   private patchDissipation = new Float64Array(4); private patchImpact = new Float64Array(4);
-  private lastContactTime = new Float64Array(this.slots.length).fill(-Infinity); private lastIntensity = new Float64Array(this.slots.length);
+  private lastContactTime: Float64Array; private lastIntensity: Float64Array;
   private load = 0; private initialized = false;
-  constructor(readonly crew: Crew) { this.initializeJoints(); }
+  constructor(readonly crew: Crew, readonly params: OarParams = TRIREME.oars) {
+    this.slots = Object.freeze(params.slots().map(s => Object.freeze(s)));
+    const n = this.slots.length;
+    this.previous = new BladeFrame(n); this.current = new BladeFrame(n);
+    this.energy = new Float64Array(n).fill(params.slotEnergy);
+    this.handleCaps = new Float64Array(n); this.powerCaps = new Float64Array(n);
+    this.replenishedEnergy = new Float64Array(n); this.spentEnergy = new Float64Array(n);
+    this.sides = [new SideController(n), new SideController(n)];
+    this.lastContactTime = new Float64Array(n).fill(-Infinity); this.lastIntensity = new Float64Array(n);
+    this.initializeJoints();
+  }
   private initializeJoints() {
     for (const slot of this.slots) {
       const o = slot.id * 6; this.current.joint[o] = 0.07; this.current.joint[o + 1] = nominalDip(slot, false);
@@ -182,7 +193,7 @@ export class RowingSystem {
     this.previous.copy(this.current);
   }
   reset(body: RowBody, time: number) {
-    for (const s of this.sides) { s.mode = s.destination = 'rest'; s.elapsed = s.duration = s.effort = s.targetEffort = 0; s.requestedRate = s.rate = 18; }
+    for (const s of this.sides) { s.mode = s.destination = 'rest'; s.elapsed = s.duration = s.effort = s.targetEffort = 0; s.requestedRate = s.rate = this.params.rateMin; }
     this.current.joint.fill(0); this.current.contact.fill(0); this.current.wetArea.fill(0);
     this.current.forceWorld.fill(0); this.current.positivePower.fill(0); this.current.handleForce.fill(0); this.initializeJoints(); this.events.clear(); this.initialized = false;
     this.lastContactTime.fill(-Infinity); this.lastIntensity.fill(0);
@@ -202,8 +213,8 @@ export class RowingSystem {
     s.start.set(this.current.joint);
     for (const slot of this.slots) if ((slot.side === -1 ? 0 : 1) === side) {
       const o = slot.id * 6, t = slot.id * 3;
-      s.target[t] = mode === 'exit' ? clamp(s.start[o] + 0.12 * s.start[o + 3], Z, A) :
-        s.destination === 'row' ? (s.targetDirection > 0 ? A : Z) : 0.07;
+      s.target[t] = mode === 'exit' ? clamp(s.start[o] + 0.12 * s.start[o + 3], this.params.sweepBack, this.params.sweepFwd) :
+        s.destination === 'row' ? (s.targetDirection > 0 ? this.params.sweepFwd : this.params.sweepBack) : 0.07;
       s.target[t + 1] = nominalDip(slot, mode === 'enter');
       s.target[t + 2] = mode === 'transfer' && s.destination === 'rest' ? Math.PI / 2 : 0;
     }
@@ -211,7 +222,7 @@ export class RowingSystem {
   private cyclePose(slot: Readonly<OarSlot>, s: SideController) {
     const out = this.current.joint, o = slot.id * 6, t = s.elapsed, T = s.period;
     const D = s.drive, C = Math.min(0.12, 0.1 * D), E = C;
-    const start = s.direction > 0 ? A : Z, end = s.direction > 0 ? Z : A;
+    const start = s.direction > 0 ? this.params.sweepFwd : this.params.sweepBack, end = s.direction > 0 ? this.params.sweepBack : this.params.sweepFwd;
     const dry = nominalDip(slot, false), wet = nominalDip(slot, true);
     out[o] = start; out[o + 1] = dry; out[o + 2] = 0; out[o + 3] = out[o + 4] = out[o + 5] = 0;
     if (t < D) {
@@ -247,7 +258,7 @@ export class RowingSystem {
   }
   private catch(side: number, time: number, body: RowBody) {
     const s = this.sides[side];
-    s.mode = 'row'; s.direction = s.targetDirection; s.rate = clamp(s.requestedRate, 18, 46);
+    s.mode = 'row'; s.direction = s.targetDirection; s.rate = clamp(s.requestedRate, this.params.rateMin, this.params.rateMax);
     s.period = 60 / s.rate; s.drive = clamp(0.48 * s.period, 0.68, 1.55); s.elapsed = 0;
     this.events.push('catchBeat', time, -1, side === 0 ? -1 : 1, body.pos.x, body.pos.y, body.pos.z, s.effort);
   }
@@ -302,7 +313,7 @@ export class RowingSystem {
       if (s.destination !== 'row') s.targetEffort = 0;
       s.effort += clamp(s.targetEffort - s.effort, -1.5 * dt, 1.5 * dt);
       if (s.effort > 0.01) s.lastEffort = s.effort;
-      s.requestedRate += clamp(o.rate - s.requestedRate, -6 * dt, 6 * dt);
+      s.requestedRate += clamp(o.rate * this.params.rateScale - s.requestedRate, -6 * dt, 6 * dt);
     }
   }
   /** Explicit step: evolve joints at t1, evaluate forces on the pre-integration hull pose. */
@@ -322,7 +333,7 @@ export class RowingSystem {
       const row = side.mode === 'row', transition = side.mode === 'exit' || side.mode === 'transfer' || side.mode === 'enter';
       const handle = row ? 750 * side.effort : transition ? 750 * Math.max(0.25, side.lastEffort) : side.mode === 'hold' ? 900 : 120;
       const peak = row ? 1400 * Math.max(0.2, side.effort) : transition ? 500 : 100;
-      const mean = row ? MEAN_POWER[this.crew.orderIndex] * (order.effort > 0 ? side.effort / order.effort : 0) : transition ? 60 : side.mode === 'hold' ? 30 : 20;
+      const mean = row ? this.params.meanPower[this.crew.orderIndex] * (order.effort > 0 ? side.effort / order.effort : 0) : transition ? 60 : side.mode === 'hold' ? 30 : 20;
       side.handleLimit += (clamp(handle, 0, 900) - side.handleLimit) * limitAlpha;
       side.peakLimit += (clamp(peak, 0, 1400) - side.peakLimit) * limitAlpha;
       side.meanLimit += (clamp(mean, 0, 320) - side.meanLimit) * limitAlpha;
@@ -390,7 +401,7 @@ export class RowingSystem {
       const Hcap = ROWING_CONSTANTS.handleMultiplier * strength * side.handleLimit;
       const Pcap = strength * side.peakLimit;
       const replenish = ROWING_CONSTANTS.powerMultiplier * strength * side.meanLimit;
-      const supplied = Math.min(640 - this.energy[id], replenish * dt);
+      const supplied = Math.min(this.params.slotEnergy - this.energy[id], replenish * dt);
       this.energy[id] += supplied; this.replenishedEnergy[id] += supplied;
       const rawHandle = Math.hypot(hx, hy, hz) / slot.inboard;
       const hs = rawHandle > 0 ? Math.min(1, Hcap / rawHandle) : 1;

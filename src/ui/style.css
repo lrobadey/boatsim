@@ -67,6 +67,28 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .ship { position: absolute; left: var(--safe); bottom: var(--safe); }
 .speed { font: 300 46px/0.95 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .speed small { font: 500 14px var(--f-ui); color: var(--t2); margin-left: 6px; letter-spacing: 0.04em; }
+.speed-row { display: flex; align-items: center; gap: 14px; }
+.anchor-badge { --p: 0; position: relative; width: 34px; height: 34px; flex: none; color: var(--t3); border-radius: 50%;
+  transition: color 0.3s, background-color 0.3s, box-shadow 0.3s, opacity 0.3s; }
+.anchor-badge[data-phase="none"] { display: none; }
+.anchor-badge .ring { position: absolute; inset: 0; width: 34px; height: 34px; transform: rotate(-90deg); }
+.anchor-badge .ring circle { fill: none; stroke-width: 2; }
+.anchor-badge .ring .track { stroke: var(--t4); }
+.anchor-badge .ring .prog { stroke: var(--bronze); stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: calc(94.25 * (1 - var(--p))); transition: stroke-dashoffset 0.15s linear; }
+.anchor-badge .icon { position: absolute; left: 7px; top: 7px; width: 20px; height: 20px; }
+/* stowed: not anchored, a quiet outline */
+.anchor-badge[data-phase="stowed"] { opacity: 0.55; }
+.anchor-badge[data-phase="stowed"] .ring .prog { opacity: 0; }
+/* going down / coming up: moving icon, ring fills with progress */
+.anchor-badge[data-phase="dropping"], .anchor-badge[data-phase="weighing"], .anchor-badge[data-phase="lifting"] { color: var(--bronze); }
+.anchor-badge[data-phase="dropping"] .icon { animation: anchor-down 1s var(--ease-out) infinite; }
+.anchor-badge[data-phase="weighing"] .icon, .anchor-badge[data-phase="lifting"] .icon { animation: anchor-up 1s var(--ease-out) infinite; }
+/* anchored: solid, lit, full ring */
+.anchor-badge[data-phase="holding"] { color: #14100a; background: var(--bronze); box-shadow: 0 0 14px var(--bronze-glow); }
+.anchor-badge[data-phase="holding"] .ring .track, .anchor-badge[data-phase="holding"] .ring .prog { stroke: var(--bronze); }
+@keyframes anchor-down { 0% { transform: translateY(-3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(3px); opacity: 0.35; } }
+@keyframes anchor-up { 0% { transform: translateY(3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(-3px); opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .anchor-badge .icon { animation: none !important; } }
 .ladder { display: flex; gap: 3px; margin-top: 11px; }
 .ladder i { width: 22px; height: 3px; border-radius: 2px; background: var(--t4); transition: background 0.2s, box-shadow 0.2s; }
 .ladder i.on { background: var(--terra); box-shadow: 0 0 8px var(--terra-glow); }
@@ -79,6 +101,7 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .stamina i { display: block; height: 100%; border-radius: inherit; background: var(--t2); transition: width 0.2s linear; }
 .stamina.low i { background: var(--danger); }
 .sail-state { font-size: 13px; color: var(--t2); margin-top: 7px; min-height: 1.2em; }
+.sail-state .leeway, .sail-state .leeway-sep { color: var(--t3); font-size: 12px; }
 
 /* heading tape, top centre */
 .tape { position: absolute; top: calc(var(--safe) - 4px); left: 50%; transform: translateX(-50%); width: 360px; height: 46px; }

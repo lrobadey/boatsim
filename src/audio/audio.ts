@@ -300,6 +300,8 @@ export class AudioEngine {
   }
   private rowingCursor: RowEventCursor | null = null;
   private lastBeatTime = -Infinity;
+  /** the keleustes' drum on each catch (trireme only) */
+  drumEnabled = true;
   private contactBins = new Map<number, { bin: number; side: number; enter: boolean; energy: number }>();
   rowingEvents(rowing: RowingSystem, renderTime: number) {
     if (!this.rowingCursor || this.rowingCursor.epoch !== rowing.events.generation) {
@@ -309,7 +311,7 @@ export class AudioEngine {
     }
     rowing.events.read(this.rowingCursor, renderTime, event => {
       if (event.kind === 'catchBeat') {
-        if (event.time - this.lastBeatTime >= 0.08) { this.strokeBeat(event.intensity); this.lastBeatTime = event.time; }
+        if (this.drumEnabled && event.time - this.lastBeatTime >= 0.08) { this.strokeBeat(event.intensity); this.lastBeatTime = event.time; }
       } else {
         const bin = Math.floor(event.time / 0.05), enter = event.kind === 'enterWater';
         const key = bin * 4 + (event.side > 0 ? 2 : 0) + (enter ? 0 : 1);

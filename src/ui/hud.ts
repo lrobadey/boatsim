@@ -29,7 +29,15 @@ export class Hud {
   density: HudDensity = 'minimal';
   private location = el('div', 'location');
   private ship = el('div', 'ship');
+  private speedRow = el('div', 'speed-row');
   private speed = el('div', 'speed');
+  private anchor = el('div', 'anchor-badge', `
+  <svg class="ring" viewBox="0 0 34 34" aria-hidden="true"><circle class="track" cx="17" cy="17" r="15"/><circle class="prog" cx="17" cy="17" r="15"/></svg>
+  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="4.8" r="2.1"/><path d="M12 6.9V20.6"/><path d="M7.6 10.2h8.8"/>
+    <path d="M4.6 13.4c0 4.1 3.3 7.3 7.4 7.3s7.4-3.2 7.4-7.3"/>
+    <path d="M4.6 13.4l-1.4 1.5M4.6 13.4l2 .5M19.4 13.4l1.4 1.5M19.4 13.4l-2 .5"/>
+  </svg>`);
   private ladder = el('div', 'ladder');
   private orderRow = el('div', 'order-row');
   private order = el('span', 'order');
@@ -56,6 +64,7 @@ export class Hud {
   private orderAge = 99;
   private sailText = '';
   private sailAge = 99;
+  private leewayAge = 0;
   private locName = '';
   private locT = 0;
   private hintT = 12;
@@ -73,7 +82,9 @@ export class Hud {
       this.rungs.push(r);
     }
     this.orderRow.append(this.order, this.orderKeys);
-    this.ship.append(this.speed, this.ladder, this.orderRow, this.stamina, this.sail);
+    this.speedRow.append(this.speed, this.anchor);
+    this.anchor.setAttribute('role', 'img');
+    this.ship.append(this.speedRow, this.ladder, this.orderRow, this.stamina, this.sail);
     this.tapeCanvas.width = TAPE_W * 2;
     this.tapeCanvas.height = TAPE_H * 2;
     this.tape.append(this.tapeCanvas, this.hdg);
@@ -84,7 +95,8 @@ export class Hud {
         <div>${key('W')}${key('S')} Stroke order</div>
         <div>${key('A')}${key('D')} Steer · ${key('X')} Centre</div>
         <div>${key('Space')} Hold water (brake)</div>
-        <div>${key('F')} Raise / lower sail</div>
+        <div>${key('F')} Raise / brail sail · ${key('G')} full / half</div>
+        <div>${key('J')}${key('L')} Trim yard · ${key('K')} crew trim</div>
         <div>${key('R')} Moor / cast off</div>
         <div>${key('Z')} Drop / raise anchor</div>
         <div>${key('E')} Leave the helm</div></div>
@@ -117,6 +129,11 @@ export class Hud {
   }
 
   /** add a widget that shows/hides with the HUD */
+  /** hide order rungs this crew can't be given (e.g. no ramming speed on a merchant ship) */
+  setMaxOrder(maxOrder: number) {
+    this.rungs.forEach((r, i) => { r.style.display = i > maxOrder ? 'none' : ''; });
+  }
+
   mount(node: HTMLElement) {
     this.root.appendChild(node);
   }
@@ -181,6 +198,16 @@ export class Hud {
 
     // ship block
     this.set('spd', kn.toFixed(1), (v) => (this.speed.innerHTML = `${v}<small>kn</small>`));
+    const moor = g.ship.mooring;
+    const phase = g.design.anchoringEnabled ? moor.anchorPhase : 'none';
+    this.set('anc', phase, (v) => {
+      this.anchor.dataset.phase = v;
+      const label = v === 'stowed' ? 'Anchor stowed' : v === 'dropping' ? 'Letting go the anchor' : v === 'holding' ? 'Anchored' : v === 'weighing' ? 'Weighing anchor' : v === 'lifting' ? 'Anchor coming up' : '';
+      this.anchor.setAttribute('aria-label', label);
+      this.anchor.title = label;
+    });
+    const prog = phase === 'holding' ? 1 : phase === 'dropping' || phase === 'weighing' || phase === 'lifting' ? moor.anchorProgress : 0;
+    this.set('ancp', prog.toFixed(3), (v) => this.anchor.style.setProperty('--p', v));
     const o = g.crew.order;
     this.set('ord', g.crew.holdWater ? 'Hold water' : o.name, (v) => (this.order.textContent = v));
     if (g.crew.orderIndex !== this.lastOrder) {
@@ -194,11 +221,29 @@ export class Hud {
     const stam = g.crew.stamina;
     this.set('stam', (stam * 100).toFixed(1), (v) => ((this.stamina.firstChild as HTMLElement).style.width = `${v}%`));
     this.stamina.classList.toggle('low', stam < 0.25);
-    const sail = ship.sailTarget > 0.5 ? (ship.sailForce > 50 ? `Sail drawing · ${(ship.sailForce / 1000).toFixed(1)} kN` : 'Sail luffing') : '';
-    if (sail.split('·')[0] !== this.sailText.split('·')[0]) this.sailAge = 0;
+    const sailState = ship.sailing.current;
+    const sailStatus = ship.sailing.telemetry.status;
+    const areaIntent = ship.sailing.deploymentTarget > 0 ? ship.sailing.deploymentTarget : g.sailDeploymentSelection;
+    const halfSail = areaIntent > 0.01 && areaIntent < 0.75;
+    let sail = '';
+    if (sailStatus !== 'furled') {
+      const condition = sailStatus === 'setting'
+        ? (ship.sailing.deploymentTarget > sailState.deployment ? 'setting' : 'brailing')
+        : sailStatus;
+      const base = halfSail ? `Half sail · ${condition}` : `Sail ${condition}`;
+      const trim = ship.sailing.trimMode === 'manual' ? ' · manual trim' : (!halfSail && condition !== 'aback' ? ' · crew trim' : '');
+      sail = `${base}${trim}`;
+    }
+    const leewayOk = this.density === 'full' && ship.speed > 0.5 && Math.abs(ship.leeway) > (3 * Math.PI / 180);
+    this.leewayAge = leewayOk ? this.leewayAge + dt : 0;
+    const leeway = leewayOk && this.leewayAge >= 0.5
+      ? `<span class="leeway">leeway ${Math.round(Math.abs(ship.leeway) * 180 / Math.PI)}°</span>`
+      : '';
+    const sailLine = sail ? `${sail}${leeway ? ` <span class="leeway-sep">·</span> ${leeway}` : ''}` : leeway;
+    if (sail !== this.sailText) this.sailAge = 0;
     this.sailText = sail;
     this.sailAge += dt;
-    this.set('sail', sail, (v) => (this.sail.textContent = v));
+    this.set('sail', sailLine, (v) => (this.sail.innerHTML = v));
     this.steady(this.ship, ashore);
     this.steady(this.ladder, this.orderAge > 4);
     this.steady(this.orderRow, this.orderAge > 4 && !commanding);
@@ -215,9 +260,13 @@ export class Hud {
     const turning = Number.isNaN(this.lastHdg) ? 0 : Math.abs(((hd - this.lastHdg + 540) % 360) - 180) / Math.max(dt, 1e-3);
     this.lastHdg = hd;
     this.lookAge = turning > 6 ? 0 : this.lookAge + dt;
-    this.drawTape(hd);
+    const apparentFrom = ship.sailing.telemetry.apparentFrom;
+    const relativeWind = ship.heading + apparentFrom - (hd * Math.PI / 180);
+    const windOffset = Math.atan2(Math.sin(relativeWind), Math.cos(relativeWind));
+    const windOn = ship.sailing.telemetry.apparentSpeed >= 0.3;
+    this.drawTape(hd, windOffset * 180 / Math.PI, windOn);
     this.set('hdg', Math.round(hd % 360).toString().padStart(3, '0'), (v) => (this.hdg.textContent = `${v}°`));
-    this.steady(this.tape, !commanding && this.lookAge > 5);
+    this.steady(this.tape, !commanding && this.lookAge > 5 && !windOn);
 
     this.astro.update(g);
 
@@ -258,13 +307,14 @@ export class Hud {
       this.debug.innerHTML = `${(1000 / avg).toFixed(0)} fps · ${avg.toFixed(1)} ms<br>scale ${g.pipeline.renderScale.toFixed(2)} · ${g.pipeline.refreshRate.toFixed(0)} Hz · gpu ${g.pipeline.gpuMs.toFixed(1)} ms<br>tris ${(info.render.triangles / 1e6).toFixed(2)}M<br>
         displ ${(ship.displacement / 1000).toFixed(1)} t · heel ${((ship.heel * 180) / Math.PI).toFixed(1)}° · pitch ${((ship.pitch * 180) / Math.PI).toFixed(1)}°<br>
         oar thrust ${(ship.oarThrust / 1000).toFixed(1)} kN · ${g.crew.rate.toFixed(0)} spm<br>
+        sail load ${(ship.sailing.telemetry.load / 1000).toFixed(1)} kN · fill ${ship.sailing.current.fill.toFixed(2)} · yard ${((ship.sailing.current.yardAngle * 180) / Math.PI).toFixed(0)}°<br>
         Hs ${g.waves.hs.toFixed(2)} m · λp ${g.waves.peakLambda.toFixed(0)} m`;
     }
   }
 
   /** ticks every 5°, taller every 15°, compass points every 45°; terracotta lubber mark */
-  private drawTape(hd: number) {
-    const k = Math.round(hd * 10) / 10;
+  private drawTape(hd: number, windOffset: number, windOn: boolean) {
+    const k = `${Math.round(hd * 10) / 10}:${windOn ? Math.round(windOffset * 10) / 10 : 'off'}`;
     if (this.cache.get('tape') === String(k)) return;
     this.cache.set('tape', String(k));
     const c = this.tapeCanvas.getContext('2d')!;
@@ -287,6 +337,43 @@ export class Hud {
       if (point) {
         c.fillStyle = deg === 0 ? `rgba(208,105,62,${fade})` : `rgba(243,238,228,${0.85 * fade})`;
         c.fillText(COMPASS[deg / 45], x, 12);
+      }
+    }
+    if (windOn) {
+      if (Math.abs(windOffset) <= span) {
+        const x = mid + windOffset * PX_PER_DEG;
+        c.strokeStyle = 'rgba(210,166,94,0.95)';
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(x - 3, 16);
+        c.lineTo(x, 20);
+        c.lineTo(x + 3, 16);
+        c.stroke();
+        c.fillStyle = 'rgba(210,166,94,0.9)';
+        c.fillRect(Math.round(x), 21, 1, 7);
+      } else {
+        const drawEdge = (side: -1 | 1) => {
+          const x = side < 0 ? 6 : TAPE_W - 6;
+          c.strokeStyle = 'rgba(210,166,94,0.5)';
+          c.lineWidth = 1.5;
+          c.beginPath();
+          if (side < 0) {
+            c.moveTo(x + 3, 16);
+            c.lineTo(x, 20);
+            c.lineTo(x + 3, 24);
+          } else {
+            c.moveTo(x - 3, 16);
+            c.lineTo(x, 20);
+            c.lineTo(x - 3, 24);
+          }
+          c.stroke();
+        };
+        if (Math.abs(windOffset) > 175) {
+          drawEdge(-1);
+          drawEdge(1);
+        } else {
+          drawEdge(windOffset < 0 ? -1 : 1);
+        }
       }
     }
     c.shadowBlur = 0;

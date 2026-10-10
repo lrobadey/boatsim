@@ -14,13 +14,16 @@ import { Ocean } from './world/ocean';
 import { OceanFFT } from './world/oceanFFT';
 import { Terrain } from './world/terrain';
 import { FoamSystem } from './world/foam';
+import { OarWater } from './world/oarWater';
 import { Props } from './world/props';
 import { Birds } from './world/birds';
 import type { WorldGenResult } from './world/worldgenTypes';
 import { ShipPhysics } from './ship/physics';
 import { Trireme } from './ship/trireme';
+import { MerchantModel } from './ship/merchantModel';
+import type { ShipVisual } from './ship/shipVisual';
+import { TRIREME, type ShipDesign } from './ship/design';
 import { Crew, ORDERS, ORDER_STOP } from './ship/crew';
-import { hullWidthTable, HULL_LENGTH, deckY, zOf } from './ship/hull';
 import { buildHarbour, type HarbourLayout } from './world/harbour';
 import { WalkGeometry } from './world/walkable';
 import type { ShipPose } from './player/walker';
@@ -66,11 +69,12 @@ export class Game {
   private lightingJump = false;
   readonly terrain: Terrain;
   readonly foam: FoamSystem;
+  readonly oarWater: OarWater;
   readonly props: Props;
   readonly birds: Birds;
   readonly crew = new Crew();
   readonly ship: ShipPhysics;
-  readonly model: Trireme;
+  readonly model: ShipVisual;
   readonly player: PlayerController;
   readonly hud: Hud;
   readonly chart: Chart;
@@ -87,6 +91,7 @@ export class Game {
   readonly builder: DeckBuilder;
   private invShip = new THREE.Matrix4();
   private steeringInput = false;
+  private sailSelection = 1;
   private acc = 0;
   private last = performance.now();
   private simTime = 0;
@@ -102,6 +107,9 @@ export class Game {
   private islands: { name: string; x: number; z: number; r: number; kind: string }[] = [];
   private harbour: { x: number; z: number; name: string } | null = null;
 
+  /** Selected exposure restored by F after the sail has been fully brailed. */
+  get sailDeploymentSelection() { return this.sailSelection; }
+
   /** nearest named place (island or its harbour) to the camera, for the location title */
   nearestIsland() {
     const p = this.player.mode === 'eagle' ? this.camera.position : this.shipPos;
@@ -114,7 +122,7 @@ export class Game {
     return best;
   }
 
-  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit) {
+  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit, readonly design: ShipDesign = TRIREME) {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 60000);
     this.pipeline = new Pipeline(canvas, this.scene, this.camera, quality);
     this.input = new Input(canvas);
@@ -176,13 +184,19 @@ export class Game {
     this.ocean.uniforms.uReflect.value = this.reflection.target.texture;
     this.ocean.uniforms.uReflMatrix.value = this.reflection.textureMatrix;
     this.ocean.uniforms.uReflOn.value = this.reflection.enabled ? 1 : 0;
-    this.ocean.uniforms.uHullW.value = hullWidthTable();
-    this.ocean.uniforms.uHullLen.value = HULL_LENGTH;
+    this.ocean.uniforms.uHullW.value = design.hull.hullWidthTable();
+    this.ocean.uniforms.uHullLen.value = design.hull.length;
+    this.ocean.uniforms.uHullDeck.value = design.kind === 'merchant' ? design.deck.deckY(0.5) : 2.0;
 
-    this.foam = new FoamSystem(quality.name === 'low' ? 512 : 1024);
+    this.foam = new FoamSystem(quality.name === 'low' ? 512 : 1024, design.hull);
     this.ocean.uniforms.uFoamMap.value = this.foam.target.texture;
     this.ocean.uniforms.uFoamSize.value = this.foam.size;
     this.ocean.uniforms.uFoamCenter.value = this.foam.center;
+    this.oarWater = new OarWater(quality.name === 'low' ? 512 : 1024, design.hull);
+    this.ocean.uniforms.uOarMap.value = this.oarWater.target.texture;
+    this.ocean.uniforms.uOarSize.value = this.oarWater.size;
+    this.ocean.uniforms.uOarCenter.value = this.oarWater.center;
+    this.scene.add(this.oarWater.spray);
 
     this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets, this.models);
     this.scene.add(this.props.group);
@@ -190,8 +204,10 @@ export class Game {
     this.scene.add(this.birds.group);
 
     T('props');
-    this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew);
-    this.model = new Trireme(assets.planks, this.ship.rowing.slots, this.models);
+    this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew, design);
+    this.model = design.kind === 'merchant'
+      ? new MerchantModel(assets.planks, this.ship.rowing.slots, this.models, design)
+      : new Trireme(assets.planks, this.ship.rowing.slots, this.models);
     this.scene.add(this.model.group);
     this.harbourLayout = buildHarbour(gen, this.terrain);
     this.ship.mooring.setHarbour(this.harbourLayout);
@@ -200,7 +216,7 @@ export class Game {
     for (const sol of this.props.solids) this.walk.add(sol);
     this.buildShipSolids();
     this.shipPose = { origin: new THREE.Vector3(), quat: new THREE.Quaternion(), cgWorld: new THREE.Vector3(), vel: new THREE.Vector3(), angVel: new THREE.Vector3(), plank: null, solids: this.shipSolids };
-    this.harbourRig = new HarbourRig();
+    this.harbourRig = new HarbourRig(design);
     this.harbourRig.setPlankModel(this.models.get('gangplank'), 3);
     this.harbourRig.setAnchorModel(this.models.get('anchor'));
     this.scene.add(this.harbourRig.group);
@@ -213,14 +229,16 @@ export class Game {
     this.ship.angVel.set(0, 0, 0);
 
     T('ship');
-    this.player = new PlayerController(this.camera, this.input);
+    this.player = new PlayerController(this.camera, this.input, design);
     this.hud = new Hud();
+    this.hud.setMaxOrder(design.oars.maxOrder);
+    this.audio.drumEnabled = design.oars.drum;
     this.chart = new Chart(gen, this.terrain);
     this.minimap = new Minimap(this.chart, gen);
     this.hud.mount(this.minimap.root);
     this.hud.mount(this.dock.root);
     this.hud.mount(this.crosshair.root);
-    this.builder = new DeckBuilder(this.models, this.model.group, this.ship.payload, this.shipSolids, this.player.interactions, this.crew);
+    this.builder = new DeckBuilder(this.models, this.model.group, this.ship.payload, this.shipSolids, this.player.interactions, this.crew, design.buildingEnabled);
     this.hud.mount(this.builder.ui.root);
     this.minimap.setBerths(this.harbourLayout.berths);
     this.chart.setBerths(this.harbourLayout.berths);
@@ -246,14 +264,24 @@ export class Game {
 
   /** fixed deck furniture people bump into (ship-local) */
   private buildShipSolids() {
-    const add = (x: number, s: number, r: number, h: number) =>
-      this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r, y0: deckY(s), y1: deckY(s) + h, surface: 'wood', walkTop: false });
-    add(0, 0.42, 0.25, 11.5); // mast
-    for (let i = 0; i < 8; i++) add((i < 4 ? -1 : 1) * 0.7, 0.47 + (i % 4) * 0.012, 0.2, 0.9); // amphorae
-    // deck crew
-    for (const [x, s] of [[1.05, 0.5], [-1.1, 0.53], [0.95, 0.38], [-1.0, 0.33], [0.8, 0.2], [-0.75, 0.17], [0.2, 0.12], [0.9, 0.66]]) add(x, s, 0.25, 1.75);
-    const s = 0.905;
-    this.shipSolids.add({ kind: 'box', cx: 0, cz: zOf(s), hx: 0.8, hz: 0.25, rot: 0, y0: deckY(0.9), y1: deckY(0.9) + 0.45, surface: 'wood', walkTop: true });
+    if (this.design.kind === 'trireme') {
+      const add = (x: number, s: number, r: number, h: number) =>
+        this.shipSolids.add({ kind: 'cyl', cx: x, cz: this.design.hull.zOf(s), r, y0: this.design.deck.deckY(s), y1: this.design.deck.deckY(s) + h, surface: 'wood', walkTop: false });
+      add(0, 0.42, 0.25, 11.5); // mast
+      for (let i = 0; i < 8; i++) add((i < 4 ? -1 : 1) * 0.7, 0.47 + (i % 4) * 0.012, 0.2, 0.9); // amphorae
+      // deck crew
+      for (const [x, s] of [[1.05, 0.5], [-1.1, 0.53], [0.95, 0.38], [-1.0, 0.33], [0.8, 0.2], [-0.75, 0.17], [0.2, 0.12], [0.9, 0.66]]) add(x, s, 0.25, 1.75);
+      const s = 0.905;
+      this.shipSolids.add({ kind: 'box', cx: 0, cz: this.design.hull.zOf(s), hx: 0.8, hz: 0.25, rot: 0, y0: this.design.deck.deckY(0.9), y1: this.design.deck.deckY(0.9) + 0.45, surface: 'wood', walkTop: true });
+      return;
+    }
+    // merchant: the mast and the crew's standing figures as solid cylinders. The spec's unbound
+    // method references are wrapped: TableHull.zOf reads `this`, so it must be called as a method.
+    const d = this.design;
+    const deckY = (s: number) => d.deck.deckY(s);
+    const zOf = (s: number) => d.hull.zOf(s);
+    this.shipSolids.add({ kind: 'cyl', cx: 0, cz: zOf(d.rig.mastStation), r: 0.18, y0: deckY(d.rig.mastStation), y1: deckY(d.rig.mastStation) + d.rig.mastHeight, surface: 'wood', walkTop: false });
+    for (const [, x, s] of d.crewSpots) this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r: 0.25, y0: deckY(s), y1: deckY(s) + 1.75, surface: 'wood', walkTop: false });
   }
 
   resize() {
@@ -334,7 +362,10 @@ export class Game {
     if (inp.hit('KeyE')) p.toggleHelm();
     if (inp.hit('KeyB')) {
       if (p.mode === 'build') p.mode = 'foot';
-      else if (p.mode === 'foot' && p.walker.frame === 'ship') p.mode = 'build';
+      else if (p.mode === 'foot' && p.walker.frame === 'ship') {
+        if (this.design.buildingEnabled) p.mode = 'build';
+        else this.hud.showToast("Building isn't available on the merchant ship yet");
+      }
       else if (p.mode === 'foot') this.hud.showToast('Build on the ship deck');
     }
     if (p.mode === 'build' && p.walker.frame !== 'ship') p.mode = 'foot';
@@ -366,16 +397,45 @@ export class Game {
         else this.crew.setOrder(this.crew.orderIndex + (inp.hit('KeyW') ? 1 : -1));
       }
       if (inp.hit('KeyR')) {
-        if (moor.state === 'moored' || moor.state === 'warping') moor.castOff();
+        if (!this.design.dockingEnabled) this.hud.showToast("Docking isn't available on the merchant ship yet");
+        else if (moor.state === 'moored' || moor.state === 'warping') moor.castOff();
         else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
         else if (!moor.approach) this.hud.showToast('No berth in range');
         else moor.makeFast();
       }
       if (inp.hit('KeyZ')) {
-        if (moor.state === 'anchored') moor.weighAnchor();
+        const ph = moor.anchorPhase;
+        if (!this.design.anchoringEnabled) this.hud.showToast("This ship can't anchor");
+        else if (moor.state === 'anchored' && (ph === 'holding' || ph === 'dropping')) moor.weighAnchor();
+        else if (ph === 'weighing') this.hud.showToast('Weighing anchor');
+        else if (ph === 'lifting') this.hud.showToast('Anchor coming up');
         else if (moor.state === 'free') moor.dropAnchor();
       }
-      if (inp.hit('KeyF')) this.ship.sailTarget = this.ship.sailTarget > 0.5 ? 0 : 1;
+      if (inp.hit('KeyF')) {
+        if (this.ship.sailing.deploymentTarget > 0) {
+          this.sailSelection = this.ship.sailing.deploymentTarget;
+          this.ship.sailing.deploymentTarget = 0;
+        } else {
+          this.ship.sailing.deploymentTarget = this.sailSelection;
+        }
+      }
+      if (inp.hit('KeyG')) {
+        this.sailSelection = this.sailSelection > 0.75 ? 0.5 : 1;
+        // Keep the selection while furled or brailing; a changed target remains lowered.
+        if (this.ship.sailing.deploymentTarget > 0) this.ship.sailing.deploymentTarget = this.sailSelection;
+      }
+      const yardDirection = (inp.down('KeyL') ? 1 : 0) - (inp.down('KeyJ') ? 1 : 0);
+      if (yardDirection !== 0) {
+        const sailing = this.ship.sailing;
+        if (sailing.trimMode !== 'manual') sailing.manualYardTarget = sailing.current.yardAngle;
+        sailing.trimMode = 'manual';
+        sailing.manualYardTarget = clamp(
+          sailing.manualYardTarget + yardDirection * dt * 0.35,
+          -this.ship.sailing.rig.maxYardAngle,
+          this.ship.sailing.rig.maxYardAngle,
+        );
+      }
+      if (inp.hit('KeyK')) this.ship.sailing.trimMode = 'auto';
       const steer = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0);
       this.steeringInput = steer !== 0 || inp.hit('KeyW') || inp.hit('KeyS');
       if (steer !== 0) this.ship.helm = clamp(this.ship.helm + steer * dt * 0.9, -1, 1);
@@ -411,8 +471,10 @@ export class Game {
         this.audio.anchorDrop();
         this.crew.setOrder(ORDER_STOP);
         this.hud.showToast('Anchor down');
-      } else if (e.type === 'anchor-up') {
+      } else if (e.type === 'anchor-weighing') {
         this.audio.anchorWeigh(3);
+        this.hud.showToast('Weighing anchor');
+      } else if (e.type === 'anchor-up') {
         this.hud.showToast('Anchor up');
       } else if (e.type === 'plank') this.audio.plank(e.down);
       else if (e.type === 'denied') {
@@ -423,7 +485,7 @@ export class Game {
     // the crew won't let the ship wander off with the captain ashore or overboard
     if (this.player.walker.frame === 'world' && moor.state === 'free') {
       if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
-      if (Math.hypot(this.ship.vel.x, this.ship.vel.z) < 1.2 && moor.dropAnchor()) this.hud.showNote('Anchor dropped while you are off the ship', 5);
+      if (this.design.anchoringEnabled && Math.hypot(this.ship.vel.x, this.ship.vel.z) < 1.2 && moor.dropAnchor(true)) this.hud.showNote('Anchor dropped while you are off the ship', 5);
     }
     // ship oars on the quay side for the last metres, both sides once she's tied up
     const a = moor.approach;
@@ -592,6 +654,7 @@ export class Game {
     this.props.update(dt, this.ship.time, this.camera, this.sky.night);
     this.birds.update(dt, this.camera);
     this.foam.update(this.paused ? 0 : dt, this.ship, this.model, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !this.paused);
+    this.oarWater.update(this.paused ? 0 : dt, this.ship, this.model, this.waves, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !this.paused);
 
     const rt = this.pipeline.refractTarget;
     const size = this.pipeline.renderer.getDrawingBufferSize(new THREE.Vector2());

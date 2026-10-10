@@ -1,0 +1,11 @@
+Model Information:
+* title:	Kyrenia Ship Hull Lines by J. Richard Steffy
+* source:	https://sketchfab.com/3d-models/kyrenia-ship-hull-lines-by-j-richard-steffy-407996fccafb4aacbec59c4a60f1c749
+* author:	Digital in situ Preservation Archive (https://sketchfab.com/kotaro_yamafune)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Kyrenia Ship Hull Lines by J. Richard Steffy" (https://sketchfab.com/3d-models/kyrenia-ship-hull-lines-by-j-richard-steffy-407996fccafb4aacbec59c4a60f1c749) by Digital in situ Preservation Archive (https://sketchfab.com/kotaro_yamafune) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

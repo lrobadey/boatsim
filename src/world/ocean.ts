@@ -61,6 +61,9 @@ export class Ocean {
       uFoamMap: { value: null },
       uFoamCenter: { value: new THREE.Vector2() },
       uFoamSize: { value: 600 },
+      uOarMap: { value: null },
+      uOarCenter: { value: new THREE.Vector2() },
+      uOarSize: { value: 96 },
       uSlopeA: { value: fft.slope(0) },
       uSlopeB: { value: fft.slope(1) },
       uDispA: { value: fft.disp(0) },
@@ -252,6 +255,9 @@ uniform float uWhiteRamp;
 uniform sampler2D uFoamMap;
 uniform vec2 uFoamCenter;
 uniform float uFoamSize;
+uniform sampler2D uOarMap;
+uniform vec2 uOarCenter;
+uniform float uOarSize;
 uniform vec2 uInnerCenter;
 uniform float uInnerHalf;
 uniform float uLastLevel;
@@ -309,7 +315,15 @@ void main() {
   vec2 fuv = vec2(fd.x, -fd.y) + 0.5; // ortho foam camera: up = -z
   vec2 wake = vec2(0.0);
   if (all(greaterThan(fuv, vec2(0.0))) && all(lessThan(fuv, vec2(1.0)))) wake = texture2D(uFoamMap, fuv).rg;
-  float slick = clamp(wake.g, 0.0, 1.0);
+  // oar disturbance: ripple and puddle slopes (rg), entrained air (b), glassy slick (a)
+  vec4 oar = vec4(0.0);
+  if (dist < 400.0) {
+    vec2 od = (vWorld.xz - uOarCenter) / uOarSize;
+    vec2 ouv = vec2(od.x, -od.y) + 0.5;
+    vec2 oe = smoothstep(vec2(0.0), vec2(0.06), ouv) * smoothstep(vec2(1.0), vec2(0.94), ouv);
+    if (oe.x * oe.y > 0.0) oar = texture2D(uOarMap, ouv) * (oe.x * oe.y) * (1.0 - smoothstep(150.0, 400.0, dist));
+  }
+  float slick = clamp(max(wake.g, oar.a), 0.0, 1.0);
 
   // FFT cascades are sampled at the undisplaced (Lagrangian) position so short waves ride the swell.
   // Their mip chain carries mean slope AND mean squared slope: the difference is the slope variance
@@ -324,6 +338,9 @@ void main() {
   vec2 varS = max(sA.zw - sA.xy * sA.xy, 0.0) * gA * gA + max(sB.zw - sB.xy * sB.xy, 0.0) * gB * gB;
   dS += r4 * 0.05 * f4 * (0.6 + 0.4 * gust);
   dS += r3 * 0.06 * clamp(wake.r, 0.0, 1.0) * f2; // churned surface right in the foam
+  // oar ripples and puddles bend the real surface: reflections and refraction wobble through them
+  dS += clamp(oar.xy, -0.6, 0.6);
+  varS += vec2(0.25 * dot(oar.xy, oar.xy) + 0.004 * clamp(oar.b, 0.0, 1.0));
 
   // Gerstner normal & Jacobian evaluated per pixel at the undisplaced position: identical across
   // clipmap levels (no seams) and sharper than per-vertex interpolation
@@ -411,7 +428,12 @@ void main() {
   vec3 inscatter = scatterCol * light * (1.0 - T);
   // aerated water (wake) glows turquoise
   inscatter += vec3(0.04, 0.15, 0.15) * light * clamp(wake.g, 0.0, 1.0) * 0.12;
+  // the bubble cloud under an oar's boil scatters light back up: pale turquoise under the foam
+  float oarAir = 1.0 - exp(-1.3 * max(oar.b, 0.0)); // overlapping boils saturate, never a white sheet
+  inscatter += vec3(0.06, 0.2, 0.19) * light * oarAir * 0.35;
   vec3 refr = sceneCol * T + inscatter;
+  // and veils what lies beneath it (the submerged blade fades into its own boil)
+  refr = mix(refr, scatterCol * light * 2.2 + vec3(0.05, 0.16, 0.16) * light * 0.4, clamp(oarAir * 0.55, 0.0, 0.7));
 
   // subsurface: light through backlit wave crests
   float sssDot = pow(max(dot(V, -normalize(L + N * 0.6)), 0.0), 4.0);
@@ -437,7 +459,7 @@ void main() {
   shoreFoam += (1.0 - smoothstep(0.0, 0.35, depthV)) * 0.8;
   // wake foam as coverage of a lace pattern: dense foam covers solidly, thin foam survives only as
   // filaments and bubbles, so the wake frays naturally as it ages
-  float wf = clamp(wake.r, 0.0, 2.0);
+  float wf = clamp(wake.r + oarAir * 0.85, 0.0, 2.0);
   float lace = texture2D(uNoise, fp * 0.13 + uTime * 0.006).b * 0.55 + texture2D(uNoise, fp * 0.41 - uTime * 0.01).a * 0.3 + texture2D(uNoise, fp * 1.3).r * 0.15;
   lace = clamp((lace - 0.5) * 2.4 + 0.5, 0.0, 1.0); // the octave sum clusters near 0.5: restore contrast
   float wakeFoam = clamp((wf * 1.05 - (1.0 - lace)) * 3.5, 0.0, 1.0) * 0.95;

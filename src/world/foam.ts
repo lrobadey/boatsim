@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { ShipPhysics } from '../ship/physics';
-import type { Trireme } from '../ship/trireme';
+import type { ShipVisual } from '../ship/shipVisual';
 import type { RowEventCursor } from '../ship/rowing';
-import { HULL_LENGTH, RAM_LENGTH, halfBeam, zOf } from '../ship/hull';
+import { TRIREME_HULL, type HullShape } from '../ship/hullShape';
 
 /**
  * Wake & foam map. Foam "particles" live in world space on the water (Kelvin wake arms spreading at
@@ -43,8 +43,10 @@ export class FoamSystem {
   private sideAcc = 0;
   private slamCd = 0;
   private rowingCursor: RowEventCursor | null = null;
+  private readonly hull: HullShape;
 
-  constructor(res = 1024) {
+  constructor(res = 1024, hull: HullShape = TRIREME_HULL) {
+    this.hull = hull;
     this.target = new THREE.WebGLRenderTarget(res, res, { type: THREE.HalfFloatType, depthBuffer: false });
     this.cam = new THREE.OrthographicCamera(-this.size / 2, this.size / 2, this.size / 2, -this.size / 2, -10, 10);
     this.cam.up.set(0, 0, -1);
@@ -107,7 +109,7 @@ export class FoamSystem {
     this.parts.push({ vx: 0, vz: 0, age: 0, life: 20, size0: 2, size1: 6, foam: 0.6, turb: 0.4, ring: 0, ff: 0.6, ...p });
   }
 
-  update(dt: number, ship: ShipPhysics, model: Trireme, renderer: THREE.WebGLRenderer, renderTime = ship.time, consumeEvents = true) {
+  update(dt: number, ship: ShipPhysics, model: ShipVisual, renderer: THREE.WebGLRenderer, renderTime = ship.time, consumeEvents = true) {
     const q = ship.quat;
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
     fwd.y = 0;
@@ -119,8 +121,8 @@ export class FoamSystem {
     this.lastPos.copy(ship.pos);
     if (moved < 20) this.distAcc += moved;
 
-    const bow = ship.toWorld(new THREE.Vector3(0, 0, -HULL_LENGTH / 2 - RAM_LENGTH * 0.6), new THREE.Vector3());
-    const stern = ship.toWorld(new THREE.Vector3(0, 0, zOf(0.93)), new THREE.Vector3());
+    const bow = ship.toWorld(new THREE.Vector3(0, 0, this.hull.zOf(0) - this.hull.bowOverhang * 0.6), new THREE.Vector3());
+    const stern = ship.toWorld(new THREE.Vector3(0, 0, this.hull.zOf(0.93)), new THREE.Vector3());
     // spawn by distance travelled so the trail is continuous at any speed
     const spacing = 1.2;
     while (this.distAcc > spacing && vAbs > 0.3) {
@@ -162,7 +164,7 @@ export class FoamSystem {
       this.sideAcc -= 1;
       const s = Math.random() * 0.5 + 0.05;
       const side = Math.random() < 0.5 ? -1 : 1;
-      const lp = new THREE.Vector3(side * (halfBeam(s) + 0.3), 0, zOf(s));
+      const lp = new THREE.Vector3(side * (this.hull.halfBeam(s) + 0.3), 0, this.hull.zOf(s));
       const wp = ship.toWorld(lp, lp);
       this.spawn({ x: wp.x, z: wp.z, vx: right.x * side * 0.6, vz: right.z * side * 0.6, life: 8, size0: 1.0, size1: 3.2, foam: 0.75 * Math.min(1, speed / 4), turb: 0.4 });
     }
@@ -173,14 +175,13 @@ export class FoamSystem {
       for (let i = 0; i < 6; i++)
         this.spawn({ x: bow.x + (Math.random() - 0.5) * 4, z: bow.z + (Math.random() - 0.5) * 4, vx: (Math.random() - 0.5) * 2, vz: (Math.random() - 0.5) * 2, life: 12, size0: 2, size1: 7, foam: 0.8, turb: 0.6 });
     }
-    // Each physical contact is consumed once, at its recorded world position and render time.
-    if (!this.rowingCursor) this.rowingCursor = { next: ship.rowing.events.oldestId };
+    // Oar contacts live in the finer OarWater map. Here they only leave the lasting slick, so the
+    // stroke marks still trail the wake beyond that map's reach.
+    if (!this.rowingCursor || this.rowingCursor.epoch !== ship.rowing.events.generation)
+      this.rowingCursor = { next: ship.rowing.events.oldestId, epoch: ship.rowing.events.generation };
     if (consumeEvents) ship.rowing.events.read(this.rowingCursor, renderTime, (event) => {
-      if (event.kind === 'catchBeat' || event.intensity <= 0) return;
-      const enter = event.kind === 'enterWater';
-      this.spawn({ x: event.x, z: event.z, life: enter ? 3.5 : 7,
-        size0: enter ? 0.4 : 0.6, size1: enter ? 1.6 : 2.2,
-        foam: (enter ? 0.85 : 0.6) * event.intensity, turb: 0.45 * event.intensity, ring: enter ? 1 : 0 });
+      if (event.kind !== 'leaveWater' || event.intensity <= 0) return;
+      this.spawn({ x: event.x, z: event.z, life: 14, size0: 0.8, size1: 2.6, foam: 0, turb: 0.35 * event.intensity, ring: 0 });
     });
 
     // advance & pack

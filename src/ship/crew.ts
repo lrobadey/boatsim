@@ -34,12 +34,14 @@ export class Crew {
   exhausted = false;
   latchedDriveTime = 1.55;
   latchedPeriod = 60 / 18;
+  /** highest order this crew can be given (the design sets it) */
+  maxOrder = ORDERS.length - 1;
   get order() { return ORDERS[this.orderIndex]; }
   get driveTime() { return this.latchedDriveTime; }
   get period() { return this.latchedPeriod; }
   get driveFrac() { return this.driveTime / this.period; }
   setOrder(i: number) {
-    this.orderIndex = clamp(Math.round(i), 0, ORDERS.length - 1);
+    this.orderIndex = clamp(Math.round(i), 0, this.maxOrder);
     if (this.orderIndex === ORDERS.length - 1 && this.stamina < 0.20) this.orderIndex--;
   }
   get strength() { return 0.65 + 0.35 * Math.sqrt(this.stamina); }

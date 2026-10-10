@@ -145,7 +145,7 @@ export class DockPanel {
     } else if (st === 'moored') {
       cta = 'Moored · <kbd>R</kbd> Cast off';
     } else {
-      cta = 'Anchored · <kbd>Z</kbd> Raise anchor';
+      cta = mooring.anchorPhase === 'weighing' ? 'Weighing anchor' : mooring.anchorPhase === 'dropping' ? 'Letting go the anchor' : 'Anchored · <kbd>Z</kbd> Raise anchor';
     }
     if (!this.same('reason', reason)) this.reason.textContent = reason;
     if (!this.same('cta', cta)) this.cta.innerHTML = cta;

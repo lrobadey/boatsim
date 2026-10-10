@@ -8,6 +8,7 @@ import { halfBeam, deckY, sheer, zOf } from './hull';
  * All forces go through ShipPhysics.addForceAtPublic during ShipPhysics.step.
  */
 export type MooringState = 'free' | 'warping' | 'moored' | 'anchored';
+export type AnchorPhase = 'stowed' | 'dropping' | 'holding' | 'weighing' | 'lifting';
 
 export interface ApproachInfo {
   berth: Berth;
@@ -65,6 +66,7 @@ export type MooringEvent =
   | { type: 'cast-off' }
   | { type: 'bump'; speed: number }
   | { type: 'anchor-down' }
+  | { type: 'anchor-weighing' }
   | { type: 'anchor-up' }
   | { type: 'plank'; down: boolean }
   | { type: 'denied'; reason: string };
@@ -87,7 +89,8 @@ const NEAR = 220;
 /** cleat stations: bow, forward spring, aft spring, stern */
 const CLEATS = [0.12, 0.4, 0.6, 0.86];
 const LINE = { k: 40e3, c: 25e3, slack: 0.1, clamp: 30e3, ramp: 1.5, timeout: 25, haulSpeed: 0.5, haulTau: 1.2 };
-const ANCHOR = { k: 18e3, c: 12e3, clamp: 60e3, s: 0.12 };
+/** fall/haul/lift in m/s; breakout = horizontal rode length at which the anchor breaks out of the seabed */
+const ANCHOR = { k: 18e3, c: 12e3, clamp: 60e3, s: 0.12, rode: 14, fall: 2.5, haul: 1.2, lift: 1.5, breakout: 1.5 };
 const PLANK = { station: 0.62, width: 0.7, rate: 0.5, reach: 1.6 };
 const SHOVE = { speed: 0.35, time: 1 };
 const BUMP = { min: 0.25, gap: 0.4 };
@@ -106,6 +109,10 @@ function headingOf(ship: ShipPhysics) {
 }
 
 export class Mooring {
+  private readonly bowLocal: THREE.Vector3;
+  constructor(readonly docking = true, readonly anchoring = true, bowLocal: THREE.Vector3 = BOW_LOCAL, readonly anchorScale = 1) {
+    this.bowLocal = bowLocal.clone();
+  }
   state: MooringState = 'free';
   berth: Berth | null = null;
   approach: ApproachInfo | null = null;
@@ -113,12 +120,23 @@ export class Mooring {
   plank: Gangplank | null = null;
   /** world xz of the anchor on the seabed, when anchored */
   anchorAt: THREE.Vector3 | null = null;
-  rode = 14;
+  rode = ANCHOR.rode;
   /** 0..1 progress while warping in */
   warpProgress = 0;
   events: MooringEvent[] = [];
   layout: HarbourLayout | null = null;
+  /** where the anchor is in its cycle; 'stowed' = on deck */
+  anchorPhase: AnchorPhase = 'stowed';
+  /** world position of the anchor's ring while it is off the deck */
+  readonly anchorPos = new THREE.Vector3();
+  /** 0..1 progress of the current anchor phase (UI); 1 while holding, 0 when stowed */
+  anchorProgress = 0;
+  /** seabed height at a world xz (ShipPhysics sets it from the terrain) */
+  seabed: ((x: number, z: number) => number) | null = null;
 
+  private dropTop = 0;
+  private weighRode0 = 0;
+  private liftDist0 = 0;
   private ship: ShipPhysics | null = null;
   private clock = 0;
   private warpTime = 0;
@@ -146,36 +164,46 @@ export class Mooring {
     this.ship = ship;
     this.clock += dt;
     this.lastDt = dt;
-    this.updateApproach(ship);
-    if (!this.approach && this.state === 'free') this.peak = 0;
-    if (!this.plank) this.plank = { station: PLANK.station, side: 1, deployed: 0, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
+    if (!this.docking) {
+      this.approach = null;
+      if (this.state === 'anchored') this.holdAnchor(ship);
+    } else {
+      this.updateApproach(ship);
+      if (!this.approach && this.state === 'free') this.peak = 0;
+      if (!this.plank) this.plank = { station: PLANK.station, side: 1, deployed: 0, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
 
-    switch (this.state) {
-      case 'warping':
-        this.warpTime += dt;
-        this.pullLines(ship);
-        this.checkMoored(ship);
-        break;
-      case 'moored':
-        this.warpTime += dt;
-        this.pullLines(ship);
-        break;
-      case 'anchored':
-        this.holdAnchor(ship);
-        break;
-      default:
-        break;
+      switch (this.state) {
+        case 'warping':
+          this.warpTime += dt;
+          this.pullLines(ship);
+          this.checkMoored(ship);
+          break;
+        case 'moored':
+          this.warpTime += dt;
+          this.pullLines(ship);
+          break;
+        case 'anchored':
+          this.holdAnchor(ship);
+          break;
+        default:
+          break;
+      }
+      if (this.shove > 0) {
+        this.shove = Math.max(0, this.shove - dt);
+        const m = ship.mass + ship.payloadMass;
+        const k = (m * SHOVE.speed) / SHOVE.time;
+        ship.addForceAtPublic(_f.set(this.shoveDir.x * k, 0, this.shoveDir.z * k), ship.pos);
+      }
+      this.updatePlank(dt, ship);
     }
-    if (this.shove > 0) {
-      this.shove = Math.max(0, this.shove - dt);
-      const m = ship.mass + ship.payloadMass;
-      const k = (m * SHOVE.speed) / SHOVE.time;
-      ship.addForceAtPublic(_f.set(this.shoveDir.x * k, 0, this.shoveDir.z * k), ship.pos);
-    }
-    this.updatePlank(dt, ship);
+    if (this.anchoring) this.updateAnchor(dt, ship);
   }
 
   makeFast(): boolean {
+    if (!this.docking) {
+      this.events.push({ type: 'denied', reason: "Docking isn't available on the merchant ship yet" });
+      return false;
+    }
     const a = this.approach,
       ship = this.ship;
     if (!a || !ship) return false;
@@ -238,31 +266,42 @@ export class Mooring {
     this.events.push({ type: 'cast-off' }, { type: 'plank', down: false });
   }
 
-  dropAnchor(): boolean {
+  /** quiet: no denied event (used by the per-frame auto-anchor while the captain is ashore) */
+  dropAnchor(quiet = false): boolean {
+    const deny = (reason: string) => {
+      if (!quiet) this.events.push({ type: 'denied', reason });
+      return false;
+    };
+    if (!this.anchoring) return deny("This ship can't anchor");
     const ship = this.ship;
     if (!ship) return false;
-    if (this.state !== 'free') {
-      this.events.push({ type: 'denied', reason: 'Already moored' });
-      return false;
+    if (this.anchorPhase === 'lifting') return deny('The anchor is still coming up');
+    if (this.state !== 'free') return deny('Already moored');
+    if (Math.hypot(ship.vel.x, ship.vel.z) >= CAPTURE.anchorSog) return deny('Too fast to anchor · slow below 3 kn');
+    ship.toWorld(this.bowLocal, _b);
+    if (this.seabed) {
+      const depth = -this.seabed(_b.x, _b.z);
+      if (depth > this.rode) return deny(`Too deep to anchor · ${Math.round(depth)} m here, ${this.rode} m of rode`);
     }
-    if (Math.hypot(ship.vel.x, ship.vel.z) >= CAPTURE.anchorSog) {
-      this.events.push({ type: 'denied', reason: 'Too fast to anchor · slow below 3 kn' });
-      return false;
-    }
-    ship.toWorld(BOW_LOCAL, _b);
     this.anchorAt = new THREE.Vector3(_b.x, 0, _b.z);
     this.berth = null;
     this.peak = 0;
     this.state = 'anchored';
+    this.anchorPhase = 'dropping';
+    this.anchorPos.copy(_b);
+    this.dropTop = _b.y;
+    this.anchorProgress = 0;
     this.events.push({ type: 'anchor-down' });
     return true;
   }
 
+  /** starts hauling the rode in; the ship is freed and the anchor comes up when it breaks out */
   weighAnchor() {
-    if (this.state !== 'anchored') return;
-    this.anchorAt = null;
-    this.state = 'free';
-    this.events.push({ type: 'anchor-up' });
+    if (this.state !== 'anchored' || (this.anchorPhase !== 'holding' && this.anchorPhase !== 'dropping')) return;
+    this.anchorPhase = 'weighing';
+    this.weighRode0 = this.rode;
+    this.anchorProgress = 0;
+    this.events.push({ type: 'anchor-weighing' });
   }
 
   /** drain and return pending events */
@@ -404,7 +443,7 @@ export class Mooring {
   private holdAnchor(ship: ShipPhysics) {
     const a = this.anchorAt;
     if (!a) return;
-    ship.toWorld(BOW_LOCAL, _b);
+    ship.toWorld(this.bowLocal, _b);
     const ex = _b.x - a.x,
       ez = _b.z - a.z;
     const d = Math.hypot(ex, ez);
@@ -414,8 +453,67 @@ export class Mooring {
       uz = ez / d;
     ship.pointVel(_b, _v);
     const vn = _v.x * ux + _v.z * uz;
-    const F = Math.min(ANCHOR.clamp, Math.max(0, ANCHOR.k * stretch + ANCHOR.c * vn));
+    const F = Math.min(ANCHOR.clamp * this.anchorScale, Math.max(0, ANCHOR.k * this.anchorScale * stretch + ANCHOR.c * this.anchorScale * vn));
     ship.addForceAtPublic(_f.set(-F * ux, 0, -F * uz), _b);
+  }
+
+  /** the anchor's own motion: falls to the seabed, holds, comes up with the rode; stowed = on deck */
+  private updateAnchor(dt: number, ship: ShipPhysics) {
+    ship.toWorld(this.bowLocal, _b);
+    const floor = (x: number, z: number) => (this.seabed ? this.seabed(x, z) : _b.y - 6);
+    switch (this.anchorPhase) {
+      case 'dropping': {
+        const a = this.anchorAt!;
+        const bottom = floor(a.x, a.z);
+        const y = this.anchorPos.y - ANCHOR.fall * dt;
+        this.anchorPos.set(a.x, Math.max(bottom, y), a.z);
+        this.anchorProgress = clamp01((this.dropTop - this.anchorPos.y) / Math.max(0.01, this.dropTop - bottom));
+        if (y <= bottom) {
+          this.anchorPhase = 'holding';
+          this.anchorProgress = 1;
+        }
+        break;
+      }
+      case 'holding': {
+        const a = this.anchorAt!;
+        this.anchorPos.set(a.x, floor(a.x, a.z), a.z);
+        this.anchorProgress = 1;
+        break;
+      }
+      case 'weighing': {
+        const a = this.anchorAt!;
+        this.anchorPos.set(a.x, floor(a.x, a.z), a.z);
+        // the shortening rode pulls the ship up to her anchor (holdAnchor)
+        this.rode = Math.max(ANCHOR.breakout, this.rode - ANCHOR.haul * dt);
+        this.anchorProgress = clamp01(1 - (this.rode - ANCHOR.breakout) / Math.max(0.01, this.weighRode0 - ANCHOR.breakout));
+        const d = Math.hypot(_b.x - a.x, _b.z - a.z);
+        if (this.rode <= ANCHOR.breakout && d <= ANCHOR.breakout + 0.5) {
+          // breakout: the ship is free, the anchor comes up
+          this.state = 'free';
+          this.anchorAt = null;
+          this.anchorPhase = 'lifting';
+          this.liftDist0 = Math.max(0.01, this.anchorPos.distanceTo(_b));
+          this.anchorProgress = 0;
+        }
+        break;
+      }
+      case 'lifting': {
+        const dist0 = this.anchorPos.distanceTo(_b);
+        const step = Math.min(dist0, ANCHOR.lift * dt);
+        if (dist0 > 1e-9) this.anchorPos.lerp(_b, step / dist0);
+        const dist = this.anchorPos.distanceTo(_b);
+        this.anchorProgress = clamp01(1 - dist / this.liftDist0);
+        if (dist < 0.3) {
+          this.anchorPhase = 'stowed';
+          this.anchorProgress = 0;
+          this.rode = ANCHOR.rode;
+          this.events.push({ type: 'anchor-up' });
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   /** gangplank: deploys while moored, stows otherwise; shoreWorld is re-projected every step */

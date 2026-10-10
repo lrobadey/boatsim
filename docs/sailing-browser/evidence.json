@@ -1,0 +1,1920 @@
+{
+  "capturedAt": "2026-10-09T05:58:14.001Z",
+  "browser": "Codex in-app browser",
+  "productionPreview": "http://127.0.0.1:5177",
+  "quality": "high",
+  "viewport": {
+    "width": 801,
+    "height": 775
+  },
+  "records": [
+    {
+      "check": "wind-only",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.9987261969190532,
+          "flutter": 0.0012738030809467116,
+          "pressure": -0.6886695508953145,
+          "yardAngle": -0.32724923474893675
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 38.78307782269277,
+        "grounding": 0,
+        "heading": -2.3461874910798195,
+        "heel": 0.009550286950270102,
+        "hud": "full",
+        "leeway": -0.022346094179682165,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.9987283651153332,
+          "flutter": 0.0012716348846668613,
+          "pressure": -0.6886163259011271,
+          "yardAngle": -0.32724923474893675
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.546397830791462,
+          "dissipatedPower": 7.778738970020978,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -1.498640148102481,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -1.498640148102481,
+          "wetArea": 0.0952670795920726,
+          "wetBlades": 8,
+          "yawMoment": -41.14768883864443
+        },
+        "sail": {
+          "apparentFrom": 2.933259490158891,
+          "apparentSpeed": 5.103782293445392,
+          "apparentWind": {
+            "x": -1.0555984017519509,
+            "y": 0.02609113336214268,
+            "z": -4.993358085083155
+          },
+          "flutter": 0.0012738030809467116,
+          "forwardForce": 1788.2264286196796,
+          "heelMoment": 6000.335610056274,
+          "lateralForce": 618.1334486774698,
+          "load": 1892.119435222849,
+          "pointOfSail": "run",
+          "pressure": -0.6886695508953145,
+          "status": "drawing"
+        },
+        "scenario": "wind",
+        "speedKn": 3.1650411245285035,
+        "stamina": 1,
+        "time": 93.72500000002066,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.0012716609030226072,
+          "fullHeight": 7,
+          "pressure": -0.6886169646010668,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.3272492347489367
+        },
+        "wetBlades": 8,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "G-half-transition",
+      "state": {
+        "current": {
+          "deployment": 0.9694444444444446,
+          "fill": -0.9990224266531548,
+          "flutter": 0.000947703050136069,
+          "pressure": -0.6377482461624054,
+          "yardAngle": -0.19634954084936207
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 28.267684644809147,
+        "grounding": 0,
+        "heading": -2.3393882201897855,
+        "heel": -0.0007214660636844031,
+        "hud": "full",
+        "leeway": 0.11635093990812316,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.9708333333333334,
+          "fill": -0.9990281724588052,
+          "flutter": 0.0009434825712433312,
+          "pressure": -0.6396729493286575,
+          "yardAngle": -0.19634954084936207
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.030501425876287316,
+          "dissipatedPower": 0.2928161583365463,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -0.18678191933334992,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.18678191933334992,
+          "wetArea": 0.006346797568652975,
+          "wetBlades": 2,
+          "yawMoment": -1.7298968715326046
+        },
+        "sail": {
+          "apparentFrom": 2.865179666830406,
+          "apparentSpeed": 5.04409462253866,
+          "apparentWind": {
+            "x": -1.375940062547489,
+            "y": -0.15215710792177584,
+            "z": -4.85041521108339
+          },
+          "flutter": 0.000947703050136069,
+          "forwardForce": 1704.7081358594223,
+          "heelMoment": 3947.28613082728,
+          "lateralForce": 402.9084386056404,
+          "load": 1751.693596441361,
+          "pointOfSail": "run",
+          "pressure": -0.6377482461624054,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 2.5459351273402167,
+        "stamina": 1,
+        "time": 103.51666666669512,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.9694944444439476,
+          "flutter": 0.00094755111289744,
+          "fullHeight": 7,
+          "pressure": -0.637817535475702,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.19634954084936207
+        },
+        "wetBlades": 2,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "wind-only-visible-HUD",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.9990864143894472,
+          "flutter": 0.0009135856105528806,
+          "pressure": -0.831987152376529,
+          "yardAngle": -0.19634954084936207
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 32.647500270526706,
+        "grounding": 0,
+        "heading": -2.3408369899445485,
+        "heel": -0.03515394066263664,
+        "hud": "full",
+        "leeway": 0.06801891473546082,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.999083133814137,
+          "flutter": 0.0009168661858629524,
+          "pressure": -0.8333453004736481,
+          "yardAngle": -0.19634954084936207
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.24091352444321623,
+          "dissipatedPower": 32.7017315742154,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -10.384815760675966,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -10.384815760675966,
+          "wetArea": 0.41724058215492793,
+          "wetBlades": 12,
+          "yawMoment": 77.09758358958884
+        },
+        "sail": {
+          "apparentFrom": 2.8007863450223556,
+          "apparentSpeed": 5.603941344536154,
+          "apparentWind": {
+            "x": -1.871362830939576,
+            "y": -0.24138783929756283,
+            "z": -5.2767311528084075
+          },
+          "flutter": 0.0009135856105528806,
+          "forwardForce": 2239.392819967532,
+          "heelMoment": 4393.606775077818,
+          "lateralForce": 454.49689629407226,
+          "load": 2285.060344371058,
+          "pointOfSail": "run",
+          "pressure": -0.831987152376529,
+          "status": "drawing"
+        },
+        "scenario": "wind",
+        "speedKn": 3.303681153131843,
+        "stamina": 1,
+        "time": 96.43333333335616,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.0009139661572876756,
+          "fullHeight": 7,
+          "pressure": -0.8321446975553091,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.19634954084936207
+        },
+        "wetBlades": 12,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "G-half-transition",
+      "state": {
+        "current": {
+          "deployment": 0.9625,
+          "fill": -0.9995931030511518,
+          "flutter": 0.0003916383132664042,
+          "pressure": -0.9044993150532789,
+          "yardAngle": -0.19634954084936207
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 36.65529928480617,
+        "grounding": 0,
+        "heading": -2.329488780231028,
+        "heel": -0.023679762475279295,
+        "hud": "full",
+        "leeway": 0.09929676756423626,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.963888888888889,
+          "fill": -0.999594814184522,
+          "flutter": 0.0003905541054745141,
+          "pressure": -0.9065094968024008,
+          "yardAngle": -0.19634954084936207
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.013638986448733664,
+          "dissipatedPower": 10.300991200984646,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -4.5451404172756895,
+          "portThrust": -2.776078162962978,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -1.7690622543127117,
+          "wetArea": 0.13210809128405177,
+          "wetBlades": 7,
+          "yawMoment": 49.921932596724645
+        },
+        "sail": {
+          "apparentFrom": 2.7803488594044734,
+          "apparentSpeed": 5.937769220000049,
+          "apparentWind": {
+            "x": -2.098426734760885,
+            "y": -0.08333186755722191,
+            "z": -5.553986347540852
+          },
+          "flutter": 0.0003916383132664042,
+          "forwardForce": 2438.161023142213,
+          "heelMoment": 4594.541049722207,
+          "lateralForce": 469.4527929919733,
+          "load": 2482.956427900833,
+          "pointOfSail": "run",
+          "pressure": -0.9044993150532789,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 3.850871351929443,
+        "stamina": 1,
+        "time": 115.12500000003767,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.9627388888891372,
+          "flutter": 0.00039145182952600536,
+          "fullHeight": 7,
+          "pressure": -0.904845066314487,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.19634954084936207
+        },
+        "wetBlades": 7,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "L-manual-trim",
+      "state": {
+        "current": {
+          "deployment": 0.5444444444444461,
+          "fill": -0.9998580781460992,
+          "flutter": 0.00007726856490150182,
+          "pressure": -0.4142629797701418,
+          "yardAngle": 0.42656712581730366
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 38.59288931628517,
+        "grounding": 0,
+        "heading": -2.343563921840359,
+        "heel": 0.0012750551511877216,
+        "hud": "full",
+        "leeway": -0.0974183274107981,
+        "manualYardTarget": 0.6116954591490734,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.545833333333335,
+          "fill": -0.9998578571070376,
+          "flutter": 0.00007758632907533096,
+          "pressure": -0.41490689208633785,
+          "yardAngle": 0.42448379248397033
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.007599473868480096,
+          "dissipatedPower": 0,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": 0,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0,
+          "wetBlades": 0,
+          "yawMoment": 0
+        },
+        "sail": {
+          "apparentFrom": 2.913548562030561,
+          "apparentSpeed": 5.923104446758764,
+          "apparentWind": {
+            "x": -1.3390472438807102,
+            "y": 0.0160073038187062,
+            "z": -5.769736781872581
+          },
+          "flutter": 0.00007726856490150182,
+          "forwardForce": 992.1816044767522,
+          "heelMoment": -6246.977990675755,
+          "lateralForce": -555.0073341544871,
+          "load": 1136.898967298406,
+          "pointOfSail": "run",
+          "pressure": -0.4142629797701418,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 2.88147625714509,
+        "stamina": 1,
+        "time": 117.63333333337302,
+        "trimMode": "manual",
+        "visual": {
+          "deployment": 0.5447722222217269,
+          "flutter": 0.00007734355724641181,
+          "fullHeight": 7,
+          "pressure": -0.4144149430765337,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0.42607545915138234
+        },
+        "wetBlades": 0,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "V-spyglass-preserved",
+      "state": {
+        "current": {
+          "deployment": 0.5,
+          "fill": -0.9995694667316104,
+          "flutter": 0.00021526663419479952,
+          "pressure": -0.34672553593519495,
+          "yardAngle": 0.6116954591490734
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 23.416628182469815,
+        "grounding": 0,
+        "heading": -2.345631099651199,
+        "heel": 0.057709494125463355,
+        "hud": "full",
+        "leeway": 0.07855047539542653,
+        "manualYardTarget": 0.6116954591490734,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.5,
+          "fill": -0.9995698791149776,
+          "flutter": 0.000215060442511128,
+          "pressure": -0.34716534984436676,
+          "yardAngle": 0.6116954591490734
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.007901279602673733,
+          "dissipatedPower": 33.08434582899156,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -17.454080297395997,
+          "portThrust": -17.454080297395997,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0.6129178877915321,
+          "wetBlades": 20,
+          "yawMoment": 56.14772979186074
+        },
+        "sail": {
+          "apparentFrom": 2.8722336722940227,
+          "apparentSpeed": 5.365462237391835,
+          "apparentWind": {
+            "x": -1.4270377161164256,
+            "y": -0.17785779528263068,
+            "z": -5.169150315314521
+          },
+          "flutter": 0.00021526663419479952,
+          "forwardForce": 733.0323777444071,
+          "heelMoment": -6911.691334610157,
+          "lateralForce": -607.0960401173026,
+          "load": 951.8246627891796,
+          "pointOfSail": "run",
+          "pressure": -0.34672553593519495,
+          "status": "drawing"
+        },
+        "scenario": "wind",
+        "speedKn": 2.69216830976396,
+        "stamina": 1,
+        "time": 118.98333333337408,
+        "trimMode": "manual",
+        "visual": {
+          "deployment": 0.5,
+          "flutter": 0.00021524519025980832,
+          "fullHeight": 7,
+          "pressure": -0.34677127658151286,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0.6116954591490734
+        },
+        "wetBlades": 20,
+        "zoom": 0.8105821925422563
+      }
+    },
+    {
+      "check": "J-manual-opposite",
+      "state": {
+        "current": {
+          "deployment": 0.5,
+          "fill": -0.9999364867392392,
+          "flutter": 0.000031756630380408435,
+          "pressure": -0.5675678240237173,
+          "yardAngle": -0.0549712075175917
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 32.30034512532088,
+        "grounding": 0,
+        "heading": -2.335741301927276,
+        "heel": 0.00200483382223501,
+        "hud": "full",
+        "leeway": 0.2894085875331521,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.5,
+          "fill": -0.9999364049461842,
+          "flutter": 0.00003179752690790627,
+          "pressure": -0.5658190301931337,
+          "yardAngle": -0.05288787418425837
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.1559102448964031,
+          "dissipatedPower": 31.29026788283068,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -15.678509977833771,
+          "portThrust": -15.588375389368643,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.09013458846512562,
+          "wetArea": 1.4630698808051656,
+          "wetBlades": 27,
+          "yawMoment": 113.59153988773264
+        },
+        "sail": {
+          "apparentFrom": 2.8106637938153223,
+          "apparentSpeed": 6.770094018323724,
+          "apparentWind": {
+            "x": -2.199749127665061,
+            "y": -0.0059526930119522025,
+            "z": -6.402752639117443
+          },
+          "flutter": 0.000031756630380408435,
+          "forwardForce": 1545.4608704566772,
+          "heelMoment": 2207.3242212613204,
+          "lateralForce": 193.28707215367024,
+          "load": 1557.5050313442723,
+          "pointOfSail": "run",
+          "pressure": -0.5675678240237173,
+          "status": "drawing"
+        },
+        "scenario": "wind",
+        "speedKn": 1.4886580334305848,
+        "stamina": 1,
+        "time": 133.68333333337608,
+        "trimMode": "manual",
+        "visual": {
+          "deployment": 0.5,
+          "flutter": 0.00003177658788582005,
+          "fullHeight": 7,
+          "pressure": -0.5667144126347057,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.053954540851298034
+        },
+        "wetBlades": 27,
+        "zoom": 1.2061620008860124e-64
+      }
+    },
+    {
+      "check": "K-crew-trim",
+      "state": {
+        "current": {
+          "deployment": 0.5,
+          "fill": -0.9999381101212356,
+          "flutter": 0.000030944939382160364,
+          "pressure": -0.6044565549227952,
+          "yardAngle": -0.10288787418425847
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 42.87689077107952,
+        "grounding": 0,
+        "heading": -2.334909784859888,
+        "heel": -0.003432894999440491,
+        "hud": "full",
+        "leeway": 0.2980287019430679,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.5,
+          "fill": -0.9999380663193256,
+          "flutter": 0.000030966840337154355,
+          "pressure": -0.6029628411588134,
+          "yardAngle": -0.10080454085092516
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.1498910482477871,
+          "dissipatedPower": 25.224972558313752,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -13.384361428709274,
+          "portThrust": -13.246459792159754,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.13790163654952017,
+          "wetArea": 1.2677831272227762,
+          "wetBlades": 26,
+          "yawMoment": 92.97429694915888
+        },
+        "sail": {
+          "apparentFrom": 2.8126441790084757,
+          "apparentSpeed": 6.890836149347271,
+          "apparentWind": {
+            "x": -2.2259171809566065,
+            "y": -0.08107470392230834,
+            "z": -6.520915766443945
+          },
+          "flutter": 0.000030944939382160364,
+          "forwardForce": 1638.5386172259225,
+          "heelMoment": 2942.002712194455,
+          "lateralForce": 258.0048814628244,
+          "load": 1658.731445396208,
+          "pointOfSail": "run",
+          "pressure": -0.6044565549227952,
+          "status": "drawing"
+        },
+        "scenario": "wind",
+        "speedKn": 1.441226281812479,
+        "stamina": 1,
+        "time": 133.87500000004258,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.5,
+          "flutter": 0.00003095448819852991,
+          "fullHeight": 7,
+          "pressure": -0.6038052957222336,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.10197954085167069
+        },
+        "wetBlades": 26,
+        "zoom": 1.7665500342395245e-65
+      }
+    },
+    {
+      "check": "F-brail",
+      "state": {
+        "current": {
+          "deployment": 0.46250000000000013,
+          "fill": -0.9999349843724658,
+          "flutter": 0.000030069727734589888,
+          "pressure": -0.6023504709087749,
+          "yardAngle": -0.1737212075175917
+        },
+        "deploymentTarget": 0,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 39.46762813741194,
+        "grounding": 0,
+        "heading": -2.3342287733886637,
+        "heel": -0.012460704153902092,
+        "hud": "full",
+        "leeway": 0.20281916610957448,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.463888888888889,
+          "fill": -0.9999352564967928,
+          "flutter": 0.000030033791765499764,
+          "pressure": -0.6030364258983067,
+          "yardAngle": -0.17163787418425838
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.1405455662896904,
+          "dissipatedPower": 16.59356857490505,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -7.23572630749045,
+          "portThrust": -7.23572630749045,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0.6627490296662374,
+          "wetBlades": 17,
+          "yawMoment": 55.188311302099834
+        },
+        "sail": {
+          "apparentFrom": 2.8063060003068276,
+          "apparentSpeed": 7.024599206358479,
+          "apparentWind": {
+            "x": -2.310409318261548,
+            "y": -0.2028512462041599,
+            "z": -6.630675241932439
+          },
+          "flutter": 0.000030069727734589888,
+          "forwardForce": 1622.4812408299445,
+          "heelMoment": 3636.1857419036337,
+          "lateralForce": 315.9376749284161,
+          "load": 1652.9571602207377,
+          "pointOfSail": "run",
+          "pressure": -0.6023504709087749,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 1.6026377189803511,
+        "stamina": 1,
+        "time": 134.15833333337565,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.4636444444436991,
+          "flutter": 0.000030040116496078907,
+          "fullHeight": 7,
+          "pressure": -0.6029156978197809,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.17200454085204311
+        },
+        "wetBlades": 17,
+        "zoom": 1.0731664788698415e-66
+      }
+    },
+    {
+      "check": "G-selection-while-brailing",
+      "state": {
+        "current": {
+          "deployment": 0.4222222222222225,
+          "fill": -0.999925138021076,
+          "flutter": 0.000031608391101305936,
+          "pressure": -0.5485176211339167,
+          "yardAngle": -0.19634954084936207
+        },
+        "deploymentTarget": 0,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 34.62072463987715,
+        "grounding": 0,
+        "heading": -2.334207676679824,
+        "heel": -0.01994297453888983,
+        "hud": "full",
+        "leeway": 0.07105197963277518,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.4236111111111114,
+          "fill": -0.999925437003349,
+          "flutter": 0.000031585713859097495,
+          "pressure": -0.550835870157832,
+          "yardAngle": -0.19634954084936207
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.1307449788152344,
+          "dissipatedPower": 3.81856872186463,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -1.3920584316216826,
+          "portThrust": -1.3920584316216826,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0.10680531536608363,
+          "wetBlades": 9,
+          "yawMoment": 11.48365940191468
+        },
+        "sail": {
+          "apparentFrom": 2.8150522919255736,
+          "apparentSpeed": 6.9983001539864595,
+          "apparentWind": {
+            "x": -2.2424368525168363,
+            "y": -0.32317322366683987,
+            "z": -6.6214228890221225
+          },
+          "flutter": 0.000031608391101305936,
+          "forwardForce": 1472.957888765232,
+          "heelMoment": 3609.5480819890536,
+          "lateralForce": 310.0883155928342,
+          "load": 1505.2450380137789,
+          "pointOfSail": "run",
+          "pressure": -0.5485176211339167,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 1.9388354242043984,
+        "stamina": 1,
+        "time": 134.4000000000421,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.42286111111111113,
+          "flutter": 0.00003159795956989006,
+          "fullHeight": 7,
+          "pressure": -0.5495840156849172,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.19634954084936207
+        },
+        "wetBlades": 9,
+        "zoom": 9.28856236801252e-68
+      }
+    },
+    {
+      "check": "brailed-settled",
+      "state": {
+        "current": {
+          "deployment": 0,
+          "fill": -0.9999705110492434,
+          "flutter": 0,
+          "pressure": 0,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 0,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 33.789550005555796,
+        "grounding": 0,
+        "heading": -2.303598511734515,
+        "heel": -0.01613982539924117,
+        "hud": "full",
+        "leeway": -0.18687789405527427,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0,
+          "fill": -0.9999704276564676,
+          "flutter": 0,
+          "pressure": 0,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.01967511457918171,
+          "dissipatedPower": 0.1961434613436759,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -0.18503995441607737,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.18503995441607737,
+          "wetArea": 0.04734006801148037,
+          "wetBlades": 9,
+          "yawMoment": 1.7200273829409547
+        },
+        "sail": {
+          "apparentFrom": 2.818052938775262,
+          "apparentSpeed": 7.196977552769073,
+          "apparentWind": {
+            "x": -2.2879774851623056,
+            "y": -0.07332735107419591,
+            "z": -6.8232153726844
+          },
+          "flutter": 0,
+          "forwardForce": 0,
+          "heelMoment": 0,
+          "lateralForce": 0,
+          "load": 0,
+          "pointOfSail": "run",
+          "pressure": 0,
+          "status": "furled"
+        },
+        "scenario": "wind",
+        "speedKn": 2.1180736295495945,
+        "stamina": 1,
+        "time": 170.35833333334273,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0,
+          "flutter": 0,
+          "fullHeight": 7,
+          "pressure": 0,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 9,
+        "zoom": 6.166049130452505e-224
+      }
+    },
+    {
+      "check": "F-restore-selected-full",
+      "state": {
+        "current": {
+          "deployment": 0.043055555555555555,
+          "fill": -0.9999747057047133,
+          "flutter": 0.000001089059935962009,
+          "pressure": -0.05258336605448271,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 33.65769037696053,
+        "grounding": 0,
+        "heading": -2.304229298356471,
+        "heel": -0.01880155291539711,
+        "hud": "full",
+        "leeway": -0.17025378651374762,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.041666666666666664,
+          "fill": -0.9999746116812636,
+          "flutter": 0.0000010578466140183835,
+          "pressure": -0.050900936598958155,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.017318875135083536,
+          "dissipatedPower": 0.4248089802767204,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -0.671158387635134,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.671158387635134,
+          "wetArea": 0.1822625304153372,
+          "wetBlades": 14,
+          "yawMoment": -5.09683308372745
+        },
+        "sail": {
+          "apparentFrom": 2.854558744654545,
+          "apparentSpeed": 7.268314299636155,
+          "apparentWind": {
+            "x": -2.057654947331135,
+            "y": -0.05922074582314034,
+            "z": -6.970720319972912
+          },
+          "flutter": 0.000001089059935962009,
+          "forwardForce": 143.72443546231835,
+          "heelMoment": 165.27662947599117,
+          "lateralForce": 12.784633408829649,
+          "load": 144.29240622823133,
+          "pointOfSail": "run",
+          "pressure": -0.05258336605448271,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 1.8598330796921805,
+        "stamina": 1,
+        "time": 170.7416666666757,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.04277222222296784,
+          "flutter": 0.000001082692418302265,
+          "fullHeight": 7,
+          "pressure": -0.05224015044645886,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 14,
+        "zoom": 1.345335454340202e-225
+      }
+    },
+    {
+      "check": "H-minimal",
+      "classes": "hud minimal",
+      "state": {
+        "current": {
+          "deployment": 0.08888888888888882,
+          "fill": -0.999977763793916,
+          "flutter": 0.000001976551651900531,
+          "pressure": -0.10847857325622276,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 39.87142077432778,
+        "grounding": 0,
+        "heading": -2.3046099979786794,
+        "heel": -0.01584501823969436,
+        "hud": "minimal",
+        "leeway": -0.10216813680740082,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.08749999999999994,
+          "fill": -0.9999776740473084,
+          "flutter": 0.0000019535208605231376,
+          "pressure": -0.10678266159870813,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.01581513260326227,
+          "dissipatedPower": 0.7094107637785358,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -0.5341854225223379,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.5341854225223379,
+          "wetArea": 0.14175933527832638,
+          "wetBlades": 15,
+          "yawMoment": -12.571738550284865
+        },
+        "sail": {
+          "apparentFrom": 2.876664897623775,
+          "apparentSpeed": 7.324891193439932,
+          "apparentWind": {
+            "x": -1.9179184180404245,
+            "y": -0.03941093286946583,
+            "z": -7.069233813918276
+          },
+          "flutter": 0.000001976551651900531,
+          "forwardForce": 296.4770702708772,
+          "heelMoment": 338.63051588756184,
+          "lateralForce": 26.630445156736695,
+          "load": 297.67182410710143,
+          "pointOfSail": "run",
+          "pressure": -0.10847857325622276,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 1.4962639694200983,
+        "stamina": 1,
+        "time": 171.01666666667546,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.08803888888864098,
+          "flutter": 0.000001962456807573457,
+          "fullHeight": 7,
+          "pressure": -0.1074406753215212,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 15,
+        "zoom": 8.897884718720714e-227
+      }
+    },
+    {
+      "check": "H-off",
+      "classes": "hud none",
+      "state": {
+        "current": {
+          "deployment": 0.15694444444444414,
+          "fill": -0.9999817300152616,
+          "flutter": 0.000002867372604779348,
+          "pressure": -0.19173020758696377,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 35.06206452262962,
+        "grounding": 0,
+        "heading": -2.3048774734428266,
+        "heel": -0.005735694655971856,
+        "hud": "none",
+        "leeway": 0.19895126497450336,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.15555555555555525,
+          "fill": -0.999981658207346,
+          "flutter": 0.000002853167746199833,
+          "pressure": -0.19001198486286908,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.013980593188735556,
+          "dissipatedPower": 0.27857306371961005,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -0.027947237477091248,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -0.027947237477091248,
+          "wetArea": 0.0025100631786578453,
+          "wetBlades": 2,
+          "yawMoment": -3.1359273921301676
+        },
+        "sail": {
+          "apparentFrom": 2.900858029635204,
+          "apparentSpeed": 7.393201023352095,
+          "apparentWind": {
+            "x": -1.762658184532451,
+            "y": 0.0034729414294022033,
+            "z": -7.180003163987677
+          },
+          "flutter": 0.000002867372604779348,
+          "forwardForce": 524.0355547014235,
+          "heelMoment": 579.5453981096894,
+          "lateralForce": 46.70160358759756,
+          "load": 526.1173017737026,
+          "pointOfSail": "run",
+          "pressure": -0.19173020758696377,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 0.8368424156668445,
+        "stamina": 1,
+        "time": 171.42500000000842,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.15600555555605244,
+          "flutter": 0.0000028577701203846817,
+          "fullHeight": 7,
+          "pressure": -0.19056868902609092,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 2,
+        "zoom": 1.5074186269933838e-228
+      }
+    },
+    {
+      "check": "H-full",
+      "state": {
+        "current": {
+          "deployment": 0.19166666666666624,
+          "fill": -0.9999833937193237,
+          "flutter": 0.000003182870462966237,
+          "pressure": -0.23458619430067212,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 34.17821715256756,
+        "grounding": 0,
+        "heading": -2.3048286110703216,
+        "heel": 0.001427263820202264,
+        "hud": "full",
+        "leeway": 0.5166785337368575,
+        "manualYardTarget": -0.23152454084936197,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0.19027777777777735,
+          "fill": -0.999983331963828,
+          "flutter": 0.000003171556882739721,
+          "pressure": -0.23285473246952812,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 0.013042681704387969,
+          "dissipatedPower": 0,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": 0,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0,
+          "wetBlades": 0,
+          "yawMoment": 0
+        },
+        "sail": {
+          "apparentFrom": 2.9093956460868218,
+          "apparentSpeed": 7.422537266624334,
+          "apparentWind": {
+            "x": -1.7080377089976222,
+            "y": 0.02242739549314706,
+            "z": -7.223306976101776
+          },
+          "flutter": 0.000003182870462966237,
+          "forwardForce": 641.2036504561454,
+          "heelMoment": 695.3355052307747,
+          "lateralForce": 56.70753727418884,
+          "load": 643.7152068764453,
+          "pointOfSail": "run",
+          "pressure": -0.23458619430067212,
+          "status": "setting"
+        },
+        "scenario": "wind",
+        "speedKn": 0.5467017965247117,
+        "stamina": 1,
+        "time": 171.63333333334157,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.1912888888886406,
+          "flutter": 0.0000031797931691426058,
+          "fullHeight": 7,
+          "pressure": -0.234115236682292,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 0,
+        "zoom": 1.81481541428011e-229
+      }
+    },
+    {
+      "check": "row-only",
+      "state": {
+        "current": {
+          "deployment": 0,
+          "fill": -0.9948447271579588,
+          "flutter": 0,
+          "pressure": 0,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 0,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 34.55851933488471,
+        "grounding": 0,
+        "heading": -2.5013363974236893,
+        "heel": 0.0035150936361790126,
+        "hud": "full",
+        "leeway": -0.08461117838328937,
+        "manualYardTarget": 0,
+        "order": "Full",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 0,
+          "fill": -0.9948656191176396,
+          "flutter": 0,
+          "pressure": 0,
+          "yardAngle": 0
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 232.13221908741744,
+          "dissipatedPower": 2263.395617233638,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -280.4515211143339,
+          "portThrust": 0,
+          "positivePower": 1531.5832068714644,
+          "powerCapFraction": 0,
+          "starboardThrust": -280.4515211143339,
+          "wetArea": 0.3650748219840314,
+          "wetBlades": 12,
+          "yawMoment": -1672.5673495708118
+        },
+        "sail": {
+          "apparentFrom": -3.097257247807941,
+          "apparentSpeed": 3.518778562059783,
+          "apparentWind": {
+            "x": 0.15593782022066094,
+            "y": 0.05279038057645869,
+            "z": -3.514925197035484
+          },
+          "flutter": 0,
+          "forwardForce": 0,
+          "heelMoment": 0,
+          "lateralForce": 0,
+          "load": 0,
+          "pointOfSail": "run",
+          "pressure": 0,
+          "status": "furled"
+        },
+        "scenario": "row",
+        "speedKn": 6.028996295628506,
+        "stamina": 0.9346746823529634,
+        "time": 95.65833333335551,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0,
+          "flutter": 0,
+          "fullHeight": 7,
+          "pressure": 0,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 12,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "console-after-row",
+      "logs": []
+    },
+    {
+      "check": "combined",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.9948447377804094,
+          "flutter": 0.005155262219590617,
+          "pressure": -0.415153736793392,
+          "yardAngle": -0.19634954084936207
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 30.719551299753817,
+        "grounding": 0,
+        "heading": -2.3792476189697176,
+        "heel": 0.01044131313891599,
+        "hud": "full",
+        "leeway": -0.030071773989789084,
+        "manualYardTarget": 0,
+        "order": "Full",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.9948688873767052,
+          "flutter": 0.005131112623294909,
+          "pressure": -0.4163387015779136,
+          "yardAngle": -0.19634954084936207
+        },
+        "primeSeconds": 90,
+        "rowing": {
+          "crewLoad": 236.85676783356735,
+          "dissipatedPower": 24353.181548982833,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0.15294117647058825,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": 16350.988480412308,
+          "portThrust": 8211.817921322632,
+          "positivePower": 78486.85090248127,
+          "powerCapFraction": 0.17647058823529413,
+          "starboardThrust": 8139.17055908968,
+          "wetArea": 18.71140450025243,
+          "wetBlades": 170,
+          "yawMoment": -2183.0055096760066
+        },
+        "sail": {
+          "apparentFrom": 2.835054416683843,
+          "apparentSpeed": 4.002338297444792,
+          "apparentWind": {
+            "x": -1.2074881044697094,
+            "y": -0.08268287432145893,
+            "z": -3.814950572032536
+          },
+          "flutter": 0.005155262219590617,
+          "forwardForce": 1117.8174866980437,
+          "heelMoment": 2433.3436473146794,
+          "lateralForce": 248.2686331131543,
+          "load": 1145.085067548015,
+          "pointOfSail": "run",
+          "pressure": -0.415153736793392,
+          "status": "drawing"
+        },
+        "scenario": "combined",
+        "speedKn": 6.939008668848227,
+        "stamina": 0.972571350987126,
+        "time": 97.1333333333567,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.00514347721660263,
+          "fullHeight": 7,
+          "pressure": -0.41573199960802665,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.19634954084936207
+        },
+        "wetBlades": 170,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "console-after-combined",
+      "logs": []
+    },
+    {
+      "check": "headwind-aback",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": 0.9994731888664152,
+          "flutter": 0.0005268111335846593,
+          "pressure": 0.5011959314574598,
+          "yardAngle": 0.06544984694978728
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 32.11395282844603,
+        "grounding": 0,
+        "heading": 0.7604946580467618,
+        "heel": 0.02010996213698644,
+        "hud": "full",
+        "leeway": -3.0307795432422484,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": 0.9994725577051662,
+          "flutter": 0.0005274422948338131,
+          "pressure": 0.5005570737792843,
+          "yardAngle": 0.06544984694978728
+        },
+        "primeSeconds": 30,
+        "rowing": {
+          "crewLoad": 0.04097464495484385,
+          "dissipatedPower": 29.401341709879254,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": 3.116168967853097,
+          "portThrust": 3.116168967853097,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": 0,
+          "wetArea": 0.966288159793532,
+          "wetBlades": 19,
+          "yawMoment": -97.05032998427178
+        },
+        "sail": {
+          "apparentFrom": -0.08463706235306948,
+          "apparentSpeed": 5.004681062062995,
+          "apparentWind": {
+            "x": 0.4230468987282587,
+            "y": 0.05866669507733138,
+            "z": 4.986423775947758
+          },
+          "flutter": 0.0005268111335846593,
+          "forwardForce": -1373.9124061581667,
+          "heelMoment": 724.4262261300591,
+          "lateralForce": 75.33888766002212,
+          "load": 1376.0065314799383,
+          "pointOfSail": "windward",
+          "pressure": 0.5011959314574598,
+          "status": "aback"
+        },
+        "scenario": "headwind",
+        "speedKn": -2.6314539514830857,
+        "stamina": 1,
+        "time": 45.749999999998046,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.0005274195730290693,
+          "fullHeight": 7,
+          "pressure": 0.5005800726554701,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0.06544984694978728
+        },
+        "wetBlades": 19,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "console-after-headwind",
+      "logs": []
+    },
+    {
+      "check": "beam-auto",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.9387905868668638,
+          "flutter": 0.061209413133136215,
+          "pressure": -0.9387905868668638,
+          "yardAngle": -0.39269908169872414
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 35.03595239082069,
+        "grounding": 0,
+        "heading": 2.3978778270719143,
+        "heel": -0.1861662497723184,
+        "hud": "full",
+        "leeway": -0.48983386998787654,
+        "manualYardTarget": 0,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.9381406826385288,
+          "flutter": 0.0618593173614711,
+          "pressure": -0.9381406826385288,
+          "yardAngle": -0.39269908169872414
+        },
+        "primeSeconds": 30,
+        "rowing": {
+          "crewLoad": 4.936883116976439,
+          "dissipatedPower": 490.3916321741261,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -102.47927126936654,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -102.47927126936654,
+          "wetArea": 8.934906097451842,
+          "wetBlades": 85,
+          "yawMoment": 83.34661595405599
+        },
+        "sail": {
+          "apparentFrom": -1.579586283463779,
+          "apparentSpeed": 8.093445676228379,
+          "apparentWind": {
+            "x": 8.002137414939288,
+            "y": 1.2102528476876218,
+            "z": -0.07034025271933686
+          },
+          "flutter": 0.061209413133136215,
+          "forwardForce": 3298.039378504026,
+          "heelMoment": 30203.86716724999,
+          "lateralForce": 3039.6562685063313,
+          "load": 4493.944571037546,
+          "pointOfSail": "reach",
+          "pressure": -0.9387905868668638,
+          "status": "drawing"
+        },
+        "scenario": "beam",
+        "speedKn": 1.7069068189506964,
+        "stamina": 1,
+        "time": 46.941666666664645,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.06133419474509269,
+          "fullHeight": 7,
+          "pressure": -0.9386658052549072,
+          "visible": true,
+          "width": 10,
+          "yardAngle": -0.39269908169872414
+        },
+        "wetBlades": 85,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "beam-manual-near-luff",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.32791857521386264,
+          "flutter": 0.6720814247861373,
+          "pressure": -0.030200297745539284,
+          "yardAngle": 0.07570061220085027
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 34.55384766329651,
+        "grounding": 0,
+        "heading": 2.4575464719455593,
+        "heel": -0.01598779241436875,
+        "hud": "full",
+        "leeway": 0.09582753373145446,
+        "manualYardTarget": 0.12488061220241509,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.3404023514551474,
+          "flutter": 0.6595976485448526,
+          "pressure": -0.03344726077161282,
+          "yardAngle": 0.07361727886751693
+        },
+        "primeSeconds": 30,
+        "rowing": {
+          "crewLoad": 0.8728345840876339,
+          "dissipatedPower": 5.895186658435026,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -1.6284506893524788,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -1.6284506893524788,
+          "wetArea": 0.13059395738674298,
+          "wetBlades": 6,
+          "yawMoment": -61.58730233635424
+        },
+        "sail": {
+          "apparentFrom": -1.6878842817281017,
+          "apparentSpeed": 9.424825347029396,
+          "apparentWind": {
+            "x": 9.34734399269962,
+            "y": 0.4955943091187027,
+            "z": -1.0994905115185212
+          },
+          "flutter": 0.6720814247861373,
+          "forwardForce": 222.26348341431012,
+          "heelMoment": 1202.7928611977295,
+          "lateralForce": 119.5720725417982,
+          "load": 252.7140067003332,
+          "pointOfSail": "reach",
+          "pressure": -0.030200297745539284,
+          "status": "luffing"
+        },
+        "scenario": "beam",
+        "speedKn": 1.6817726115133462,
+        "stamina": 1,
+        "time": 78.26666666667502,
+        "trimMode": "manual",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.6660892121903226,
+          "fullHeight": 7,
+          "pressure": -0.03175883999805406,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0.0747006122008506
+        },
+        "wetBlades": 6,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "beam-luff-after",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": -0.007428888885373333,
+          "flutter": 0.9925711111146268,
+          "pressure": -0.00034264999258371215,
+          "yardAngle": 0.12488061220241509
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 37.0924417058921,
+        "grounding": 0,
+        "heading": 2.4704932808457434,
+        "heel": -0.027892999332381936,
+        "hud": "full",
+        "leeway": -0.24425881993555548,
+        "manualYardTarget": 0.12488061220241509,
+        "order": "Oars Up",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": -0.007715683619759896,
+          "flutter": 0.99228431638024,
+          "pressure": -0.00035542603155748427,
+          "yardAngle": 0.12488061220241509
+        },
+        "primeSeconds": 30,
+        "rowing": {
+          "crewLoad": 4.713326487488323,
+          "dissipatedPower": 11.716111131080323,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -1.2005757283208742,
+          "portThrust": 0,
+          "positivePower": 0,
+          "powerCapFraction": 0,
+          "starboardThrust": -1.2005757283208742,
+          "wetArea": 0.14139983143748636,
+          "wetBlades": 12,
+          "yawMoment": 29.937345816857693
+        },
+        "sail": {
+          "apparentFrom": -1.682137896553263,
+          "apparentSpeed": 9.1391246275781,
+          "apparentWind": {
+            "x": 9.059702278162,
+            "y": 0.6476153960489516,
+            "z": -1.0129106023095744
+          },
+          "flutter": 0.9925711111146268,
+          "forwardForce": 12.351491350333916,
+          "heelMoment": 1258.2330161747343,
+          "lateralForce": 125.29293886132125,
+          "load": 126.5642270543202,
+          "pointOfSail": "reach",
+          "pressure": -0.00034264999258371215,
+          "status": "luffing"
+        },
+        "scenario": "beam",
+        "speedKn": 1.0966454907313945,
+        "stamina": 1,
+        "time": 85.28333333334727,
+        "trimMode": "manual",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.9924277137474334,
+          "fullHeight": 7,
+          "pressure": -0.0003490380120705957,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0.12488061220241509
+        },
+        "wetBlades": 12,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "console-after-beam-luff",
+      "logs": []
+    },
+    {
+      "check": "calm-rowing-with-cloth",
+      "state": {
+        "current": {
+          "deployment": 1,
+          "fill": 0.9916603171882776,
+          "flutter": 0.00833968281172226,
+          "pressure": 0.2178596916309147,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 1,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 35.88616031342381,
+        "grounding": 0,
+        "heading": -2.381263222842078,
+        "heel": -0.01042797579685464,
+        "hud": "full",
+        "leeway": -0.020242420697979657,
+        "manualYardTarget": 0,
+        "order": "Full",
+        "playerMode": "chase",
+        "previous": {
+          "deployment": 1,
+          "fill": 0.991655914414746,
+          "flutter": 0.008344085585254124,
+          "pressure": 0.2176201184712905,
+          "yardAngle": 0
+        },
+        "primeSeconds": 60,
+        "rowing": {
+          "crewLoad": 217.1887709416214,
+          "dissipatedPower": 24568.30692784599,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": 18447.35840157168,
+          "portThrust": 9403.695006771408,
+          "positivePower": 85906.37930535106,
+          "powerCapFraction": 0,
+          "starboardThrust": 9043.663394800267,
+          "wetArea": 18.45200263089379,
+          "wetBlades": 170,
+          "yawMoment": -2233.546229463739
+        },
+        "sail": {
+          "apparentFrom": -0.014376862676370467,
+          "apparentSpeed": 3.3130510541287648,
+          "apparentWind": {
+            "x": 0.04759914103864456,
+            "y": 0.11854189119848312,
+            "z": 3.3105874749154705
+          },
+          "flutter": 0.00833968281172226,
+          "forwardForce": -602.6983546672288,
+          "heelMoment": -50.15874521755359,
+          "lateralForce": -4.743348992663812,
+          "load": 602.834441868394,
+          "pointOfSail": "windward",
+          "pressure": 0.2178596916309147,
+          "status": "aback"
+        },
+        "scenario": "calm",
+        "speedKn": 6.480460179313879,
+        "stamina": 0.9467359737680584,
+        "time": 205.01666666664457,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 1,
+          "flutter": 0.008342641475536457,
+          "fullHeight": 7,
+          "pressure": 0.2176986984676046,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 170,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "helm-G-half",
+      "state": {
+        "current": {
+          "deployment": 0.9680555555555556,
+          "fill": 0.9922139228983567,
+          "flutter": 0.007537355194229541,
+          "pressure": 0.21796026737378693,
+          "yardAngle": 0
+        },
+        "deploymentTarget": 0.5,
+        "drawCalls": 1,
+        "finite": true,
+        "foundWater": true,
+        "gpuMs": 42.45231863177969,
+        "grounding": 0,
+        "heading": -2.3814383545178672,
+        "heel": -0.006619663821432246,
+        "hud": "full",
+        "leeway": -0.01784267481161961,
+        "manualYardTarget": 0,
+        "order": "Full",
+        "playerMode": "helm",
+        "previous": {
+          "deployment": 0.9694444444444446,
+          "fill": 0.9922075952124144,
+          "flutter": 0.007554303530187136,
+          "pressure": 0.21846309400163744,
+          "yardAngle": 0
+        },
+        "primeSeconds": 60,
+        "rowing": {
+          "crewLoad": 241.3051885178109,
+          "dissipatedPower": 47474.00265772332,
+          "fallbackQueries": 0,
+          "forceCapFraction": 0.04705882352941176,
+          "guardedQueries": 0,
+          "missedDriveFraction": 0,
+          "oarThrust": -2811.282422984744,
+          "portThrust": -1260.9170990437162,
+          "positivePower": 38227.30677639398,
+          "powerCapFraction": 0.14705882352941177,
+          "starboardThrust": -1550.3653239410287,
+          "wetArea": 1.1155976196687427,
+          "wetBlades": 93,
+          "yawMoment": -1741.0232568288927
+        },
+        "sail": {
+          "apparentFrom": -0.01535040978604453,
+          "apparentSpeed": 3.367762598916547,
+          "apparentWind": {
+            "x": 0.0516732275971029,
+            "y": 0.0966176125299428,
+            "z": 3.365979773730057
+          },
+          "flutter": 0.007537355194229541,
+          "forwardForce": -602.6748513954001,
+          "heelMoment": -57.46341015614007,
+          "lateralForce": -5.079504008294464,
+          "load": 602.7762359215951,
+          "pointOfSail": "windward",
+          "pressure": 0.21796026737378693,
+          "status": "setting"
+        },
+        "scenario": "calm",
+        "speedKn": 6.5358668330530065,
+        "stamina": 0.9462631103589856,
+        "time": 205.63333333331065,
+        "trimMode": "auto",
+        "visual": {
+          "deployment": 0.9688500000002476,
+          "flutter": 0.007547049642400305,
+          "fullHeight": 7,
+          "pressure": 0.218247884205007,
+          "visible": true,
+          "width": 10,
+          "yardAngle": 0
+        },
+        "wetBlades": 93,
+        "zoom": 0
+      }
+    },
+    {
+      "check": "console-after-calm-helm",
+      "logs": []
+    }
+  ]
+}

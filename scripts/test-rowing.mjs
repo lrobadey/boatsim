@@ -33,7 +33,7 @@ test('layout, real bank geometry, orthonormal basis and endpoints',()=>{
  for(let phase=0;phase<=20;phase++)for(const direction of [-1,1]){
   const j={...samplePose,sweep:direction*(.72-1.3*phase/20),dip:.1+.5*phase/20,feather:Math.PI/2*phase/20};evaluateOar(slot,j,k);
   near(k.matrix.determinant(),1,1e-10);near(k.axis.dot(k.normal),0,1e-10);near(k.axis.dot(k.widthAxis),0,1e-10);
-  const pos=geometries[slot.bank].attributes.position;const center=new THREE.Vector3();for(let v=pos.count-24;v<pos.count;v++)center.add(new THREE.Vector3().fromBufferAttribute(pos,v));center.multiplyScalar(1/24).applyMatrix4(k.matrix);assert.ok(center.distanceTo(k.center)<1e-6);
+  const geo=geometries[slot.bank],pos=geo.attributes.position,blade=geo.userData.blade,box=new THREE.Box3();for(let v=blade.start;v<blade.start+blade.count;v++)box.expandByPoint(new THREE.Vector3().fromBufferAttribute(pos,v));near(box.max.x-box.min.x,slot.bladeLength,1e-6);near(box.max.y-box.min.y,slot.bladeWidth,1e-6);const center=box.getCenter(new THREE.Vector3()).applyMatrix4(k.matrix);assert.ok(center.distanceTo(k.center)<1e-6);
   for(const l of [-slot.bladeLength/2,slot.bladeLength/2])for(const w of [-slot.bladeWidth/2,slot.bladeWidth/2]){
    const a=new THREE.Vector3(slot.bladeRadius+l,w,0).applyMatrix4(k.matrix);const b=k.center.clone().addScaledVector(k.axis,l).addScaledVector(k.widthAxis,w);assert.ok(a.distanceTo(b)<1e-6);
   }

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { clamp, damp } from '../core/util';
 import type { Input } from '../core/input';
-import { deckY, halfBeam, sOf, zOf, HULL_LENGTH } from '../ship/hull';
-import { outrigger } from '../ship/trireme';
+import { TRIREME, type ShipDesign } from '../ship/design';
 import type { Terrain } from '../world/terrain';
 import type { WaveField } from '../world/waves';
 import type { WalkGeometry } from '../world/walkable';
@@ -24,7 +23,6 @@ export interface ChaseHints {
   docking: number;
 }
 
-const HELM_S = 0.885;
 const EYE = 1.66;
 const CLIMB_RANGE = 2.2;
 const LEVEL_TIME = 0.6; // frame-switch ramp inside foot mode (WS-A)
@@ -45,7 +43,8 @@ export class PlayerController {
   // chase
   chaseYaw = Math.PI * 0.85;
   chasePitch = 0.28;
-  chaseDist = 42;
+  /** the user's chase distance choice (set from the design in the constructor) */
+  chaseDist: number;
   /** raises the look-at point (cinematic framing puts the ship low in frame) */
   chaseLift = 0;
   /** chase camera swings back behind the ship after the player stops looking around */
@@ -60,8 +59,8 @@ export class PlayerController {
   private distBoost = 0; // eased speed widening of the distance, fraction
   private lookIdle = 0;
   private chaseHeading = NaN; // smoothed ship heading the chase camera trails
-  private distS = 42; // smoothed zoom
-  private readonly chase = new ChaseCamera();
+  private distS: number; // smoothed zoom
+  private readonly chase: ChaseCamera;
   // eagle
   eaglePos = new THREE.Vector3();
   eagleVel = new THREE.Vector3();
@@ -75,7 +74,7 @@ export class PlayerController {
   baseFov = 70;
 
   /** foot movement, camera feel and interactions */
-  readonly walker = new Walker();
+  readonly walker: Walker;
   readonly feel = new CameraFeel();
   readonly interactions = new Interactions();
   /** the camera rig: transitions between modes and trauma shake (spec §9) */
@@ -117,12 +116,16 @@ export class PlayerController {
   private readonly up = new THREE.Vector3(0, 1, 0);
   private readonly zAxis = new THREE.Vector3(0, 0, 1);
 
-  constructor(private camera: THREE.PerspectiveCamera, private input: Input) {
+  constructor(private camera: THREE.PerspectiveCamera, private input: Input, readonly design: ShipDesign = TRIREME) {
+    this.walker = new Walker(design);
+    this.chase = new ChaseCamera(design.camera.chasePivotUp);
+    this.chaseDist = design.camera.chaseDist;
+    this.distS = design.camera.chaseDist;
     this.helm = {
       id: 'helm',
       label: 'Take helm',
       frame: 'ship',
-      pos: new THREE.Vector3(0, deckY(HELM_S) + 1.0, zOf(HELM_S)),
+      pos: new THREE.Vector3(0, this.design.deck.deckY(this.design.camera.helmS) + 1.0, this.design.hull.zOf(this.design.camera.helmS)),
       radius: 2.5,
       enabled: () => this.onFoot && this.walker.frame === 'ship' && !this.walker.scripted,
       act: () => {
@@ -167,8 +170,8 @@ export class PlayerController {
   toggleHelm() {
     if (this.mode === 'helm') {
       this.mode = 'foot';
-      const z = zOf(HELM_S - 0.02);
-      this.walker.placeOnDeck(new THREE.Vector3(0, deckY(sOf(z)), z));
+      const z = this.design.hull.zOf(this.design.camera.helmS - 0.02);
+      this.walker.placeOnDeck(new THREE.Vector3(0, this.design.deck.deckY(this.design.hull.sOf(z)), z));
       return;
     }
     const t = this.interactions.target;
@@ -341,16 +344,16 @@ export class PlayerController {
       return;
     }
     const local = this.tmpV4.copy(w.world).sub(ship.origin).applyQuaternion(this.tmpQ.copy(ship.quat).invert());
-    const s = clamp(sOf(local.z), 0, 1);
+    const s = clamp(this.design.hull.sOf(local.z), 0, 1);
     const side = local.x < 0 ? -1 : 1;
-    const outer = halfBeam(s) + outrigger(s);
+    const outer = this.design.deck.outerHalfWidth(s);
     this.climbDist = Math.abs(local.x) - outer;
-    this.climb.pos.set(side * outer, 0.3, clamp(local.z, -HULL_LENGTH / 2, HULL_LENGTH / 2)).applyQuaternion(ship.quat).add(ship.origin);
+    this.climb.pos.set(side * outer, 0.3, clamp(local.z, -this.design.hull.length / 2, this.design.hull.length / 2)).applyQuaternion(ship.quat).add(ship.origin);
   }
 
   /** at the helm: fixed eye, ship-referenced look (the earlier deck camera, unchanged) */
   private helmPose(ship: ShipPose, live: Pose) {
-    const eyeLocal = this.tmpV.set(0, deckY(HELM_S) + EYE + 0.1, zOf(HELM_S) + 0.25);
+    const eyeLocal = this.tmpV.set(0, this.design.deck.deckY(this.design.camera.helmS) + EYE + 0.1, this.design.hull.zOf(this.design.camera.helmS) + 0.25);
     live.position.copy(eyeLocal).applyQuaternion(ship.quat).add(ship.origin);
     const look = this.tmpQ.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
     const qShip = this.tmpQ2.copy(ship.quat).multiply(look);
@@ -393,9 +396,9 @@ export class PlayerController {
       const pitchGoal = pitchSpeed + (0.62 - pitchSpeed) * this.chaseDocking;
       this.chasePitch += (pitchGoal - this.chasePitch) * k;
     }
-    // distance: speed opens the view by up to 15%, docking widens it toward 48 m; both multiply the user's choice
+    // distance: speed opens the view by up to 15%, docking widens it toward the design's docking distance; both multiply the user's choice
     this.distBoost += (0.15 * sp - this.distBoost) * (1 - Math.exp(-dt));
-    const distBase = this.chaseDist + (Math.max(this.chaseDist, 48) - this.chaseDist) * this.chaseDocking;
+    const distBase = this.chaseDist + (Math.max(this.chaseDist, this.design.camera.dockingDist) - this.chaseDist) * this.chaseDocking;
     this.distS = damp(this.distS, clamp(distBase * (1 + this.distBoost), 14, 200), 8, dt);
 
     const fwd = this.tmpV.set(0, 0, -1).applyQuaternion(ship.quat);

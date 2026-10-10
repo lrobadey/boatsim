@@ -1,0 +1,218 @@
+{
+  "CL": -98.7415,
+  "keelHalfCm": 5.0914,
+  "zKeel": -122.3161,
+  "zWL": 6.1839,
+  "xBow": -660.6993,
+  "xStern": 717.1685,
+  "Lcm": 1377.8679,
+  "pxMin": -684.8809,
+  "pxMax": 741.5692,
+  "stations": [
+    {
+      "x": -596.1517,
+      "s": 0.0468,
+      "keelZ": -38.7057,
+      "rabbetZ": -11.411,
+      "topZ": 150.0187,
+      "maxHalfBreadthCm": 54.0763,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 418,
+      "keelFixed": false
+    },
+    {
+      "x": -494.994,
+      "s": 0.1203,
+      "keelZ": -68.9615,
+      "rabbetZ": -49.5852,
+      "topZ": 129.2329,
+      "maxHalfBreadthCm": 112.8466,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 490,
+      "keelFixed": false
+    },
+    {
+      "x": -396.1449,
+      "s": 0.192,
+      "keelZ": -90.7471,
+      "rabbetZ": -72.1425,
+      "topZ": 112.827,
+      "maxHalfBreadthCm": 152.9736,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 573,
+      "keelFixed": false
+    },
+    {
+      "x": -296.5519,
+      "s": 0.2643,
+      "keelZ": -105.7593,
+      "rabbetZ": -86.6799,
+      "topZ": 100.7379,
+      "maxHalfBreadthCm": 177.3725,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 643,
+      "keelFixed": false
+    },
+    {
+      "x": -201.1938,
+      "s": 0.3335,
+      "keelZ": -114.4743,
+      "rabbetZ": -92.2799,
+      "topZ": 93.5558,
+      "maxHalfBreadthCm": 194.111,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 653,
+      "keelFixed": false
+    },
+    {
+      "x": -99.6208,
+      "s": 0.4072,
+      "keelZ": -119.561,
+      "rabbetZ": -96.5979,
+      "topZ": 92.3044,
+      "maxHalfBreadthCm": 204.5411,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 684,
+      "keelFixed": false
+    },
+    {
+      "x": -0.5025,
+      "s": 0.4791,
+      "keelZ": -122.1746,
+      "rabbetZ": -99.4313,
+      "topZ": 93.085,
+      "maxHalfBreadthCm": 210.8079,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 687,
+      "keelFixed": false
+    },
+    {
+      "x": 100.3997,
+      "s": 0.5524,
+      "keelZ": -121.9302,
+      "rabbetZ": -98.5212,
+      "topZ": 97.1642,
+      "maxHalfBreadthCm": 208.6746,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 686,
+      "keelFixed": false
+    },
+    {
+      "x": 200.0902,
+      "s": 0.6247,
+      "keelZ": -121.2936,
+      "rabbetZ": -97.491,
+      "topZ": 106.4836,
+      "maxHalfBreadthCm": 196.6923,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 678,
+      "keelFixed": false
+    },
+    {
+      "x": 298.1238,
+      "s": 0.6959,
+      "keelZ": -118.6438,
+      "rabbetZ": -93.5822,
+      "topZ": 121.1827,
+      "maxHalfBreadthCm": 176.7491,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 692,
+      "keelFixed": false
+    },
+    {
+      "x": 397.9153,
+      "s": 0.7683,
+      "keelZ": -113.5488,
+      "rabbetZ": -89.1823,
+      "topZ": 140.4613,
+      "maxHalfBreadthCm": 149.3868,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 628,
+      "keelFixed": false
+    },
+    {
+      "x": 497.9716,
+      "s": 0.8409,
+      "keelZ": -105.8802,
+      "rabbetZ": -82.9194,
+      "topZ": 166.3601,
+      "maxHalfBreadthCm": 115.3101,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 610,
+      "keelFixed": false
+    },
+    {
+      "x": 597.0748,
+      "s": 0.9128,
+      "keelZ": -90.344,
+      "rabbetZ": -74.2534,
+      "topZ": 201.6761,
+      "maxHalfBreadthCm": 70.6421,
+      "tumblehomeCm": 0.0,
+      "paretoPoints": 604,
+      "keelFixed": false
+    }
+  ],
+  "waterlines": [
+    {
+      "z": -71.2614,
+      "y": -0.7745,
+      "bodyCount": 499,
+      "bodyRmsCm": 2.1322,
+      "bodyMaxCm": 8.1942,
+      "endsCount": 5,
+      "endsRmsCm": 0.7707,
+      "endsMaxCm": 0.8205
+    },
+    {
+      "z": -46.8033,
+      "y": -0.5299,
+      "bodyCount": 552,
+      "bodyRmsCm": 0.568,
+      "bodyMaxCm": 1.6365,
+      "endsCount": 14,
+      "endsRmsCm": 0.3556,
+      "endsMaxCm": 0.8766
+    },
+    {
+      "z": -22.7144,
+      "y": -0.289,
+      "bodyCount": 588,
+      "bodyRmsCm": 1.5893,
+      "bodyMaxCm": 6.4456,
+      "endsCount": 22,
+      "endsRmsCm": 0.5171,
+      "endsMaxCm": 1.2632
+    },
+    {
+      "z": 1.6434,
+      "y": -0.0454,
+      "bodyCount": 597,
+      "bodyRmsCm": 2.0077,
+      "bodyMaxCm": 7.6882,
+      "endsCount": 37,
+      "endsRmsCm": 1.4232,
+      "endsMaxCm": 4.7149
+    },
+    {
+      "z": 26.0642,
+      "y": 0.1988,
+      "bodyCount": 597,
+      "bodyRmsCm": 1.7538,
+      "bodyMaxCm": 5.9082,
+      "endsCount": 52,
+      "endsRmsCm": 2.8922,
+      "endsMaxCm": 9.6139
+    },
+    {
+      "z": 75.3324,
+      "y": 0.6915,
+      "bodyCount": 597,
+      "bodyRmsCm": 1.2994,
+      "bodyMaxCm": 3.4517,
+      "endsCount": 71,
+      "endsRmsCm": 2.5178,
+      "endsMaxCm": 8.861
+    }
+  ]
+}

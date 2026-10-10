@@ -20,6 +20,8 @@ hold the display's refresh rate.
 | **W / S** | stroke order: back water · oars up · slow · half · full · ramming speed |
 | **A / D** | steering oars · **X** centre them · **Space** hold water (brake) |
 | **F** | raise / brail the sail |
+| **G** | select full / half sail area |
+| **J / L** | hold to trim the yard manually · **K** return to crew trim |
 | **E** | take / leave the helm; on deck **WASD** walk, **Shift** run |
 | **C** | chase camera (wheel zooms) · **Q** Ikaros, the eagle |
 | **RMB** | spyglass · **M** sea chart |
@@ -40,8 +42,11 @@ hold the display's refresh rate.
   local immersion and water flow; passive drag is bounded by handle force, work and crew reserves.
   Low-speed hard helm backs the inner bank, and hold-water brakes through submerged blade drag. This
   is a reduced-order traction model, without shaft dynamics or unsteady blade vortices. It also has steering
-  oars modelled as lifting plates, a square sail trimmed to the apparent wind, crew stamina, and
-  grounding.
+  oars modelled as lifting plates, a square sail with apparent-wind crew trim and partial deployment,
+  crew stamina, and grounding. Sailing couples distributed sail pressure, rigid-body apparent wind,
+  and shallow-hull leeway. Its aerodynamic and hull coefficients are bounded engineering approximations,
+  not CFD or a calibrated Olympias performance model; rig billow is a visual approximation, not a
+  cloth simulation.
 - **Sky & light** — astronomical sun and moon (latitude 37°N, midsummer). A Preetham sky with clouds is
   baked to the environment, alongside a moonlit night sky, stars and a phase-lit moon. Heightfield sun
   shadows are ray-marched over the terrain for every material, and aerial perspective uses the sky
@@ -55,3 +60,29 @@ hold the display's refresh rate.
 The researched rowing contract is in [docs/rowing-spec.md](docs/rowing-spec.md). Run
 `npm run test:rowing` for geometry, transitions, power, control and sea-stability checks.
 Opt-in browser review scenes use `?dev&hud=1&rowingReview=forward` (or `back`, `hold`, `pivot`, `rest`, `transition`).
+
+The coupled sailing contract, including its research basis and limits, is in
+[docs/sailing-spec.md](docs/sailing-spec.md). Run `npm run test:sailing` for deterministic wind, rig,
+force, hull-balance and propulsion-regime checks.
+Run `npm run test:sailing-tuning` for the combined, favorable-wind 8 kn engineering target at uniform
+14 m/s; this is a design target, not a historical trireme calibration. Normal play starts from a
+fresh 12 m/s 10 m reference breeze, then the wind field varies it over time and location. In 8–18°
+heel, crew trim chooses yard angles that reduce sail loading; manual yard control remains in the
+player's hands, and half sail is useful when reducing load.
+
+Opt-in sailing review scenes accept `?dev&hud=1&sailingReview=combined&sailingWind=14&sailingPrime=90`;
+choose `wind`, `row`, `combined`, `beam`, `headwind`, or `calm`. The wind query is clamped to 0–20 m/s
+and calm always uses zero. `sailingPrime` advances the same physics before showing the scene
+(0–120 seconds); `#sailing-review-state` exposes wind base/current/mean speed, direction, wave height,
+physics and rendered rig state. Older review records used the original 8 m/s scenario and are
+historical. See [the browser verification record](docs/sailing-browser-validation.md) for captures
+and limits.
+
+## Credits
+
+The merchant ship's hull (play it with `?ship=merchant` or the ship selector on the title screen) is
+built from "[Kyrenia Ship Hull Lines by J. Richard Steffy](https://sketchfab.com/3d-models/kyrenia-ship-hull-lines-by-j-richard-steffy-407996fccafb4aacbec59c4a60f1c749)"
+by [Digital in situ Preservation Archive](https://sketchfab.com/kotaro_yamafune), licensed under
+[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/). The source model is in
+`tools/blender/ref/kyrenia_steffy_gltf/`; `tools/blender/merchant_offsets.py` turns it into
+`src/ship/merchantOffsets.ts`.

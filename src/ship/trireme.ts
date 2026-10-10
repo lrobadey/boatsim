@@ -11,6 +11,8 @@ import { buildOarGeometry } from './oarGeometry';
 import { Crew } from './crew';
 import type { ModelKit } from '../gfx/models';
 import type { ShipPhysics } from './physics';
+import type { ShipVisual } from './shipVisual';
+import { SAIL_RIG } from './sailGeometry';
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -26,7 +28,7 @@ const mat = (p: THREE.MeshStandardMaterialParameters, key = '') => patchMaterial
 /**
  * The visual trireme, built procedurally from the hull definition.
  */
-export class Trireme {
+export class Trireme implements ShipVisual {
   readonly group = new THREE.Group();
   private oars: THREE.InstancedMesh[] = [];
   private slots: readonly OarSlot[];
@@ -44,13 +46,32 @@ export class Trireme {
   private tmpV = new THREE.Vector3();
   private tmpS = new THREE.Vector3(1, 1, 1);
   readonly bladeWorld: THREE.Vector3[] = [];
+  /** world-space blade frame as drawn: loom axis (outboard), width axis, face normal */
+  readonly bladeAxis: THREE.Vector3[] = [];
+  readonly bladeWidthAxis: THREE.Vector3[] = [];
+  readonly bladeNormal: THREE.Vector3[] = [];
   readonly bladeIn: boolean[] = [];
+  /** per instance: wet line (m from the thole), soak, film gloss, load bend (m) */
+  private oarFx: THREE.InstancedBufferAttribute[] = [];
   private lastTime = 0;
   readonly mastTop = new THREE.Vector3();
   /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
   readonly oarStow = [0, 0];
   readonly oarStowTarget = [0, 0];
   private stowJoint = { sweep: 0, dip: 0, feather: 0, dSweep: 0, dDip: 0, dFeather: 0 };
+
+  /** Read-back of the actual rendered rig for opt-in browser acceptance scenes. */
+  sailingVisualState() {
+    return {
+      deployment: 1 - this.sailUniforms.uFurl.value,
+      pressure: this.sailUniforms.uBillow.value,
+      flutter: this.sailUniforms.uFlutter.value,
+      yardAngle: this.yard.rotation.y,
+      width: SAIL_RIG.width,
+      fullHeight: SAIL_RIG.height,
+      visible: this.sailMesh.visible,
+    };
+  }
 
   constructor(planks: SurfaceMaps, slots: readonly OarSlot[], models: ModelKit) {
     const g = this.group;
@@ -140,31 +161,40 @@ export class Trireme {
     // ---------- oars ----------
     this.slots = slots;
     this.instanceIds = new Int16Array(slots.length);
-    const oarMat = mat({ color: 0x9a7650, roughness: 0.7 }, 'oar');
+    const oarMat = this.oarMaterial(hullMaps);
     for (let bank = 0; bank < OAR_BANKS.length; bank++) {
       const bankSlots = slots.filter(slot => slot.bank === bank);
-      const mesh = new THREE.InstancedMesh(buildOarGeometry(bankSlots[0]), oarMat, bankSlots.length);
+      const geo = buildOarGeometry(bankSlots[0]);
+      const fx = new THREE.InstancedBufferAttribute(new Float32Array(bankSlots.length * 4), 4);
+      fx.setUsage(THREE.DynamicDrawUsage);
+      for (let k = 0; k < bankSlots.length; k++) fx.setX(k, 99);
+      geo.setAttribute('oarFx', fx);
+      this.oarFx.push(fx);
+      const mesh = new THREE.InstancedMesh(geo, oarMat, bankSlots.length);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.castShadow = true; mesh.frustumCulled = false; mesh.layers.enable(LAYER_REFRACT);
       bankSlots.forEach((slot, index) => { this.instanceIds[slot.id] = index; });
       this.oars.push(mesh); g.add(mesh);
     }
-    for (const slot of slots) { this.bladeWorld.push(new THREE.Vector3()); this.bladeIn.push(false); }
+    for (const slot of slots) {
+      this.bladeWorld.push(new THREE.Vector3()); this.bladeIn.push(false);
+      this.bladeAxis.push(new THREE.Vector3(slot.side, 0, 0)); this.bladeWidthAxis.push(new THREE.Vector3(0, 1, 0)); this.bladeNormal.push(new THREE.Vector3(0, 0, 1));
+    }
 
     // ---------- mast, yard, sail ----------
-    const sm = 0.42;
+    const sm = SAIL_RIG.mastStation;
     const mastZ = zOf(sm);
     const mastBase = deckY(sm);
-    const mastH = 11.5;
+    const mastH = SAIL_RIG.mastHeight;
     const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.2, mastH, 10), woodDark);
     mast.position.set(0, mastBase + mastH / 2, mastZ);
     mast.castShadow = true;
     g.add(mast);
     this.mastTop.set(0, mastBase + mastH, mastZ);
     this.yard = new THREE.Group();
-    this.yard.position.set(0, mastBase + mastH - 0.7, mastZ);
+    this.yard.position.set(0, mastBase + mastH - SAIL_RIG.yardDrop, mastZ);
     g.add(this.yard);
-    const yardMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 12.5, 8).rotateZ(Math.PI / 2), woodDark);
+    const yardMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, SAIL_RIG.yardLength, 8).rotateZ(Math.PI / 2), woodDark);
     yardMesh.castShadow = true;
     this.yard.add(yardMesh);
     const sailTex = makeSailTexture();
@@ -183,14 +213,14 @@ export class Trireme {
           .replace(
             '#include <begin_vertex>',
             `vec3 transformed = vec3(position);
-             // position: x in [-5,5], y in [-7,0] (top at the yard)
-             float u = transformed.x / 5.0;
-             float v = -transformed.y / 7.0;           // 0 top .. 1 foot
-             float h = 7.0 * (1.0 - uFurl * 0.94);      // brailed up toward the yard
+             // The cloth spans the shared rig width and deploys downward from the yard.
+             float u = transformed.x / ${ (SAIL_RIG.width / 2).toFixed(1) };
+             float v = -transformed.y / ${ SAIL_RIG.height.toFixed(1) }; // 0 top .. 1 foot
+             float h = ${ SAIL_RIG.height.toFixed(1) } * (1.0 - uFurl);
              transformed.y = -v * h;
              float belly = (1.0 - u * u) * sin(3.14159 * clamp(v * 0.85 + 0.1, 0.0, 1.0));
              float flap = sin(transformed.x * 1.3 + uTime * 7.0 + v * 4.0) * sin(v * 3.14159) * uFlutter;
-             transformed.z += -(uBillow * 1.6 * belly) * (1.0 - uFurl) + flap * 0.35;
+             transformed.z += (uBillow * 1.6 * belly) * (1.0 - uFurl) + flap * 0.35;
              // folds when brailed
              // brailed-up cloth: a rounded bundle under the yard with irregular folds
              transformed.z += uFurl * (0.28 * sin(3.14159 * v) + sin(v * 40.0 + u * 3.0) * 0.08) * (1.0 - 0.3 * u * u);
@@ -201,9 +231,9 @@ export class Trireme {
             '#include <beginnormal_vertex>',
             `#include <beginnormal_vertex>
              {
-               float u = position.x / 5.0; float v = -position.y / 7.0;
+               float u = position.x / ${ (SAIL_RIG.width / 2).toFixed(1) }; float v = -position.y / ${ SAIL_RIG.height.toFixed(1) };
                float dbdu = -2.0 * u * sin(3.14159 * clamp(v * 0.85 + 0.1, 0.0, 1.0));
-               objectNormal = normalize(vec3(uBillow * 1.6 * dbdu / 5.0 * (1.0 - uFurl), 0.0, 1.0));
+               objectNormal = normalize(vec3(-uBillow * 1.6 * dbdu / ${ (SAIL_RIG.width / 2).toFixed(1) } * (1.0 - uFurl), 0.0, 1.0));
              }`,
           );
         sh.fragmentShader = sh.fragmentShader
@@ -221,9 +251,9 @@ export class Trireme {
       },
       'sail',
     );
-    const sailGeo = new THREE.PlaneGeometry(10, 7, 24, 18).translate(0, -3.5, 0);
+    const sailGeo = new THREE.PlaneGeometry(SAIL_RIG.width, SAIL_RIG.height, 24, 18).translate(0, -SAIL_RIG.height / 2, 0);
     this.sailMesh = new THREE.Mesh(sailGeo, sailMat);
-    this.sailMesh.position.set(0, -0.1, 0.2);
+    this.sailMesh.position.set(0, -SAIL_RIG.clothTopDrop, SAIL_RIG.clothOffsetZ);
     this.sailMesh.castShadow = true;
     this.sailMesh.frustumCulled = false;
     this.yard.add(this.sailMesh);
@@ -290,6 +320,41 @@ export class Trireme {
     g.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).receiveShadow = true;
     });
+  }
+
+  /**
+   * Oar wood with the same grain as the hull, plus two effects driven per instance: the loom bows under
+   * the blade's actual load (the blade itself stays where the physics has it), and wood the sea reached
+   * is darker and glossy, the film draining within a second or two and the soak lasting longer.
+   */
+  private oarMaterial(maps: THREE.Texture[]) {
+    const m = new THREE.MeshStandardMaterial({ map: maps[0], normalMap: maps[1], normalScale: new THREE.Vector2(0.25, 0.25), color: 0xffe6c8, roughness: 0.62, vertexColors: true });
+    return patchMaterial(m, (sh) => {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', `#include <common>
+          attribute vec4 oarFx; attribute float bend;
+          varying vec4 vOarFx; varying float vLoomX;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          transformed.z += oarFx.w * bend;
+          vOarFx = oarFx; vLoomX = position.x;`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+          varying vec4 vOarFx; varying float vLoomX;`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          // ragged wet line: water creeps up the grain unevenly
+          float wl = vOarFx.x + 0.025 * sin(vLoomX * 37.0 + vNormal.y * 5.0);
+          float oarWet = smoothstep(wl - 0.02, wl + 0.02, vLoomX);
+          diffuseColor.rgb *= mix(1.0, 0.52, oarWet * vOarFx.y);`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+          roughnessFactor = mix(roughnessFactor, 0.14, oarWet * vOarFx.z);`);
+    }, 'oar');
+  }
+
+  /** written by the oar-water system each frame */
+  setOarWet(id: number, wetLine: number, soak: number, film: number) {
+    const slot = this.slots[id];
+    const a = this.oarFx[slot.bank], k = this.instanceIds[id];
+    a.setXYZ(k, wetLine, soak, film);
   }
 
   /** x of the hull surface at station s and height y (starboard) */
@@ -601,18 +666,32 @@ export class Trireme {
         evaluateOar(slot, j, this.oarPose);
       }
       this.oars[slot.bank].setMatrixAt(this.instanceIds[slot.id], this.oarPose.matrix);
-      this.bladeWorld[slot.id].copy(this.oarPose.center).applyMatrix4(this.group.matrixWorld);
-      this.bladeIn[slot.id] = physics.rowing.current.contact[slot.id] !== 0;
+      const id = slot.id;
+      this.bladeWorld[id].copy(this.oarPose.center).applyMatrix4(this.group.matrixWorld);
+      this.bladeAxis[id].copy(this.oarPose.axis).applyQuaternion(this.group.quaternion);
+      this.bladeWidthAxis[id].copy(this.oarPose.widthAxis).applyQuaternion(this.group.quaternion);
+      const n = this.bladeNormal[id].copy(this.oarPose.normal).applyQuaternion(this.group.quaternion);
+      this.bladeIn[id] = physics.rowing.current.contact[id] !== 0;
+      // loom bend: the middle of the loom bows back against the water's push on the blade
+      // (~5 cm at a hard drive's blade load; a stiff ash/fir loom of this length)
+      const o = id * 3, pf = physics.rowing.previous.forceWorld, cf = physics.rowing.current.forceWorld;
+      const fx = pf[o] + (cf[o] - pf[o]) * alpha, fy = pf[o + 1] + (cf[o + 1] - pf[o + 1]) * alpha, fz = pf[o + 2] + (cf[o + 2] - pf[o + 2]) * alpha;
+      const fn = fx * n.x + fy * n.y + fz * n.z;
+      this.oarFx[slot.bank].setW(this.instanceIds[id], Math.max(-0.08, Math.min(0.08, -fn * 2.2e-4)));
     }
     for (const mesh of this.oars) mesh.instanceMatrix.needsUpdate = true;
+    for (const a of this.oarFx) a.needsUpdate = true;
 
-    // sail
+    // Sail cloth follows the same fixed-step state interpolation as the rigid body.
+    // Its billow is a visual approximation of planar aerodynamic loading, not a cloth solver.
+    const sail = physics.sailing;
     const su = this.sailUniforms;
-    const furl = 1 - physics.sailSet;
-    su.uFurl.value = furl;
-    su.uBillow.value += (physics.sailPressure - su.uBillow.value) * 0.05;
-    su.uFlutter.value = (1 - Math.min(1, Math.abs(physics.sailPressure) * 3)) * (1 - furl) * 0.8;
-    this.yard.rotation.y = physics.yardAngle;
+    const lerp = THREE.MathUtils.lerp;
+    const deployment = lerp(sail.previous.deployment, sail.current.deployment, alpha);
+    su.uFurl.value = 1 - deployment;
+    su.uBillow.value = lerp(sail.previous.pressure, sail.current.pressure, alpha);
+    su.uFlutter.value = lerp(sail.previous.flutter, sail.current.flutter, alpha);
+    this.yard.rotation.y = lerp(sail.previous.yardAngle, sail.current.yardAngle, alpha);
 
     // steering oars twist with the rudder angle
     for (const s of this.steer) {

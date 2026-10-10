@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { patchMaterial } from '../gfx/shared';
-import { deckY, zOf } from '../ship/hull';
+import { TRIREME, type ShipDesign } from '../ship/design';
 import type { Mooring } from '../ship/mooring';
 
 const SEG = 12;
@@ -12,16 +12,14 @@ const _q = new THREE.Vector3();
 const _m = new THREE.Matrix4();
 const _quat = new THREE.Quaternion();
 const _s = new THREE.Vector3();
+const _wq = new THREE.Quaternion();
+const _fwd = new THREE.Vector3();
+const _aq = new THREE.Quaternion();
+const _ay = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
-const BOW = new THREE.Vector3(0, deckY(0.12), zOf(0.12));
 // anchor lying on the foredeck in ship-local space: shank fore-aft, stock across the deck, flukes up.
 // The kit's anchor is built shank-up (y), stock along z, flukes along x: this cyclic map sends (x, y, z) to (z, x, y).
 const ANCHOR_BASIS = new THREE.Matrix4().set(0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1);
-const ANCHOR_LOCAL = new THREE.Matrix4().compose(
-  new THREE.Vector3(0.6, deckY(0.1) + 0.3, zOf(0.1) + 0.8),
-  new THREE.Quaternion().setFromRotationMatrix(ANCHOR_BASIS),
-  new THREE.Vector3(1, 1, 1),
-);
 
 /**
  * Visible ship-to-shore rigging: mooring lines sagging between cleats and bollards, the anchor rode
@@ -33,8 +31,24 @@ export class HarbourRig {
   private plank: THREE.Object3D;
   private plankLen = 3;
   private anchor: THREE.Object3D | null = null;
+  /** height of the anchor model's ring end above its origin (model is built shank-up along +y) */
+  private anchorTop = 1;
+  /** rode fairlead at the bow and the stowed anchor's pose, ship-local, for this ship's deck */
+  private readonly bow: THREE.Vector3;
+  private readonly anchorLocal: THREE.Matrix4;
 
-  constructor() {
+  constructor(design: ShipDesign = TRIREME) {
+    const { deck, hull } = design;
+    this.bow = new THREE.Vector3(0, deck.deckY(design.anchor.s), hull.zOf(design.anchor.s));
+    // stowed on the foredeck, inboard of the rail
+    const s = design.kind === 'trireme' ? 0.1 : 0.12;
+    const x = design.kind === 'trireme' ? 0.6 : Math.max(0, deck.deckHalfWidth(s) - 0.4);
+    const dz = design.kind === 'trireme' ? 0.8 : 0.3;
+    this.anchorLocal = new THREE.Matrix4().compose(
+      new THREE.Vector3(x, deck.deckY(s) + 0.3, hull.zOf(s) + dz),
+      new THREE.Quaternion().setFromRotationMatrix(ANCHOR_BASIS),
+      new THREE.Vector3(1, 1, 1),
+    );
     const rope = patchMaterial(new THREE.MeshStandardMaterial({ color: 0xb9a27a, roughness: 0.92 }), undefined, 'rope');
     this.ropes = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.022, 0.022, 1, 5, 1, true).translate(0, 0.5, 0), rope, MAX_ROPES * SEG);
     this.ropes.castShadow = true;
@@ -68,6 +82,8 @@ export class HarbourRig {
   /** the anchor as stowed on the foredeck; shown only while she is not riding to an anchor */
   setAnchorModel(obj: THREE.Object3D) {
     if (this.anchor) this.group.remove(this.anchor);
+    // local extent at identity, before the model is placed in the rig
+    this.anchorTop = new THREE.Box3().setFromObject(obj).max.y;
     this.anchor = obj;
     this.group.add(obj);
   }
@@ -89,22 +105,45 @@ export class HarbourRig {
       _b.copy(l.anchor).setY(l.anchor.y + 0.65);
       rope(_a, _b, (1 - l.tension) * 0.06 * _a.distanceTo(_b) + 0.05);
     }
-    if (moor.anchorAt) {
-      _a.copy(BOW).applyMatrix4(ship.matrixWorld);
-      // the rode runs to the waterline a few metres out toward the anchor, then out of sight
-      _b.set(moor.anchorAt.x - _a.x, 0, moor.anchorAt.z - _a.z);
-      const d = _b.length();
-      _b.multiplyScalar(d > 1e-3 ? Math.min(3.5, d) / d : 0).add(_a).setY(-0.6);
-      rope(_a, _b, 0.25);
+    const phase = moor.anchorPhase;
+    if (phase !== 'stowed') {
+      _a.copy(this.bow).applyMatrix4(ship.matrixWorld);
+      if (phase === 'dropping' || phase === 'lifting') {
+        // the rode runs from the fairlead to the anchor ring, nearly straight
+        rope(_a, moor.anchorPos, 0.02);
+      } else {
+        // holding or weighing: slack rode sags, taut rode does not
+        const hd = Math.hypot(moor.anchorPos.x - _a.x, moor.anchorPos.z - _a.z);
+        rope(_a, moor.anchorPos, Math.max(0.05, 0.2 * (moor.rode - hd)));
+      }
     }
     this.ropes.count = n;
     this.ropes.instanceMatrix.needsUpdate = true;
 
     if (this.anchor) {
       // copy the ship's transform each frame so the anchor rides with her without being a child of her group
-      this.anchor.visible = !moor.anchorAt;
-      if (this.anchor.visible) {
-        _m.multiplyMatrices(ship.matrixWorld, ANCHOR_LOCAL).decompose(this.anchor.position, this.anchor.quaternion, this.anchor.scale);
+      this.anchor.visible = true;
+      if (phase === 'stowed') {
+        _m.multiplyMatrices(ship.matrixWorld, this.anchorLocal).decompose(this.anchor.position, this.anchor.quaternion, this.anchor.scale);
+      } else {
+        // ship's yaw from her forward axis
+        ship.getWorldQuaternion(_wq);
+        _fwd.set(0, 0, -1).applyQuaternion(_wq);
+        const yaw = Math.atan2(-_fwd.x, -_fwd.z);
+        if (phase === 'dropping' || phase === 'lifting') {
+          // hangs from its ring, shank down: built shank-up, so a turn about y leaves the shank vertical
+          _ay.setFromAxisAngle(UP, yaw);
+          this.anchor.quaternion.copy(_ay);
+          this.anchor.position.copy(moor.anchorPos).sub(_b.set(0, this.anchorTop, 0));
+        } else {
+          // holding or weighing: lies on the seabed, shank along the rode toward the bow
+          _a.copy(this.bow).applyMatrix4(ship.matrixWorld);
+          const heading = Math.atan2(_a.x - moor.anchorPos.x, _a.z - moor.anchorPos.z);
+          _ay.setFromAxisAngle(UP, heading);
+          _aq.setFromRotationMatrix(ANCHOR_BASIS);
+          this.anchor.quaternion.copy(_ay).multiply(_aq);
+          this.anchor.position.copy(moor.anchorPos).add(_b.set(0, 0.15, 0));
+        }
       }
     }
 

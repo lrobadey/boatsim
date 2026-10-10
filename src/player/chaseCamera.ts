@@ -9,7 +9,6 @@ import type { Pose } from './cameraRig';
  * damped springs (tight horizontally, soft vertically so heave does not bounce the view), a look-ahead
  * along the ship's velocity, and a spring arm that pulls in before terrain or water and lets back out.
  */
-const PIVOT_UP = 4; // m above the centre of gravity
 const OMEGA_XZ = 8;
 const OMEGA_Y = 2.5;
 const LOOK_TIME = 0.6; // s of ship velocity the pivot leads by
@@ -36,6 +35,9 @@ export class ChaseCamera {
   private q = new THREE.Quaternion();
   private readonly up = new THREE.Vector3(0, 1, 0);
 
+  /** pivotUp: m above the centre of gravity */
+  constructor(readonly pivotUp = 4) {}
+
   /** Solves the chase pose into `out` (un-zoomed fov). yaw/pitch are the world orbit angles. */
   solve(dt: number, ship: ShipPose, terrain: Terrain, waves: WaveField, time: number, yaw: number, pitch: number, dist: number, lift: number, speed: number, baseFov: number, out: Pose) {
     const h = Math.min(0.25, Math.max(0, dt));
@@ -47,7 +49,7 @@ export class ChaseCamera {
       lx *= LOOK_MAX / ll;
       lz *= LOOK_MAX / ll;
     }
-    this.goal.set(ship.cgWorld.x + lx, ship.cgWorld.y + PIVOT_UP + lift, ship.cgWorld.z + lz);
+    this.goal.set(ship.cgWorld.x + lx, ship.cgWorld.y + this.pivotUp + lift, ship.cgWorld.z + lz);
     if (!this.ready) {
       this.ready = true;
       this.pivot.copy(this.goal);

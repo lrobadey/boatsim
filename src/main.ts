@@ -1,8 +1,9 @@
 import type * as THREE from 'three';
 import { QUALITY, QualityName } from './core/quality';
 import type { WorldGenResult } from './world/worldgenTypes';
-import { Wind } from './world/wind';
+import { DEFAULT_WIND_SPEED, Wind } from './world/wind';
 import { Game } from './game';
+import { DESIGNS, chosenShipKind } from './ship/design';
 import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
 import { loadVisualAssets } from './gfx/assets';
 import { loadModels } from './gfx/models';
@@ -25,6 +26,9 @@ const qName = (params.get('q') as QualityName) || (localStorage.getItem('trieres
 const quality = QUALITY[qName] ?? QUALITY.high;
 const seed = Number(params.get('seed') ?? 1729);
 const dev = params.has('dev');
+const storedShip = (() => { try { return localStorage.getItem('trieres.ship'); } catch { return null; } })();
+const shipKind = chosenShipKind(location.search, storedShip);
+const design = DESIGNS[shipKind];
 
 const ui = document.getElementById('ui')!;
 const canvas = document.getElementById('gl') as HTMLCanvasElement;
@@ -35,7 +39,7 @@ loading.innerHTML = `
   <div class="stack">
     ${EMBLEM_SVG}
     <div class="wordmark">ΤΡΙΗΡΗΣ</div>
-    <div class="sub">Trireme simulator</div>
+    <div class="sub">${design.subtitle}</div>
     <div class="load-track"><div class="load-fill"></div></div>
     <div class="load-status">Loading</div>
   </div>`;
@@ -46,8 +50,11 @@ const label = loading.querySelector('.load-status') as HTMLElement;
 /** quality segmented control: the key is stored in data-q, the label is sentence case */
 const qualitySeg = (seedValue: number | string, current: string) =>
   `<div class="seg" role="group" aria-label="Quality">${Object.keys(QUALITY)
-    .map((k) => `<a href="?q=${k}&seed=${seedValue}" data-q="${k}" class="${k === current ? 'on' : ''}"${k === current ? ' aria-current="true"' : ''}>${k[0].toUpperCase()}${k.slice(1)}</a>`)
+    .map((k) => `<a href="?q=${k}&seed=${seedValue}&ship=${shipKind}" data-q="${k}" class="${k === current ? 'on' : ''}"${k === current ? ' aria-current="true"' : ''}>${k[0].toUpperCase()}${k.slice(1)}</a>`)
     .join('')}</div>`;
+
+/** ship segmented control: picks the ship for the next load and remembers it */
+const shipSeg = () => `<div class="seg ship-seg" role="group" aria-label="Ship">${(['trireme', 'merchant'] as const).map((k) => `<a href="?q=${quality.name}&seed=${seed}&ship=${k}" data-ship="${k}" class="${k === shipKind ? 'on' : ''}"${k === shipKind ? ' aria-current="true"' : ''}>${DESIGNS[k].name}</a>`).join('')}</div>`;
 
 function generate(): Promise<WorldGenResult> {
   return new Promise((resolve, reject) => {
@@ -91,7 +98,7 @@ async function boot() {
   label.textContent = 'Preparing the ship';
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
-  const game = new Game(canvas, quality, gen, tex, assets, models);
+  const game = new Game(canvas, quality, gen, tex, assets, models, design);
   if (dev && params.get('inspect') === 'harbour') {
     const h = gen.sites.harbour;
     const towardShore = gen.sites.pier.angle + Math.PI;
@@ -135,6 +142,69 @@ async function boot() {
     };
     requestAnimationFrame(observeRowing);
   }
+  // Opt-in sailing acceptance: reproducible open-water setup plus DOM telemetry read-back.
+  // These scenes preserve the normal input, rendering, waves and force integration paths.
+  const sailingReview = dev ? params.get('sailingReview') : null;
+  if (sailingReview && ['wind', 'row', 'combined', 'beam', 'headwind', 'calm'].includes(sailingReview)) {
+    game.clock.hours = 12.5; game.clock.compute();
+    game.player.mode = 'chase'; game.player.prevShipMode = 'helm';
+    game.player.chaseYaw = 0.8; game.player.chasePitch = 0.26; game.player.chaseDist = 38;
+    game.hud.density = 'full';
+    game.hud.root.classList.remove('minimal', 'none');
+    game.hud.root.classList.add('full');
+    const requestedWind = params.get('sailingWind');
+    const parsedWind = requestedWind === null || requestedWind.trim() === '' ? NaN : Number(requestedWind);
+    const sailingWind = Number.isFinite(parsedWind) ? Math.max(0, Math.min(20, parsedWind)) : DEFAULT_WIND_SPEED;
+    game.wind.baseSpeed = sailingReview === 'calm' ? 0 : sailingWind;
+    game.wind.update(0);
+    const heading = game.wind.from + (sailingReview === 'headwind' ? 0 : sailingReview === 'beam' ? Math.PI / 2 : Math.PI);
+    const start = gen.sites.start;
+    let reviewX = start.x, reviewZ = start.z, foundWater = false;
+    for (let ring = 0; ring <= 8 && !foundWater; ring++) {
+      for (let k = 0; k < 16 && !foundWater; k++) {
+        const x = start.x + ring * 250 * Math.sin(k * Math.PI / 8);
+        const z = start.z + ring * 250 * Math.cos(k * Math.PI / 8);
+        let clear = true;
+        for (const distance of [0, 100, 200, 400, 650]) for (const side of [-50, 0, 50]) {
+          const px = x + Math.sin(heading) * distance + Math.cos(heading) * side;
+          const pz = z - Math.cos(heading) * distance + Math.sin(heading) * side;
+          if (game.terrain.heightAt(px, pz) > -15) clear = false;
+        }
+        if (clear) { reviewX = x; reviewZ = z; foundWater = true; }
+      }
+    }
+    game.ship.place(reviewX, reviewZ, heading);
+    game.crew.setOrder(['row', 'combined', 'calm'].includes(sailingReview) ? 4 : 1);
+    game.ship.sailTarget = sailingReview === 'row' ? 0 : 1;
+    // Prime only the same environmental and physics systems, without presenting frames.
+    const requestedPrime = Number(params.get('sailingPrime') ?? 45);
+    const prime = Number.isFinite(requestedPrime) ? Math.max(0, Math.min(120, requestedPrime)) : 45;
+    for (let i = 0; i < Math.round(prime * 120); i++) {
+      game.wind.update(1 / 120);
+      if (i % 120 === 0) game.waves.retarget(game.wind);
+      game.waves.update(1 / 120);
+      game.ship.step(1 / 120);
+    }
+    const reviewState = document.createElement('script');
+    reviewState.type = 'application/json'; reviewState.id = 'sailing-review-state'; ui.appendChild(reviewState);
+    const observeSailing = () => {
+      const s = game.ship, sail = s.sailing;
+      reviewState.textContent = JSON.stringify({ scenario: sailingReview, foundWater, primeSeconds: prime,
+        windBaseSpeed: game.wind.baseSpeed, windSpeed: game.wind.speed, windMeanSpeed: game.wind.meanSpeed,
+        windFrom: game.wind.from, waveHs: game.waves.hs,
+        time: s.time, speedKn: s.speed * 1.943844, heading: s.heading, heel: s.heel, leeway: s.leeway,
+        grounding: s.grounding, stamina: game.crew.stamina, order: game.crew.order.name,
+        deploymentTarget: sail.deploymentTarget, trimMode: sail.trimMode, manualYardTarget: sail.manualYardTarget,
+        current: sail.current, previous: sail.previous, sail: sail.telemetry,
+        visual: game.model.sailingVisualState(), rowing: s.rowing.telemetry,
+        wetBlades: Array.from(s.rowing.current.wetArea).filter(a => a > 0).length,
+        hud: game.hud.density, playerMode: game.player.mode, zoom: game.player.zoom,
+        gpuMs: game.pipeline.gpuMs, drawCalls: game.pipeline.renderer.info.render.calls,
+        finite: [...s.pos.toArray(), ...s.vel.toArray(), ...s.angVel.toArray(), sail.telemetry.load].every(Number.isFinite) });
+      if (game.running) requestAnimationFrame(observeSailing);
+    };
+    requestAnimationFrame(observeSailing);
+  }
   (window as any).game = game;
   if (dev) console.log('[boot] game built', performance.now().toFixed(0));
   fill.style.width = '100%';
@@ -150,8 +220,9 @@ async function boot() {
     <div class="scrim"></div>
     <div class="stack">
       <div class="wordmark">ΤΡΙΗΡΗΣ</div>
-      <div class="sub">Trireme simulator</div>
+      <div class="sub">${design.subtitle}</div>
       ${MEANDER_SVG}
+      ${shipSeg()}
       <div class="actions">
         <button class="pill primary board">Set sail</button>
         <button class="pill ghost open-settings">Settings</button>
@@ -165,7 +236,7 @@ async function boot() {
         <span><kbd>?</kbd> Controls</span>
       </div>
       ${qualitySeg(seed, quality.name)}
-      <a class="new-island" href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}">New archipelago</a>
+      <a class="new-island" href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}&ship=${shipKind}">New archipelago</a>
     </div>`;
   if (!dev) {
     ui.appendChild(title);
@@ -176,8 +247,8 @@ async function boot() {
     game.player.mode = 'chase';
     game.player.chaseYaw = 2.4;
     game.player.chasePitch = 0.09;
-    game.player.chaseDist = 58;
-    game.player.chaseLift = 13;
+    game.player.chaseDist = design.camera.titleDist;
+    game.player.chaseLift = design.camera.titleLift;
   } else game.hud.setVisible(params.get('hud') === '1');
 
   const pause = document.createElement('div');
@@ -253,6 +324,7 @@ async function boot() {
   // quality links keep their hrefs and remember the choice; only the data-q links count
   pause.querySelectorAll<HTMLAnchorElement>('a[data-q]').forEach((a) => a.addEventListener('click', () => localStorage.setItem('trieres.quality', a.dataset.q!)));
   title.querySelectorAll<HTMLAnchorElement>('a[data-q]').forEach((a) => a.addEventListener('click', () => localStorage.setItem('trieres.quality', a.dataset.q!)));
+  title.querySelectorAll<HTMLAnchorElement>('a[data-ship]').forEach((a) => a.addEventListener('click', () => { try { localStorage.setItem('trieres.ship', a.dataset.ship!); } catch {} }));
 
   // Starting the voyage is independent of pointer lock: if the browser refuses the lock, the view
   // follows plain mouse movement (and click-drag) instead.
@@ -285,7 +357,7 @@ async function boot() {
         game.cinematic = false;
         game.player.mode = 'helm';
         game.player.chaseLift = 0;
-        game.player.chaseDist = 42;
+        game.player.chaseDist = design.camera.chaseDist;
         game.hud.setVisible(true);
       }
     }

@@ -1,0 +1,74 @@
+{
+  "dimensions": {
+    "LOA": 14.2645,
+    "beam": 4.216025591098748,
+    "depth": 2.1509504867872042,
+    "sStar": 0.479
+  },
+  "hydrostatics": [
+    {
+      "draft": 0.5,
+      "refTonnes": 0.9,
+      "fineTonnes": 0.9500595778185157,
+      "columnTonnes": 0.5995641396820857,
+      "fineOverRef": 1.055621753131684,
+      "columnOverRef": 0.6661823774245396,
+      "columnOverFine": 0.6310805697667698
+    },
+    {
+      "draft": 0.8,
+      "refTonnes": 5.4,
+      "fineTonnes": 5.541356394286383,
+      "columnTonnes": 5.3388433320866655,
+      "fineOverRef": 1.0261771100530337,
+      "columnOverRef": 0.9886746911271602,
+      "columnOverFine": 0.9634542433674677
+    },
+    {
+      "draft": 1,
+      "refTonnes": 10.4,
+      "fineTonnes": 10.527145907618648,
+      "columnTonnes": 10.213455203517809,
+      "fineOverRef": 1.0122255680402545,
+      "columnOverRef": 0.9820630003382508,
+      "columnOverFine": 0.9702017330382191
+    },
+    {
+      "draft": 1.2,
+      "refTonnes": 16.6,
+      "fineTonnes": 16.535051361607895,
+      "columnTonnes": 16.238941944796007,
+      "fineOverRef": 0.9960874314221623,
+      "columnOverRef": 0.9782495147467474,
+      "columnOverFine": 0.9820920171134507
+    },
+    {
+      "draft": 1.4,
+      "refTonnes": 23.5,
+      "fineTonnes": 23.262702173161184,
+      "columnTonnes": 23.1119801663609,
+      "fineOverRef": 0.9899022201345185,
+      "columnOverRef": 0.9834885177174851,
+      "columnOverFine": 0.9935208727826049
+    },
+    {
+      "draft": 1.6,
+      "refTonnes": 30.9,
+      "fineTonnes": 30.494782515089803,
+      "columnTonnes": 30.384252106548868,
+      "fineOverRef": 0.9868861655368869,
+      "columnOverRef": 0.9833091296617757,
+      "columnOverFine": 0.9963754321419986
+    }
+  ],
+  "equilibrium": {
+    "draft9t": 0.9435578939307562,
+    "draft18t": 1.245170972060714,
+    "draft22t": 1.3637439489922145
+  },
+  "waterline": {
+    "draft": 1.36,
+    "LWL": 13.124538830584708,
+    "BWL": 3.831162660937374
+  }
+}

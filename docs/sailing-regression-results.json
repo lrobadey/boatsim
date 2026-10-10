@@ -1,0 +1,292 @@
+{
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Pro",
+    "runtime": "v25.4.0"
+  },
+  "tests": [
+    {
+      "name": "1 geometry: shared yard samples, exposed area, extents and rigid-body velocity",
+      "status": "passed",
+      "ms": 9.411917000000017
+    },
+    {
+      "name": "2 pure aero: passivity, symmetry, broadside lift and continuous coefficients",
+      "status": "passed",
+      "ms": 1.234958000000006
+    },
+    {
+      "name": "3 cloth state: luffing, signed fill, reversal, flutter and actuator limits",
+      "status": "passed",
+      "ms": 14.527917000000002
+    },
+    {
+      "name": "4 wind: calm, height shear, pure explicit-time determinism and update cadence",
+      "status": "passed",
+      "ms": 2.4417909999999665
+    },
+    {
+      "name": "5 reef: area, load scaling, load-center motion and continuous deployment",
+      "status": "passed",
+      "ms": 13.067874999999958
+    },
+    {
+      "name": "6 hull balance and mirrored sail/water response",
+      "status": "passed",
+      "ms": 402.852667
+    },
+    {
+      "name": "7 propulsion regimes: sail-only, row-only, combined and calm coupling",
+      "status": "passed",
+      "ms": 5365.633916
+    },
+    {
+      "name": "8 no-go crossing: continuous sweep and rowing through headwind",
+      "status": "passed",
+      "ms": 437.74241600000005
+    },
+    {
+      "name": "9 coupled gust: roll and blade immersion respond to wind while rowing invariants hold",
+      "status": "passed",
+      "ms": 551.7664590000004
+    },
+    {
+      "name": "10 convergence: 60-second smooth-wind integration at 120 and 240 Hz",
+      "status": "passed",
+      "ms": 2249.1826250000013
+    },
+    {
+      "name": "11 long run: 300-second varied wind/wave stability and runtime",
+      "status": "passed",
+      "ms": 32209.392292
+    }
+  ],
+  "measured": {
+    "geometry": {
+      "maxVelocityErrorMps": 1.8060663922719608e-10,
+      "fullArea": 70,
+      "halfArea": 35,
+      "accumulatorSailLoadN": 4760.827144682285
+    },
+    "aero": {
+      "samples": 1000,
+      "maxNegativePowerRatio": -0.3158513447502941,
+      "maxMirrorRelativeError": 0,
+      "maxCoefficientJump": 0.00011883102556575764
+    },
+    "clothState": {
+      "followingFill": -0.9999967512120356,
+      "headwindFill": 0.9999967512120356,
+      "maxFillStep": 0.0735464573595892,
+      "maxYardRateRadS": 0.2500000000000058,
+      "deploymentAfterSixSeconds": 0.9999999999999968
+    },
+    "wind": {
+      "calmSamples": 9,
+      "tenMeterSpeedMps": 5.542433964330318,
+      "cadenceDeltaSpeed": 6.750155989720952e-14,
+      "cadenceDeltaDirection": 1.3322676295501878e-15,
+      "localDeltaMps": 0.00004535771568411171,
+      "finalMeanSpeed": 6.786202458892003,
+      "finalGustSpeed": 6.057120765609014,
+      "recoveredSlowMean": 6.786202458892003
+    },
+    "reef": {
+      "uniformLoadRatio": 0.5,
+      "shearedLoadRatio": 0.5153559794554992,
+      "fullCenterY": 9.889619882986937,
+      "halfCenterY": 11.639619882986935,
+      "maxDeploymentForceStepFraction": 0.0015362355987849892
+    },
+    "hull": {
+      "maxWaterRelativePowerW": -0.7655335156069862,
+      "mirrorLateralVelocityMps": 0,
+      "mirrorLeewayRadians": 1.1102230246251565e-16,
+      "mirrorHeelRadians": 1.3877787807814457e-17,
+      "lateralVelocityMps": 0.27026327654002125,
+      "leewayRadians": 0.578637414377932,
+      "heelDegrees": -6.05604872038575
+    },
+    "regimes": {
+      "sailOnly": {
+        "meanLast30Mps": 2.427020153101768,
+        "meanLast30Kn": 4.717748562485952,
+        "speedMps": 2.43981044047424,
+        "stamina": 1,
+        "sailImpulseNs": 320707.2046850197,
+        "oarImpulseNs": 0,
+        "heel": 4.613372927265428e-18,
+        "leeway": -9.161975198291673e-20
+      },
+      "rowOnly": {
+        "meanLast30Mps": 3.4457302095670084,
+        "meanLast30Kn": 6.697961993485571,
+        "speedMps": 3.4623345535656753,
+        "stamina": 0.9910367463130112,
+        "sailImpulseNs": 0,
+        "oarImpulseNs": 668640.2435225103,
+        "heel": 6.002527275590449e-18,
+        "leeway": 2.3953656673900527e-20
+      },
+      "combined": {
+        "meanLast30Mps": 3.566928167266749,
+        "meanLast30Kn": 6.933551916372466,
+        "speedMps": 3.580435594811753,
+        "stamina": 1,
+        "sailImpulseNs": 193130.43465607674,
+        "oarImpulseNs": 551063.2638967644,
+        "heel": 5.597406770534837e-18,
+        "leeway": -2.8920820000375804e-20
+      },
+      "combinedStaticSailLoadN": 4760.82791186723,
+      "combinedMovingSailLoadN": 1454.2827443032163,
+      "calmRowOnly": {
+        "meanLast30Mps": 3.398249319298449,
+        "meanLast30Kn": 6.605666549822374,
+        "speedMps": 3.4392770224835774,
+        "stamina": 0.9623086693972561,
+        "sailImpulseNs": 0,
+        "oarImpulseNs": 381620.4577804118,
+        "heel": 5.344863149504239e-18,
+        "leeway": 9.763967373105515e-20
+      },
+      "calmCombined": {
+        "meanLast30Mps": 3.2783867252882555,
+        "meanLast30Kn": 6.372672365631224,
+        "speedMps": 3.3345636757641666,
+        "stamina": 0.9522229707813454,
+        "sailImpulseNs": -31038.495577215337,
+        "oarImpulseNs": 394159.6153288148,
+        "heel": 4.281087069915166e-18,
+        "leeway": 4.546259550842175e-19
+      }
+    },
+    "noGo": {
+      "sweepPoints": 4801,
+      "sweepDurationSeconds": 40,
+      "nearHeadwind": {
+        "heading": 0,
+        "fill": 0.9997126746310482,
+        "forward": -4209.415048374074,
+        "yard": 0.7853981633974483,
+        "status": "aback",
+        "pressure": 0.9997126746310482
+      },
+      "maxFillJump": 0.010449208494484797,
+      "maxYardStepRateRadS": 0.2500000000000058,
+      "maxForwardForceStepN": 50.77077972482084,
+      "pressureRange": [
+        -0.9851335854194401,
+        0.9999944920509124
+      ],
+      "statuses": [
+        "furled",
+        "setting",
+        "drawing",
+        "luffing",
+        "aback"
+      ],
+      "rowingHeadwind": {
+        "data": {
+          "meanLast30Mps": 0.8957038941244988,
+          "meanLast30Kn": 1.7411086403705422,
+          "speedMps": 0.9180153638460009,
+          "stamina": 0.9749232618829414,
+          "sailImpulseNs": -98655.93098813253,
+          "oarImpulseNs": 161122.22203313353,
+          "heel": 6.919912323922024e-18,
+          "leeway": -1.4463823223450645e-18
+        },
+        "forwardProgressM": 15.484170648215708
+      },
+      "restHeadwind": {
+        "data": {
+          "meanLast30Mps": -1.013672175036501,
+          "meanLast30Kn": -1.9704205754116522,
+          "speedMps": -1.1334493511201558,
+          "stamina": 1,
+          "sailImpulseNs": -68519.98233854357,
+          "oarImpulseNs": 0,
+          "heel": 5.161079140974742e-18,
+          "leeway": 3.141592653589793
+        },
+        "forwardProgressM": -10.919952115998422
+      }
+    },
+    "coupling": {
+      "calmWetAreaM2Steps": 19114.279632164675,
+      "gustWetAreaM2Steps": 17773.29584392009,
+      "finalCalmHeelDegrees": 3.05039006546267e-16,
+      "finalGustHeelDegrees": 6.995530898675,
+      "maxRollDifferenceDegrees": 7.5565665976651735
+    },
+    "convergence": {
+      "trimCadence120": [
+        {
+          "time": 0.25,
+          "calls": 1,
+          "yard": 0
+        },
+        {
+          "time": 0.5,
+          "calls": 2,
+          "yard": 0
+        },
+        {
+          "time": 0.75,
+          "calls": 3,
+          "yard": -0.0020833333333333333
+        },
+        {
+          "time": 1,
+          "calls": 4,
+          "yard": -0.06458333333333333
+        }
+      ],
+      "trimCadence240": [
+        {
+          "time": 0.25,
+          "calls": 1,
+          "yard": 0
+        },
+        {
+          "time": 0.5,
+          "calls": 2,
+          "yard": 0
+        },
+        {
+          "time": 0.75,
+          "calls": 3,
+          "yard": -0.0010416666666666667
+        },
+        {
+          "time": 1,
+          "calls": 4,
+          "yard": -0.06354166666666675
+        }
+      ],
+      "speed120Mps": -0.5290665690526881,
+      "speed240Mps": -0.5286349905474539,
+      "speedErrorMps": 0.00043157850523423136,
+      "positionErrorM": 0.014760587035641138,
+      "impulse120Ns": -340903.6045762565,
+      "impulse240Ns": -340908.43259794393,
+      "impulseRelativeError": 0.000014162224297776417,
+      "yard120Rad": 0.7853981633974483,
+      "yard240Rad": 0.7853981633974483,
+      "yardErrorRad": 0
+    },
+    "longRun": {
+      "simulatedSeconds": 300,
+      "elapsedMs": 32208.581707999998,
+      "maxSpeedMps": 2.463966745609966,
+      "maxAngularSpeedRadS": 0.26181584989520634,
+      "maxSailLoadN": 9623.01909564223,
+      "maxHeelDegrees": 9.251235076193,
+      "maxKineticEnergyJ": 171750.66621703698,
+      "calmKineticEnergyStartJ": 21085.330867782595,
+      "calmKineticEnergyEndJ": 120.18358728407384
+    }
+  }
+}

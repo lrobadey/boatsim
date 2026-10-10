@@ -9,10 +9,14 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:rowing": "node scripts/test-rowing.mjs",
+    "test:sailing": "node scripts/test-sailing.mjs",
+    "test:sailing-tuning": "node scripts/test-sailing-tuning.mjs",
     "test:walker": "node scripts/test-walker.mjs",
     "test:camera": "node scripts/test-camera.mjs",
     "test:mooring": "node scripts/test-mooring.mjs",
-    "test:build": "node scripts/test-build.mjs"
+    "test:build": "node scripts/test-build.mjs",
+    "test:merchant": "node scripts/test-merchant.mjs",
+    "test:golden": "node scripts/test-golden.mjs"
   },
   "dependencies": {
     "postprocessing": "^6.39.5",
