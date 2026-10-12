@@ -428,3 +428,10 @@ hooks in `game.ts` (harbourLayouts, placeDocked, startInHarbour, time-skip gatin
   merchant's voyage (`trieres.voyage.v1.<seed>.<heightmapSize>`); the title offers Continue/New voyage.
 - Tests: `npm run test:market|voyage|cargo|hold|ports|ledger`, `lint:ui-text`; all existing suites green.
 - Open: T7 tuning in play; the sea-state bake is +1.2 s with three detail regions; no porter figures yet.
+- Gangplank (2026-10-11, after the cargo commit): now a rigid board with two physical contacts
+  (`Mooring.updatePlank`). Its foot is set on deck per berth, inboard far enough for a climb of 28 degrees
+  or less, and rides with her. Each step the board lowers until it meets the quay: the top edge when her
+  deck is below the quay (merchant, about 1.2 m lower), or its own end on the quay top when her deck is
+  above it (trireme). It pivots and slides as she heaves and rolls; with under 0.15 m of bearing it isn't
+  walkable. The walker stands on it in both frames. The merchant's plank moved to s 0.62, clear of the
+  aft hatch. Before this, the merchant's plank ran through the stone and you couldn't walk off.

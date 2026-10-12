@@ -70,6 +70,8 @@ export interface DockingDesign {
   /** gangplank opening station, and how far the plank reaches out from the rail toward the quay (m) */
   plankS: number;
   plankReach: number;
+  /** gangplank length (m): it rests on the quay edge or the quay top, its foot set on deck (Mooring) */
+  plankLength: number;
   /** clearance between the hull's widest point and the quay face when docked (fenders implied, m) */
   gap: number;
   /**
@@ -296,6 +298,7 @@ export const TRIREME: ShipDesign = {
     cleats: [0.12, 0.4, 0.6, 0.86],
     plankS: 0.62,
     plankReach: 1.6,
+    plankLength: 3,
     // the outrigger is widest at 2.65 m: 0.35 m off a quay face 3 m from the berth centre
     gap: 0.35,
     capture: { along: 8, latMin: -0.8, latMax: 4, head: (15 * Math.PI) / 180, sog: 1.3 },
@@ -421,9 +424,12 @@ export const MERCHANT: ShipDesign = {
   docking: {
     enabled: true,
     cleats: [0.1, 0.38, 0.62, 0.88],
-    plankS: 0.55,
+    // aft of the after hatch (s 0.47-0.555): her deck is about 1.2 m below the quay top, so the crew set the
+    // plank's foot well inboard and it climbs to the quay edge
+    plankS: 0.62,
     // her deck lies about a metre below the quay top: a longer reach keeps the plank walkable
     plankReach: 2.2,
+    plankLength: 3.1,
     gap: 0.25,
     // a line's throw (about 7 m) from her side to the quay face; the along range scales with her length
     capture: { along: 4, latMin: -0.3, latMax: 7, head: (25 * Math.PI) / 180, sog: 1.0 },

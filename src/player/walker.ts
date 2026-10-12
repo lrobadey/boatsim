@@ -361,7 +361,38 @@ export class Walker {
       f.plank = false;
       found = true;
     }
+    // the gangplank's inboard part lies over her own deck: walkable from the ship frame too
+    if (this.plankSurfaceLocal(x, z, ship, this.pl) && this.pl.y <= maxY && (!found || this.pl.y > f.y)) {
+      f.y = this.pl.y;
+      f.nx = 0;
+      f.ny = 1;
+      f.nz = 0;
+      f.kind = 'wood';
+      f.plank = true;
+      found = true;
+    }
     return found;
+  }
+
+  /** the gangplank in ship-local coordinates: its foot is ship-local, its far end comes back from the world */
+  private plankSurfaceLocal(x: number, z: number, ship: ShipPose, out: Floor): boolean {
+    const p = ship.plank;
+    if (!p || p.deployed < 0.95 || p.resting === false) return false;
+    const A = p.deckLocal;
+    const B = this.toLocal(ship, p.shoreWorld, this.td);
+    const dx = B.x - A.x;
+    const dz = B.z - A.z;
+    const L2 = dx * dx + dz * dz;
+    if (L2 < 1e-6) return false;
+    const px = x - A.x;
+    const pz = z - A.z;
+    const t = (px * dx + pz * dz) / L2;
+    if (t < -0.02 || t > 1.02) return false;
+    if (Math.abs(px * dz - pz * dx) / Math.sqrt(L2) > p.width / 2) return false;
+    out.y = A.y + Math.min(1, Math.max(0, t)) * (B.y - A.y);
+    out.kind = 'wood';
+    out.plank = true;
+    return true;
   }
 
   // ───────────────────────── world frame ─────────────────────────
@@ -556,7 +587,7 @@ export class Walker {
   /** is (x,z) on the gangplank footprint; fills `out` with the sloped surface */
   private plankSurface(x: number, z: number, ship: ShipPose, out: Floor): boolean {
     const p = ship.plank;
-    if (!p || p.deployed < 0.95) return false;
+    if (!p || p.deployed < 0.95 || p.resting === false) return false;
     const A = this.ta.copy(p.deckLocal).applyQuaternion(ship.quat).add(ship.origin);
     const B = p.shoreWorld;
     const dx = B.x - A.x;

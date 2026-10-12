@@ -274,7 +274,8 @@ export class TradeLayer {
 
   update() {
     const g = this.g;
-    const T = g.clock.totalHours;
+    // the economy never runs backwards; a clock set back (dev tools) just waits for it to catch up
+    const T = Math.max(g.clock.totalHours, this.economy.now);
     let wages = 0;
     let done: 'stowed' | 'landed' | null = null;
     for (const e of this.session.tick(T)) {

@@ -11,6 +11,7 @@ const { sheer, zOf } = await import('../src/ship/hull.ts');
 const { TRIREME, MERCHANT } = await import('../src/ship/design.ts');
 
 const dt = 1 / 120, DEG = Math.PI / 180;
+const near = (a, b, tol, what = '') => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} vs ${b} (tol ${tol})`);
 let failures = 0;
 const report = {};
 function test(name, fn) {
@@ -140,9 +141,46 @@ test('gangplank deploys on a 2 s animation while docked and its shore end sits o
   for (let i = 0; i < 2.2 / dt; i++) sh.step(dt);
   const p = sh.mooring.plank;
   assert.ok(p.deployed > 0.99, `deployed ${p.deployed}`);
-  assert.equal(p.shoreWorld.y, TOP);
-  assert.ok(Math.abs(p.shoreWorld.z - 3) < 1.6, `shore z ${p.shoreWorld.z}`);
+  // her deck is above the quay top: the board's end lies on the quay top, past the face
+  assert.ok(p.resting, 'plank not resting on the quay');
+  near(p.restWorld.y, TOP, 1e-9, 'bears at the quay top');
+  near(p.shoreWorld.y, TOP, 0.01, 'end on the quay top');
+  assert.ok(p.shoreWorld.z < 3 - 0.15, `end past the face with bearing (z ${p.shoreWorld.z})`);
   assert.equal(p.station, 0.62);
+});
+
+test('merchant gangplank: foot set inboard, rests on the quay edge at a walkable slope, and rides with her', () => {
+  // light harbour chop, 8 cm waves. (An 11 m beam sea has a 2.65 s period, right on her 2.6 s roll: at
+  // 16 cm she rolls 7 degrees and the board swings 23-34 degrees. That is physical, just not walkable.)
+  const sh = makeShip(single(0.04, 0, 0, 1), { vx: 0, vz: 0 }, syntheticLayout(), MERCHANT);
+  const b = syntheticLayout().berths[0];
+  const pose = sh.mooring.berthPose(b, { x: 0, z: 0 });
+  sh.place(pose.x, pose.z, H0);
+  sh.mooring.restoreDocked(b, true);
+  for (let i = 0; i < 3 / dt; i++) sh.step(dt);
+  const p = sh.mooring.plank;
+  const L = MERCHANT.docking.plankLength;
+  const foot = new THREE.Vector3();
+  const slopes = [], ys = [];
+  for (let i = 0; i < 12 / dt; i++) {
+    sh.step(dt);
+    if (i % 12) continue;
+    sh.toWorld(p.deckLocal, foot);
+    const dx = p.shoreWorld.x - foot.x, dy = p.shoreWorld.y - foot.y, dz = p.shoreWorld.z - foot.z;
+    near(Math.hypot(dx, dy, dz), L, 0.01, 'rigid board length (solved before the step moves her: one-step lag)');
+    assert.ok(p.resting, 'slid off the quay');
+    near(p.restWorld.y, TOP, 1e-9, 'bears on the quay edge');
+    assert.ok(Math.abs(p.restWorld.z - 3) < 1e-6, `bears at the face line (z ${p.restWorld.z})`);
+    assert.ok(p.shoreWorld.y > TOP, 'end overhangs the quay above its top');
+    slopes.push(Math.atan2(dy, Math.hypot(dx, dz)) / DEG);
+    ys.push(foot.y);
+  }
+  const maxSlope = Math.max(...slopes), minSlope = Math.min(...slopes);
+  assert.ok(maxSlope < 33, `slope up to ${maxSlope.toFixed(1)} deg`);
+  assert.ok(Math.abs(p.deckLocal.x) < MERCHANT.deck.deckHalfWidth(p.station) - 0.5, `foot inboard (x ${p.deckLocal.x.toFixed(2)})`);
+  // the board pivots on the edge as her deck heaves: the slope follows the foot
+  assert.ok(maxSlope - minSlope > 0.2, `slope did not follow the heave (${minSlope.toFixed(2)}..${maxSlope.toFixed(2)})`);
+  report.merchantPlank = { footX: p.deckLocal.x, slope: [minSlope, maxSlope], footHeave: Math.max(...ys) - Math.min(...ys), endAboveTop: p.shoreWorld.y - TOP };
 });
 
 test('docked ship in waves stays within 0.6 m of her berth', () => {

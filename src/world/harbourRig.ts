@@ -157,11 +157,10 @@ export class HarbourRig {
     const pl = moor.plank;
     this.plank.visible = !!pl && pl.deployed > 0.01;
     if (pl && this.plank.visible) {
+      // the board runs from its foot on deck (riding with the ship) to its far end, which the mooring solves
+      // each step: swinging down from upright while it deploys, then resting on the quay edge or quay top
       _a.copy(pl.deckLocal).applyMatrix4(ship.matrixWorld);
-      // stowed: standing up on deck; deployed: resting on the quay
-      _q.copy(pl.deckLocal).setY(pl.deckLocal.y + this.plankLen).applyMatrix4(ship.matrixWorld);
-      const k = pl.deployed * pl.deployed * (3 - 2 * pl.deployed);
-      _b.lerpVectors(_q, pl.shoreWorld, k);
+      _b.copy(pl.shoreWorld);
       _m.lookAt(_a, _b, UP); // -z (forward) points from the ship end toward the shore
       this.plank.position.copy(_a);
       this.plank.quaternion.setFromRotationMatrix(_m);

@@ -68,11 +68,17 @@ export interface Gangplank {
   side: -1 | 1;
   /** 0 stowed .. 1 resting on the quay */
   deployed: number;
-  /** deck-edge end, ship-local */
+  /** the plank's foot on deck, where the crew set it (ship-local); it rides with the ship */
   deckLocal: THREE.Vector3;
-  /** quay end, world */
+  /** the plank's far end (world): over the quay when it rests there, swung up while stowed */
   shoreWorld: THREE.Vector3;
   width: number;
+  /** plank length (m); its top surface runs straight from deckLocal to shoreWorld */
+  length?: number;
+  /** true when it lies on the quay with enough bearing to walk on; absent = true (simple test planks) */
+  resting?: boolean;
+  /** where it bears on the quay (world): the quay's top edge, or its end on the quay top */
+  restWorld?: THREE.Vector3;
 }
 
 export type MooringEvent =
@@ -114,7 +120,14 @@ const STALL_REASON = 'Wind too strong to haul in · lines holding';
 const PHASE_LABEL = { out: 'Lines out', hauling: 'Hauling in', docked: 'Docked', casting: 'Casting off' } as const;
 /** fall/haul/lift in m/s; breakout = horizontal rode length at which the anchor breaks out of the seabed */
 const ANCHOR = { k: 18e3, c: 12e3, clamp: 60e3, rode: 14, fall: 2.5, haul: 1.2, lift: 1.5, breakout: 1.5, sog: 1.5 };
-const PLANK = { width: 0.7, rate: 0.5 };
+/**
+ * width (m); rate: deploy per second; maxSlope: the steepest climb the crew will set it at; bearing: the
+ * least run past the quay edge (m) it needs to be walked on; edgeInset: its foot at least this far inboard
+ */
+const PLANK = { width: 0.7, rate: 0.5, maxSlope: (28 * Math.PI) / 180, bearing: 0.15, edgeInset: 0.25 };
+const _pH = new THREE.Vector3();
+const _pU = new THREE.Vector3();
+const _pR = new THREE.Vector3();
 const SHOVE = { speed: 0.35, time: 1 };
 const BUMP = { min: 0.25, gap: 0.4 };
 const RATING = { smart: 0.35, well: 0.8 };
@@ -159,6 +172,9 @@ export class Mooring {
   approach: ApproachInfo | null = null;
   lines: MooringLine[] = [];
   plank: Gangplank | null = null;
+  /** the plank foot's distance from the centre line, chosen per berth (m) */
+  private plankFoot = 0;
+  private plankBerth = -1;
   /** true while the crew can't haul her in and the lines are holding her */
   stalled = false;
   /** 0..1 progress while hauling in */
@@ -257,7 +273,7 @@ export class Mooring {
     if (this.docking.enabled) {
       this.updateApproach(ship);
       if (!this.approach && this.linePhase === 'none') this.peak = 0;
-      if (!this.plank) this.plank = { station: this.docking.plankS, side: 1, deployed: 0, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
+      if (!this.plank) this.plank = this.newPlank(1, 0);
       this.phaseTime += dt;
       switch (this.linePhase) {
         case 'out':
@@ -377,7 +393,7 @@ export class Mooring {
       this.targets.push({ x: p.x + lx * c - lz * s, z: p.z + lx * s + lz * c });
       this.lines.push({ local: new THREE.Vector3(lx, hull.sheer(st), lz), anchor: b.bollards[bollardOf[i]].clone(), tension: 1, deploy: 1 });
     });
-    if (!this.plank) this.plank = { station: this.docking.plankS, side, deployed: 1, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
+    if (!this.plank) this.plank = this.newPlank(side, 1);
     this.plank.deployed = 1;
     this.side = side;
     this.pose = { x: p.x, z: p.z, h };
@@ -805,27 +821,101 @@ export class Mooring {
     }
   }
 
-  /** gangplank: deploys while docked, stows otherwise; shoreWorld is re-projected every step */
+  private newPlank(side: -1 | 1, deployed: number): Gangplank {
+    return { station: this.docking.plankS, side, deployed, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width, length: this.docking.plankLength, resting: false, restWorld: new THREE.Vector3() };
+  }
+
+  /**
+   * Gangplank, a rigid board with two contacts. Its foot is set on deck by the crew (ship-local, so it
+   * heaves, rolls and surges with her); from there it lowers under its own weight until it meets the quay:
+   * either the quay's top edge (her deck below the quay top: it pivots on the edge and its end overhangs
+   * the quay) or its own end on the quay top (her deck above it). Solved again every step, so the board
+   * pivots and slides on the stone as she moves. Too little bearing past the edge and nobody can walk it.
+   */
   private updatePlank(dt: number, ship: ShipPhysics) {
     const p = this.plank!;
+    const b = this.berth;
     const target = this.linePhase === 'docked' ? 1 : 0;
     p.deployed += Math.max(-PLANK.rate * dt, Math.min(PLANK.rate * dt, target - p.deployed));
     p.side = this.side;
+    const L = this.docking.plankLength;
+    p.length = L;
+    const { deck, hull } = this.design;
     const st = p.station;
-    p.deckLocal.set(this.side * this.design.deck.deckHalfWidth(st), this.design.deck.deckY(st), this.design.hull.zOf(st));
-    ship.toWorld(p.deckLocal, p.shoreWorld);
-    let ox: number, oz: number, oy: number;
-    if (this.berth) {
-      ox = -this.berth.nx;
-      oz = -this.berth.nz;
-      oy = this.berth.top;
-    } else {
-      _s.set(1, 0, 0).applyQuaternion(ship.quat);
-      ox = _s.x * this.side;
-      oz = _s.z * this.side;
-      oy = p.shoreWorld.y;
+    const zl = hull.zOf(st),
+      yd = deck.deckY(st),
+      hwd = deck.deckHalfWidth(st);
+    // the crew choose the foot once per berth: far enough inboard that the climb stays walkable
+    if (b && this.plankBerth !== b.id) {
+      this.plankBerth = b.id;
+      this.plankFoot = this.chooseFoot(ship, b, zl, yd, hwd, L);
+    } else if (!b) this.plankBerth = -1;
+    p.deckLocal.set(this.side * this.plankFoot, yd, zl);
+    const H = ship.toWorld(p.deckLocal, _pH);
+    // horizontal direction from the foot toward the quay: her own athwartships axis on the quay side
+    const u = _pU.set(this.side, 0, 0).applyQuaternion(ship.quat).setY(0).normalize();
+    let el = Math.PI / 2;
+    p.resting = false;
+    if (b) {
+      const rest = this.plankRest(H, u, b, L);
+      p.resting = rest.bearing >= PLANK.bearing;
+      el = rest.elevation;
+      p.restWorld!.copy(rest.point);
     }
-    const reach = this.docking.plankReach;
-    p.shoreWorld.set(p.shoreWorld.x + ox * reach, oy, p.shoreWorld.z + oz * reach);
+    // stowed it stands upright on its foot; deploying it swings down to where it rests
+    const k = p.deployed * p.deployed * (3 - 2 * p.deployed);
+    const e = Math.PI / 2 + (el - Math.PI / 2) * k;
+    p.shoreWorld.copy(H).addScaledVector(u, L * Math.cos(e));
+    p.shoreWorld.y += L * Math.sin(e);
+  }
+
+  /**
+   * Where a board of length L pinned at H (world) and pointing along u (horizontal, toward berth b's quay)
+   * comes to rest: lowered from upright, it stops on the first thing it meets, the quay's top edge or its
+   * own end on the quay top. Returns its elevation (rad), the bearing point and how far it runs past the
+   * edge (m, along the board's horizontal).
+   */
+  private plankRest(H: THREE.Vector3, u: THREE.Vector3, b: Berth, L: number) {
+    const un = u.x * b.nx + u.z * b.nz; // < 0 when u points at the quay
+    const out = { elevation: 0, bearing: -1, point: _pR.copy(H) };
+    if (un > -0.2) return out;
+    // horizontal run from the foot to the quay face along u
+    const dFace = ((H.x - b.cx) * b.nx + (H.z - b.cz) * b.nz + b.face) / -un;
+    const rise = b.top - H.y;
+    const aEdge = Math.atan2(rise, Math.max(1e-3, dFace));
+    let a = aEdge;
+    let onEdge = true;
+    if (Math.abs(rise) < L) {
+      const aEnd = Math.asin(rise / L);
+      // the end can lie on the quay top only past the face; take whichever contact holds it higher
+      if (L * Math.cos(aEnd) > dFace && aEnd > aEdge) {
+        a = aEnd;
+        onEdge = false;
+      }
+    }
+    out.elevation = a;
+    out.bearing = L * Math.cos(a) - dFace;
+    const run = onEdge ? dFace : L * Math.cos(a);
+    out.point.copy(H).addScaledVector(u, run);
+    out.point.y = b.top;
+    return out;
+  }
+
+  /** the foot's distance from the centre line: as far out as the climb allows (MAX slope), never past the deck edge */
+  private chooseFoot(ship: ShipPhysics, b: Berth, zl: number, yd: number, hwd: number, L: number): number {
+    const edge = Math.max(0, hwd - PLANK.edgeInset);
+    const H = ship.toWorld(_pH.set(this.side * edge, yd, zl), _pH);
+    const u = _pU.set(this.side, 0, 0).applyQuaternion(ship.quat).setY(0).normalize();
+    const un = u.x * b.nx + u.z * b.nz;
+    if (un > -0.2) return edge;
+    const dFace = ((H.x - b.cx) * b.nx + (H.z - b.cz) * b.nz + b.face) / -un;
+    const rise = b.top - H.y;
+    if (rise <= 0) return edge;
+    // inboard far enough for the slope (never past the centre line), then back out until the board still
+    // reaches past the quay edge with twice the bearing it needs
+    let i = Math.min(edge, Math.max(0, rise / Math.tan(PLANK.maxSlope) - dFace));
+    const bearing = (d: number) => (L * d) / Math.hypot(d, rise) - d;
+    while (i > 0 && bearing(dFace + i) < 2 * PLANK.bearing) i = Math.max(0, i - 0.05);
+    return edge - i;
   }
 }

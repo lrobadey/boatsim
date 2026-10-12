@@ -224,6 +224,64 @@ test('walking down the gangplank reaches the quay', () => {
   assert.ok(w.world.x > hw + 2, `did not reach the quay (x ${w.world.x})`);
 });
 
+test('a deck below the quay: up the plank from its inboard foot onto the quay, and back down to the deck', () => {
+  // the merchant's case: the quay top 1.2 m above her deck, the plank's foot set inboard, resting on the
+  // quay's top edge and overhanging it (Mooring.updatePlank)
+  const s = 0.62;
+  const hw = deckHalfWidth(s);
+  const dy = deckY(s);
+  const top = dy + 1.2;
+  const face = hw + 0.44;
+  const footX = 0.3;
+  const a = Math.atan2(top - dy, face - footX);
+  const L = 3.1;
+  const ship = pose({
+    plank: {
+      station: s,
+      side: 1,
+      deployed: 1,
+      deckLocal: new THREE.Vector3(footX, dy, zOf(s)),
+      shoreWorld: new THREE.Vector3(footX + L * Math.cos(a), dy + L * Math.sin(a), zOf(s)),
+      width: 0.7,
+      length: L,
+      resting: true,
+      restWorld: new THREE.Vector3(face, top, zOf(s)),
+    },
+  });
+  const quay = { kind: 'box', cx: face + 8, cz: zOf(s), hx: 8, hz: 30, rot: 0, y0: -5, y1: top, surface: 'stone', walkTop: true };
+  const W = seaWorld([quay]);
+  const w = new Walker();
+  w.placeOnDeck(deckAt(s));
+  const view = { yaw: 0 };
+  sim(w, 2.5, { strafe: 1 }, ship, W, view);
+  assert.equal(w.frame, 'world', 'never left the deck');
+  assert.ok(!w.swimming, 'fell in instead of climbing the plank');
+  near(w.world.y, top, 0.02);
+  assert.ok(w.world.x > face + 0.5, `did not reach the quay (x ${w.world.x})`);
+  sim(w, 4, { strafe: -1 }, ship, W, view);
+  assert.equal(w.frame, 'ship', 'did not come back aboard');
+  assert.ok(!w.swimming, 'fell in on the way down');
+  near(w.pos.y, dy, 0.02);
+});
+
+test('a plank that is not resting on the quay cannot be walked', () => {
+  const s = 0.62;
+  const hw = deckHalfWidth(s);
+  const ship = pose({
+    plank: {
+      station: s, side: 1, deployed: 1, width: 0.7, resting: false,
+      deckLocal: new THREE.Vector3(hw, deckY(s), zOf(s)),
+      shoreWorld: new THREE.Vector3(hw + 1.6, 1.8, zOf(s)),
+    },
+  });
+  const quay = { kind: 'box', cx: hw + 1.6 + 8, cz: zOf(s), hx: 8, hz: 30, rot: 0, y0: -5, y1: 1.8, surface: 'stone', walkTop: true };
+  const W = seaWorld([quay]);
+  const w = new Walker();
+  w.placeOnDeck(deckAt(s));
+  sim(w, 7, { strafe: 1 }, ship, W, { yaw: 0 });
+  assert.ok(w.frame === 'ship' || w.swimming || w.world.y < 1.7, 'walked a plank that is not on the quay');
+});
+
 test('swim to the beach exits to walking', () => {
   // sea floor -5 until x = -20, shelving to 0 at x = 0, then land at 0.4
   const beach = {
