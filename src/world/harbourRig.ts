@@ -103,7 +103,14 @@ export class HarbourRig {
     for (const l of moor.lines) {
       _a.copy(l.local).applyMatrix4(ship.matrixWorld);
       _b.copy(l.anchor).setY(l.anchor.y + 0.65);
-      rope(_a, _b, (1 - l.tension) * 0.06 * _a.distanceTo(_b) + 0.05);
+      if (l.deploy < 1) {
+        // thrown: the line's end flies along an arc from the cleat toward the bollard, trailing a straight rope
+        const t = l.deploy;
+        const lift = 0.35 * _a.distanceTo(_b) * 4 * t * (1 - t);
+        _q.lerpVectors(_a, _b, t).setY(_q.y + lift);
+        _b.copy(_q);
+        rope(_a, _b, 0.02);
+      } else rope(_a, _b, (1 - l.tension) * 0.06 * _a.distanceTo(_b) + 0.05);
     }
     const phase = moor.anchorPhase;
     if (phase !== 'stowed') {

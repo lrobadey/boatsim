@@ -1,0 +1,116 @@
+{
+  "tests": [
+    {
+      "name": "setup: 170 crew oars in three banks, no stance payload, no animator view, merchant switches off",
+      "status": "passed",
+      "ms": 46
+    },
+    {
+      "name": "order ladder from rest: Slow < Half < Full, Back astern, all oars in time",
+      "status": "passed",
+      "ms": 14691
+    },
+    {
+      "name": "the crew keeps time at every ramming call from 30 to 44 spm (no block of the crew settles behind the stroke)",
+      "status": "passed",
+      "ms": 7610
+    },
+    {
+      "name": "ramming speed: faster than Full, then drops to Full when the crew is spent",
+      "status": "passed",
+      "ms": 21052
+    },
+    {
+      "name": "hold water stops her from Full within two lengths",
+      "status": "passed",
+      "ms": 3281
+    },
+    {
+      "name": "turning: pivot from rest, and the oars help the helm at Full",
+      "status": "passed",
+      "ms": 9752
+    },
+    {
+      "name": "shipping runs every oar in, dry, and the crew rows again after",
+      "status": "passed",
+      "ms": 983
+    },
+    {
+      "name": "a real sea: Full at wind 10 m/s stays finite, in time and in the water",
+      "status": "passed",
+      "ms": 20681
+    },
+    {
+      "name": "entrained water: picked up with the sea, so the catch loses little to pickup",
+      "status": "passed",
+      "ms": 2694
+    },
+    {
+      "name": "deterministic and within the CPU budget",
+      "status": "passed",
+      "ms": 1638
+    }
+  ],
+  "measured": {
+    "ladder": {
+      "0": {
+        "kn": -3.9,
+        "spm": 17.7,
+        "spreadMs": 133,
+        "stamina": 0.998
+      },
+      "2": {
+        "kn": 4.23,
+        "spm": 17.7,
+        "spreadMs": 133,
+        "stamina": 0.999
+      },
+      "3": {
+        "kn": 4.8,
+        "spm": 25.6,
+        "spreadMs": 108,
+        "stamina": 0.996
+      },
+      "4": {
+        "kn": 5.44,
+        "spm": 30.5,
+        "spreadMs": 117,
+        "stamina": 0.92
+      }
+    },
+    "ramCallSpreadMs": {
+      "30": 100,
+      "33": 100,
+      "38": 108,
+      "44": 92
+    },
+    "ram": {
+      "fullKn": 5.45,
+      "best5sKn": 5.97,
+      "demotedS": 197
+    },
+    "hold": {
+      "seconds": 16.3,
+      "metres": 8.7
+    },
+    "turning": {
+      "pivotDeg": 112,
+      "pivotMaxKn": 0.32,
+      "fullDegS": 1.5,
+      "oarsUpDegS": 0.67
+    },
+    "sea10": {
+      "kn": 5.44,
+      "missed": 0.014,
+      "maxHeelDeg": 7.3
+    },
+    "entrained": {
+      "pickupW": 0.47,
+      "hullW": 55.4
+    },
+    "cpu": {
+      "meanMs": 0.266,
+      "p95Ms": 0.435
+    }
+  }
+}

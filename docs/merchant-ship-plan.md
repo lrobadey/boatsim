@@ -689,7 +689,7 @@ Browser checks:
 |---|---|
 | 0 | Hull from the Steffy lines (offsets table from a headless Blender script; analytic fit kept as fallback). Hydrostatics test against Table A2 (±6%, 0.8–1.7 m) |
 | 1 | `ShipDesign` threaded through constructors (no global `setShipKind`). Trireme identical, proven by a golden-trace test |
-| 2 | Physics, headless, merchant flags only: mass properties via `setPayload`, girth wetted area, lateral profile, damping restructure, wave forces with implicit added mass and Munk terms, per-design aero and windage, line and rode stiffness from target periods |
+| 2 | **Done 2026-10-10** (see handoff.md: excitation, added mass, planar Munk, damping restructure; setPayload CG shift and girth wetted area deferred). Physics, headless, merchant flags only: mass properties via `setPayload`, girth wetted area, lateral profile, damping restructure, wave forces with implicit added mass and Munk terms, per-design aero and windage, line and rode stiffness from target periods |
 | 2b | Wind–wave exposure map (W1) with 4 bands, effective fetch, the blurred depth term (W2) and the harbour-basin attenuation; the seabed map; clock unification; the FFT h0 crossfade. All before docking and anchoring tuning |
 | 2c | Short-wave CPU bins (FFT, 5–11 m), merchant flag only: CPU/GPU agreement tests, CPU cost measured |
 | 3 | Procedural merchant hull, decks and open hold (`walkFloor(s, x)`, `gunwaleY`, `deckFittingY`) |

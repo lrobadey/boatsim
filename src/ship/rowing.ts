@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Crew } from './crew';
 import { type OarSlot } from './oarLayout';
 import { TRIREME, type ShipDesign } from './design';
+import type { OarPropulsion, RowTelemetry } from './oarPropulsion';
 import { createFlowSample, type WaveField } from '../world/waves';
 import { clamp, smoothstep } from '../core/util';
 
@@ -148,14 +149,14 @@ export function bladeDrag(area: number, slip: THREE.Vector3, normal: THREE.Vecto
     k * (ROWING_CONSTANTS.normalDrag * vn * Math.abs(vn) * normal.z + ROWING_CONSTANTS.profileDrag * tn * tz));
 }
 
-export class RowingSystem {
+export class RowingSystem implements OarPropulsion {
   readonly slots: readonly OarSlot[];
   readonly previous: BladeFrame; readonly current: BladeFrame;
   readonly events = new RowEventRing(); readonly energy: Float64Array;
   readonly handleCaps: Float64Array; readonly powerCaps: Float64Array;
   readonly replenishedEnergy: Float64Array; readonly spentEnergy: Float64Array;
   readonly sides: SideController[];
-  readonly telemetry = { portThrust: 0, starboardThrust: 0, oarThrust: 0, yawMoment: 0, wetArea: 0, wetBlades: 0,
+  readonly telemetry: RowTelemetry = { portThrust: 0, starboardThrust: 0, oarThrust: 0, yawMoment: 0, wetArea: 0, wetBlades: 0,
     positivePower: 0, dissipatedPower: 0, crewLoad: 0, forceCapFraction: 0, powerCapFraction: 0,
     missedDriveFraction: 0, fallbackQueries: 0, guardedQueries: 0 };
   /** Test/reference switch: query each strip center even when curvature allows one center plane. */
@@ -207,6 +208,8 @@ export class RowingSystem {
     j.dSweep = p[o + 3] + (c[o + 3] - p[o + 3]) * alpha; j.dDip = p[o + 4] + (c[o + 4] - p[o + 4]) * alpha;
     j.dFeather = p[o + 5] + (c[o + 5] - p[o + 5]) * alpha;
   }
+  /** the trireme's oars are stowed visually (Trireme.oarStow); nothing to do here */
+  setShipped(_side: RowSide, _on: boolean) {}
   renderPose(index: number, alpha: number, out: OarKinematics) { this.readJoint(index, clamp(alpha, 0, 1)); evaluateOar(this.slots[index], this.joint, out); }
   private beginTransition(side: number, mode: 'exit' | 'transfer' | 'enter') {
     const s = this.sides[side]; s.mode = mode; s.elapsed = 0; s.duration = mode === 'exit' ? 0.28 : mode === 'transfer' ? 0.38 : 0.22;

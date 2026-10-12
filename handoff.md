@@ -39,7 +39,27 @@ or the ship selector on the title screen (it reloads the page; the live swap is 
 - **Visual:** `src/ship/merchantModel.ts` (flush working deck for now; the open hold is phase 3).
 - **Anchor (both ships):** animated drop to the seabed, haul in (pulls her up to it), breakout, lift,
   stow; refused deeper than the 14 m rode. HUD anchor badge next to the speed readout.
-- **Off on the merchant for now:** docking, deck building.
+- **Off on the merchant for now:** deck building.
+
+## Docking system (done 2026-10-09, uncommitted)
+
+Plan §5.1–5.2, built for both ships. `src/ship/mooring.ts` now has two independent state machines:
+`linePhase` (none → out → hauling → docked → casting) and `anchorPhase`; the old `state` enum is
+gone, so the anchor can stay down while she warps in. Per-ship data is `ShipDesign.docking` (cleats,
+plank, fender gap, capture window, crew × tackle, line strength, hold period); each ship docks off the
+quay face by her own beam (`Berth.face`, `Mooring.berthPose`).
+- Hauling: cleat servo + feed-forward of the filtered environmental load (`ShipPhysics.pendingForce`),
+  capped at crew × 350 N × tackle; stall after 4 s at the cap without closing ("Wind too strong to
+  haul in · lines holding"), lines then hold up to their strength; resumes when the load eases.
+- Docked: critically damped PD hold at the CG (position + yaw, soft deadband 0.15 m / 3°, period
+  1.75 s, uses her mass since the sim has no added mass), clamped at line strength; a filtered
+  overload for 2 s eases the lines (back to hauling). Sail brailed, oars shipped, W/S and F refused.
+- Cast off (user choice: shove only, no back-water): plank up (2 s), let go, shove. R while hauling
+  lets go at once. Oars stay live while hauling and at anchor (user choice).
+- Weighing while on the lines drags the anchor home instead of hanging forever.
+- The dock panel plan view and the berth marker ghost now use the ship's own outline.
+- The old "moored in waves within 0.6 m" failure is fixed (worst drift 0.30 m).
+- Not done: voyage save on docking, anchor holding/dragging/seabed, auto-throw, tuning after W1.
 
 Known issues and next steps:
 - Sail aero still uses the trireme's boosted calibration: about 7.6 kn beam reach and 8.3 kn
@@ -49,6 +69,39 @@ Known issues and next steps:
 - The pre-existing mooring failure ("moored in waves within 0.6 m") is unchanged.
 - berthMarker and deckBuilder still use trireme geometry (inactive on the merchant).
 
+## Phase 2 water response (done 2026-10-10, uncommitted)
+
+Behind `design.hydro.response` (merchant only; the trireme's golden trace is bit-identical).
+- **Wave excitation** per submerged column: horizontal Froude–Krylov ρV·a plus diffraction C_a·ρV·a along
+  each hull axis; vertical C_a33·ρV·a_y only. Fluid acceleration from `WaveField.accelAtDepth`.
+- **Implicit added mass**: per-column C_a [sway 0.7, heave 1.0, surge 0.06] of ρV, summed each step; added
+  inertia from the lever arms. The integrator divides force per hull axis by its effective mass and uses
+  I + I_A + payload inertia (rowers' hands etc.). Measured: sway 0.72, heave 1.03, surge 0.06 of her mass;
+  added inertia pitch +56%, yaw +42%, roll +31%.
+- **Kirchhoff/Munk** terms in the horizontal plane only (surge, sway, yaw), with velocity relative to
+  the water. Full 3D terms left a spurious mean heel in waves.
+- **Damping restructure**: column heave damping acts on the centre line (no roll moment); roll damping
+  retuned to rollDampLin 12000 / quad 8000.
+- **Docked hold** uses the effective mass per hull axis and the effective yaw inertia.
+- `npm run test:seakeeping` (writes `docs/merchant-hull/seakeeping.json`): roll period 2.6 s (was 2.2),
+  ζ 0.14 (10→5°) and 0.10 (3→1°), heave 2.1 s, pitch 2.3 s, beam-wave sway ratio 1.01 with no drift,
+  stress run at 17 m/s finite. The plan's underway band (ζ 0.12–0.25 at 4 kn) is not physical for this
+  hull (lift damping adds only about +0.01 at Fn 0.18); the test checks that ζ does not fall.
+- Rowing at Full: 1 kn in 27.9 s (was 25.1), 1.76 kn at 60 s (was 1.82). Turning under oars at 2.3 kn
+  with full helm: 85° in 60 s (was 81°); the Munk moment outweighs the added yaw inertia.
+- Deferred from phase 2: `setPayload` with a composite-CG shift (only matters once cargo moves; payload
+  inertia is in), girth-based wetted-area distribution (the total already matches), merchant sail aero
+  (phase 5).
+
+## Sea state (built 2026-10-10, uncommitted)
+
+`docs/sea-state-spec.md` (§14 has the implementation notes and measurements). Wave size now varies by
+place: fetch, wind shelter and swell exposure are baked per direction in the worldgen worker (world grid
+94 m, harbour grid 4 m including the mole); the main thread composes an envelope for the current wind,
+which the CPU waves, the ocean shader (exact parity, 5e-6) and the sail's wind all read. Wind and sea now
+advance on simulation time. The FFT outputs were repacked to stay inside the ocean's 16 texture units.
+Dev: `?debug=seastate` (blue calm, red exposed), `?windFrom=<deg>`. User decisions: calmer archipelago
+accepted, no chart shading, shoreline visuals later.
 ## 1. What the user asked for (in order)
 
 1. "Turn this app into a surprisingly deep antiquity trade simulator." This is the long-term
@@ -358,3 +411,20 @@ then wait for "go".
 - Measured trireme facts (reviewer probes): 56.6 t, GM about 0.74 m, roll about 3.3 s undamped.
   ζ ≈ 0.5, caused by the per-column heave damper `1800·A·v` (`physics.ts:263`); with it removed,
   ζ ≈ 0.14. The integrator is stable with all damping off in calm water.
+
+## Cargo and ports (built 2026-10-11, uncommitted)
+
+Spec: `docs/cargo-trade-spec.md` (rev. 2, Opus consultant research + review). Built by four Haiku lanes
+(Economy, Ship, World, Interface) in three waves; integration by the lead in `src/tradeLayer.ts` plus small
+hooks in `game.ts` (harbourLayouts, placeDocked, startInHarbour, time-skip gating, trade hooks) and
+`main.ts` (initTrade, Continue/New voyage, Esc). `Input.freeze` lets the ledger own the keyboard.
+- Three harbours (seed 1729: Serrothos, Kormakos, Korkia) with villages, stalls and port profiles from terrain.
+- Economy: 8 goods, per-port stock on game time, hashed shocks, harvest seasons, NPC shipments; prices move
+  between ports only through shipments. Wages 1.5 dr per hand per day. Duty 2 %, porterage per kg.
+- Cargo is physical: `ShipPhysics.setStaticLoad` folds the hold's stowage into mass, CG and inertia (no pose
+  jump; `refPoint` keeps the mooring honest). Merchant trace bit-identical without cargo calls.
+- Hatches with gratings, cargo visible in the hold, quay stack, loading at 10 units per game hour.
+- Every ship starts docked at the main harbour (`?start=sea` for the old start). Docking saves the
+  merchant's voyage (`trieres.voyage.v1.<seed>.<heightmapSize>`); the title offers Continue/New voyage.
+- Tests: `npm run test:market|voyage|cargo|hold|ports|ledger`, `lint:ui-text`; all existing suites green.
+- Open: T7 tuning in play; the sea-state bake is +1.2 s with three detail regions; no porter figures yet.

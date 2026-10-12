@@ -4,6 +4,8 @@ import { TRIREME, type ShipDesign } from './design';
 import { dragCoefficient } from './resistance';
 import { Crew } from './crew';
 import { RowingSystem } from './rowing';
+import type { OarPropulsion } from './oarPropulsion';
+import { CrewRowing } from './crew/crewRowing';
 import { hullLateralForce } from './hullLateral';
 import { SailingSystem } from './sailing';
 import { Mooring } from './mooring';
@@ -25,9 +27,21 @@ const _p = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _h = new THREE.Vector3();
+// water response (design.hydro.response)
+const _wa = new THREE.Vector3();
+const _wb = new THREE.Vector3();
+const _wc = new THREE.Vector3();
+const _wd = new THREE.Vector3();
 const _hullHorizontalForce = new THREE.Vector3();
 const _windSample = new THREE.Vector3();
 const _windPointVelocity = new THREE.Vector3();
+// static load (setStaticLoad) scratch
+const _sCg = new THREE.Vector3();
+const _sMr = new THREE.Vector3();
+const _sI = new THREE.Vector3();
+const _sD = new THREE.Vector3();
+const _sR = new THREE.Vector3();
+const _sV = new THREE.Vector3();
 // quay (pier face) contact: fendered spring + damper along the face normal, Coulomb friction
 const QUAY_K = 3e5;
 const QUAY_C = 8e4;
@@ -39,11 +53,24 @@ const QUAY_MU = 0.25;
  * the relative flow at each surface. Nothing is a "max speed" constant. The ship's hull and
  * coefficients come from its ShipDesign (the trireme by default).
  */
+/** point-mass inertia of mass m at offset d from the axis point, about the hull axes (x, y, z), added to out */
+function addPointInertia(out: THREE.Vector3, d: THREE.Vector3, m: number) {
+  out.x += m * (d.y * d.y + d.z * d.z);
+  out.y += m * (d.x * d.x + d.z * d.z);
+  out.z += m * (d.x * d.x + d.y * d.y);
+}
+
 export class ShipPhysics {
   readonly columns: Column[];
-  readonly mass: number;
+  /** total mass: the design load plus any static load (setStaticLoad) */
+  mass: number;
   readonly inertia = new THREE.Vector3();
-  readonly cg: THREE.Vector3; // local centre of gravity
+  /** local centre of gravity; the same object, moved in place by setStaticLoad */
+  readonly cg: THREE.Vector3;
+  /** the design load as built (never changed): mass, CG and inertia about the design CG */
+  readonly designMass: number;
+  readonly designCg: THREE.Vector3;
+  readonly designInertia: THREE.Vector3;
   // state
   readonly pos = new THREE.Vector3(); // world CoG
   readonly quat = new THREE.Quaternion();
@@ -55,12 +82,21 @@ export class ShipPhysics {
   // accumulators
   private force = new THREE.Vector3();
   private torque = new THREE.Vector3();
-  readonly rowing: RowingSystem;
+  readonly rowing: OarPropulsion;
   readonly sailing: SailingSystem;
   readonly mooring: Mooring;
   /** deck cargo / built pieces: weight acting at ship-local points (spec §8) */
   readonly payload: { mass: number; local: THREE.Vector3 }[] = [];
   private flow = createFlowSample();
+  private cgFlow = createFlowSample();
+  /**
+   * With design.hydro.response: added mass along the hull axes (x sway, y heave, z surge) and added
+   * inertia about them (x pitch, y yaw, z roll), summed over the submerged columns each step.
+   */
+  readonly addedMass = new THREE.Vector3();
+  readonly addedInertia = new THREE.Vector3();
+  /** payload inertia about the CG along the hull axes (response designs only) */
+  readonly payloadInertia = new THREE.Vector3();
   private contactPts: THREE.Vector3[] = [];
   /** outrigger edge points that meet the pier face when she is alongside (harbour boxes only) */
   private quayPts: THREE.Vector3[] = [];
@@ -80,14 +116,13 @@ export class ShipPhysics {
   displacement = 0;
   time = 0;
 
-  constructor(private waves: WaveField, private wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
+  constructor(private waves: WaveField, readonly wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
     this.cg = new THREE.Vector3(0, design.mass.cgY, design.mass.cgZ);
-    this.mooring = new Mooring(design.dockingEnabled, design.anchoringEnabled,
-      new THREE.Vector3(0, design.deck.deckY(design.anchor.s), design.hull.zOf(design.anchor.s)), design.anchor.stiffnessScale);
+    this.mooring = new Mooring(design);
     this.mooring.seabed = (x, z) => terrain.heightAt(x, z);
     const hull = design.hull;
     this.columns = hull.buildColumns(design.columns.stations, design.columns.strips);
-    this.rowing = new RowingSystem(crew, design.oars);
+    this.rowing = createPropulsion(crew, design, this.payload);
     this.sailing = new SailingSystem(design.rig, design.aero);
     crew.maxOrder = design.oars.maxOrder;
     // mass from displacement at the design waterline: the ship floats where it was designed to
@@ -122,6 +157,9 @@ export class ShipPhysics {
         this.contactPts.push(new THREE.Vector3(sg * hull.halfBeam(s), hull.sheer(s) * 0.8, hull.zOf(s)));
       }
     }
+    this.designMass = this.mass;
+    this.designCg = this.cg.clone();
+    this.designInertia = this.inertia.clone();
   }
 
   place(x: number, z: number, heading: number) {
@@ -134,6 +172,52 @@ export class ShipPhysics {
     this.prevQuat.copy(this.quat);
     this.rowing.reset(this, this.time);
     this.sailing.reset();
+  }
+
+  /**
+   * Static load (cargo, later ballast): items are differences from the design load and may be negative.
+   * Their mass, CG and inertia fold into the rigid body. Not per-step point weights: `payload` stays for
+   * crew. The hull does not jump: pos, prevPos and vel move with the CG shift. Called by the game's
+   * cargo hold only, never from step(). Throws, changing nothing, on a bad load table: total mass under
+   * 0.4 of the design, or any inertia component under 0.3 of the design.
+   */
+  setStaticLoad(items: { mass: number; local: THREE.Vector3 }[]) {
+    const dMass = this.designMass;
+    let dm = 0;
+    _sMr.set(0, 0, 0);
+    for (const it of items) {
+      dm += it.mass;
+      _sMr.addScaledVector(it.local, it.mass);
+    }
+    const M = dMass + dm;
+    if (M < 0.4 * dMass) throw new Error(`setStaticLoad: mass ${M.toFixed(0)} kg is under 0.4 of the design ${dMass.toFixed(0)} kg`);
+    // CG: the design load at its CG plus the differences
+    const cg = _sCg.copy(this.designCg).multiplyScalar(dMass).add(_sMr).divideScalar(M);
+    // inertia about the new CG: the design inertia (about the design CG) shifted, plus each item shifted
+    const I = _sI.copy(this.designInertia);
+    addPointInertia(I, _sD.copy(this.designCg).sub(cg), dMass);
+    for (const it of items) addPointInertia(I, _sD.copy(it.local).sub(cg), it.mass);
+    const di = this.designInertia;
+    if (I.x < 0.3 * di.x || I.y < 0.3 * di.y || I.z < 0.3 * di.z) {
+      throw new Error(`setStaticLoad: inertia (${I.x.toFixed(0)}, ${I.y.toFixed(0)}, ${I.z.toFixed(0)}) is under 0.3 of the design`);
+    }
+    // no pose jump: the CG shift is carried by the body, so hull points keep their world positions
+    const d = _sD.copy(cg).sub(this.cg);
+    this.pos.add(_sR.copy(d).applyQuaternion(this.quat));
+    this.prevPos.add(_sV.copy(d).applyQuaternion(this.prevQuat));
+    this.vel.add(_sV.copy(this.angVel).cross(_sR));
+    this.mass = M;
+    this.cg.copy(cg);
+    this.inertia.copy(I);
+    this.displacement = M;
+  }
+
+  /**
+   * World position of the design CG: a fixed hull point. Equal to pos until a static load moves the
+   * CG. The mooring compares this with the berth, so a moving cargo CG does not drag the hull.
+   */
+  refPoint(out: THREE.Vector3) {
+    return this.toWorld(this.designCg, out);
   }
 
   /** local hull point -> world */
@@ -149,10 +233,27 @@ export class ShipPhysics {
   addForceAtPublic(f: THREE.Vector3, world: THREE.Vector3) {
     this.addForceAt(f, world);
   }
+  /** a pure torque (world frame), for the docked hold */
+  addTorquePublic(t: THREE.Vector3) {
+    this.torque.add(t);
+  }
+  /** everything acting on her so far this step (world frame); read by the mooring as the environmental load */
+  get pendingForce(): Readonly<THREE.Vector3> {
+    return this.force;
+  }
   get payloadMass() {
     let m = 0;
     for (const p of this.payload) m += p.mass;
     return m;
+  }
+  /** mass the hull axes resist acceleration with: ship, payload and the water's added mass (x sway, y heave, z surge) */
+  effectiveMass(out: THREE.Vector3) {
+    const m = this.mass + this.payloadMass;
+    return out.set(m + this.addedMass.x, m + this.addedMass.y, m + this.addedMass.z);
+  }
+  /** rotational inertia about the hull axes including added and payload inertia (x pitch, y yaw, z roll) */
+  effectiveInertia(out: THREE.Vector3) {
+    return out.copy(this.inertia).add(this.addedInertia).add(this.payloadInertia);
   }
   /** Legacy sail fields proxy the coupled sailing subsystem. */
   get sailSet() { return this.sailing.current.deployment; }
@@ -178,6 +279,7 @@ export class ShipPhysics {
     this.torque.set(0, 0, 0);
     const invQ = _q.copy(this.quat).invert();
 
+    if (this.design.hydro.response) this.payloadInertiaUpdate();
     this.hydrostatics(dt, invQ);
     this.rowing.step(dt, this.time, this, this.helm, this.waves, this.force, this.torque);
     this.oarThrust = this.rowing.telemetry.oarThrust;
@@ -189,11 +291,20 @@ export class ShipPhysics {
     this.ground();
     this.boundary();
 
+    const resp = this.design.hydro.response;
+    if (resp) this.kirchhoff(invQ);
+
     // integrate (semi-implicit Euler)
-    this.vel.addScaledVector(this.force, dt / (this.mass + this.payloadMass));
+    if (resp) {
+      // implicit added mass: the hull axes each resist with their own effective mass
+      const fb = _wa.copy(this.force).applyQuaternion(invQ);
+      const me = this.effectiveMass(_wb);
+      fb.set(fb.x / me.x, fb.y / me.y, fb.z / me.z).applyQuaternion(this.quat);
+      this.vel.addScaledVector(fb, dt);
+    } else this.vel.addScaledVector(this.force, dt / (this.mass + this.payloadMass));
     const tb = _v.copy(this.torque).applyQuaternion(invQ);
     const wb = _v2.copy(this.angVel).applyQuaternion(invQ);
-    const I = this.inertia;
+    const I = resp ? this.effectiveInertia(_wc) : this.inertia;
     // gyroscopic term w x (I w)
     const Iw = new THREE.Vector3(I.x * wb.x, I.y * wb.y, I.z * wb.z);
     const gyro = new THREE.Vector3().crossVectors(wb, Iw);
@@ -228,6 +339,11 @@ export class ShipPhysics {
     const cols = this.columns;
     const d = this.design, hull = d.hull, hy = d.hydro;
     let bowImm = 0;
+    const resp = hy.response;
+    if (resp) {
+      this.addedMass.set(0, 0, 0);
+      this.addedInertia.set(0, 0, 0);
+    }
     for (let i = 0; i < cols.length; i++) {
       const c = cols[i];
       const pb = this.toWorld(_p.set(c.x, c.bottom, c.z), _p);
@@ -262,21 +378,98 @@ export class ShipPhysics {
       // longitudinal: skin friction + form and wave-making drag (see resistance.ts)
       const Swet = c.area * hy.wettedFactor;
       const Fz = -0.5 * RHO * dragCoefficient(hy.resistance, lv.z, hull.length) * Swet * lv.z * Math.abs(lv.z) + _hullHorizontalForce.z;
-      // vertical: radiation/viscous damping
-      const Fy = -0.5 * RHO * hy.heaveDampQuad * c.area * lv.y * Math.abs(lv.y) - hy.heaveDampLin * c.area * lv.y;
-      const Fl = _v.set(Fx, Fy, Fz).applyQuaternion(this.quat);
-      this.addForceAt(Fl, cp);
+      if (!resp) {
+        // vertical: radiation/viscous damping
+        const Fy = -0.5 * RHO * hy.heaveDampQuad * c.area * lv.y * Math.abs(lv.y) - hy.heaveDampLin * c.area * lv.y;
+        const Fl = _v.set(Fx, Fy, Fz).applyQuaternion(this.quat);
+        this.addForceAt(Fl, cp);
+        continue;
+      }
+      this.addForceAt(_v.set(Fx, 0, Fz).applyQuaternion(this.quat), cp);
+      this.columnResponse(c, cp, vol, subLen, resp.ca, invQ);
     }
     this.bowSlam = Math.max(0, bowImm - this.bowImmersion) / dt;
     this.bowImmersion = bowImm;
     // weak angular damping (added-mass, appendages)
-    this.torque.addScaledVector(this.angVel, -this.mass * hy.angularDamp);
+    this.torque.addScaledVector(this.angVel, -this.designMass * hy.angularDamp);
     // roll damping: bilge/keel eddy-making plus 170 oar blades acting as outriggers when in the
     // water (much stronger with the oars run out than with them shipped)
     const fwdAxis = _v.set(0, 0, -1).applyQuaternion(this.quat);
     const rollRate = this.angVel.dot(fwdAxis);
     // Blade forces now supply actual oar roll damping; retain only hull damping here.
     this.torque.addScaledVector(fwdAxis, -hy.rollDampLin * rollRate - hy.rollDampQuad * rollRate * Math.abs(rollRate));
+  }
+
+  /**
+   * One submerged column of a response design (plan §4.3): heave damping on the centre line (same
+   * strength as before, but no roll moment), wave excitation, and the column's share of the added mass.
+   * this.flow still holds the column's flow sample.
+   */
+  private columnResponse(c: Column, cp: THREE.Vector3, vol: number, subLen: number, ca: [number, number, number], invQ: THREE.Quaternion) {
+    const hy = this.design.hydro;
+    const flow = this.flow;
+    const yc = c.bottom + subLen * 0.5; // local height of the submerged part's centre
+    const pc = this.toWorld(_wa.set(0, yc, c.z), _wa);
+    const v = this.pointVel(pc, _wb);
+    v.x -= flow.vx; v.y -= flow.vy; v.z -= flow.vz;
+    const vy = v.applyQuaternion(invQ).y;
+    const Fy = -0.5 * RHO * hy.heaveDampQuad * c.area * vy * Math.abs(vy) - hy.heaveDampLin * c.area * vy;
+    this.addForceAt(_wb.set(0, Fy, 0).applyQuaternion(this.quat), pc);
+
+    // wave excitation: horizontal Froude–Krylov rho V a, plus diffraction C_a rho V a along each hull axis.
+    // The vertical Froude–Krylov force is the buoyancy from the instantaneous surface; not added again.
+    const m = RHO * vol;
+    const a = this.waves.accelAtDepth(flow, Math.max(0, flow.height - cp.y), _wc);
+    const f = _wd.copy(a).applyQuaternion(invQ);
+    f.set(ca[0] * m * f.x, ca[1] * m * f.y, ca[2] * m * f.z).applyQuaternion(this.quat);
+    f.x += m * a.x;
+    f.z += m * a.z;
+    this.addForceAt(f, cp);
+
+    // added mass and inertia about the CG along the hull axes (x pitch, y yaw, z roll)
+    const ax = ca[0] * m, ay = ca[1] * m, az = ca[2] * m;
+    this.addedMass.x += ax;
+    this.addedMass.y += ay;
+    this.addedMass.z += az;
+    const dx = c.x - this.cg.x, dy = yc - this.cg.y, dz = c.z - this.cg.z;
+    this.addedInertia.x += ay * dz * dz + az * dy * dy;
+    this.addedInertia.y += ax * dz * dz + az * dx * dx;
+    this.addedInertia.z += ax * dy * dy + ay * dx * dx;
+  }
+
+  /**
+   * Kirchhoff terms of the added mass with the hull's velocity relative to the water at the CG
+   * (body frame u, w): force -(w x M_A u - M_A (w x u)) and the Munk moment -(u x M_A u), which turns
+   * a hull moving at an angle of drift further broadside. Horizontal plane only (surge, sway, yaw), as
+   * in manoeuvring models: with heave and roll included, products of the wave-induced relative motions
+   * left a spurious mean heel in waves, and the columns already carry the seakeeping forces. The
+   * gyroscopic -(w x I_A w) is in the integrator's gyro term.
+   */
+  private kirchhoff(invQ: THREE.Quaternion) {
+    const fl = this.waves.sampleFlowAt(this.pos.x, this.pos.y, this.pos.z, this.time, this.cgFlow);
+    const u = _wa.set(this.vel.x - fl.vx, this.vel.y - fl.vy, this.vel.z - fl.vz).applyQuaternion(invQ);
+    const w = _wb.copy(this.angVel).applyQuaternion(invQ);
+    u.y = 0;
+    w.x = 0;
+    w.z = 0;
+    const A = this.addedMass;
+    const P = _wc.set(A.x * u.x, A.y * u.y, A.z * u.z);
+    const wu = _wd.crossVectors(w, u);
+    wu.set(A.x * wu.x, A.y * wu.y, A.z * wu.z);
+    this.force.add(_v.crossVectors(w, P).sub(wu).negate().applyQuaternion(this.quat));
+    this.torque.add(_v.crossVectors(u, P).negate().applyQuaternion(this.quat));
+  }
+
+  /** payload (crew, cargo) inertia about the CG along the hull axes */
+  private payloadInertiaUpdate() {
+    let ix = 0, iy = 0, iz = 0;
+    for (const p of this.payload) {
+      const dx = p.local.x - this.cg.x, dy = p.local.y - this.cg.y, dz = p.local.z - this.cg.z;
+      ix += p.mass * (dy * dy + dz * dz);
+      iy += p.mass * (dx * dx + dz * dz);
+      iz += p.mass * (dx * dx + dy * dy);
+    }
+    this.payloadInertia.set(ix, iy, iz);
   }
 
   private rudders(dt: number, invQ: THREE.Quaternion) {
@@ -353,7 +546,7 @@ export class ShipPhysics {
       g += Fn;
     }
     this.grounding = g / (this.mass * G);
-    const quays = this.mooring.layout?.shipColliders;
+    const quays = this.mooring.shipColliders;
     if (quays && quays.length) this.quayContacts(quays);
   }
 
@@ -418,4 +611,9 @@ export class ShipPhysics {
     pos.lerpVectors(this.prevPos, this.pos, alpha);
     quat.slerpQuaternions(this.prevQuat, this.quat, alpha);
   }
+}
+
+/** the ship's oar system: the agent crew (both ships), or the older scripted banks (oars.system 'banks') */
+function createPropulsion(crew: Crew, design: ShipDesign, payload: { mass: number; local: THREE.Vector3 }[]): OarPropulsion {
+  return design.oars.system === 'crew' ? new CrewRowing(crew, design, payload) : new RowingSystem(crew, design.oars);
 }

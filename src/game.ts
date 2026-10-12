@@ -3,12 +3,14 @@ import { Pipeline, LAYER_REFRACT, LAYER_NOREFLECT } from './core/pipeline';
 import { Quality } from './core/quality';
 import { Input } from './core/input';
 import { shared } from './gfx/shared';
+import { setEnvironmentShaderBlend } from './gfx/environmentMaterials';
 import { dataTexture } from './gfx/textures';
 import type { VisualAssets } from './gfx/assets';
 import type { ModelKit } from './gfx/models';
 import { AstroClock } from './world/astro';
 import { Wind } from './world/wind';
 import { WaveField } from './world/waves';
+import { SeaStateField } from './world/seaState';
 import { SkySystem } from './world/sky';
 import { Ocean } from './world/ocean';
 import { OceanFFT } from './world/oceanFFT';
@@ -21,10 +23,14 @@ import type { WorldGenResult } from './world/worldgenTypes';
 import { ShipPhysics } from './ship/physics';
 import { Trireme } from './ship/trireme';
 import { MerchantModel } from './ship/merchantModel';
+import { CrewRowing } from './ship/crew/crewRowing';
+import { CrewAnimator } from './crew/crewAnimator';
+import { CrewSolids } from './crew/crewSolids';
 import type { ShipVisual } from './ship/shipVisual';
 import { TRIREME, type ShipDesign } from './ship/design';
 import { Crew, ORDERS, ORDER_STOP } from './ship/crew';
-import { buildHarbour, type HarbourLayout } from './world/harbour';
+import { buildHarbours, type HarbourLayout, type Berth } from './world/harbour';
+import { TradeLayer } from './tradeLayer';
 import { WalkGeometry } from './world/walkable';
 import type { ShipPose } from './player/walker';
 import { HarbourRig } from './world/harbourRig';
@@ -75,18 +81,30 @@ export class Game {
   readonly crew = new Crew();
   readonly ship: ShipPhysics;
   readonly model: ShipVisual;
+  /** the merchant's animated rowers; null for every other ship (no crew, or one whose rowers are not drawn) */
+  private crewAnimator: CrewAnimator | null = null;
+  /** walker collision for the agent crew: hands and stances on shipSolids.dynamic */
+  private crewSolids: CrewSolids | null = null;
   readonly player: PlayerController;
   readonly hud: Hud;
   readonly chart: Chart;
   readonly audio = new AudioEngine();
-  readonly harbourLayout: HarbourLayout;
+  /** every harbour's layout; [0] is the main harbour */
+  readonly harbourLayouts: HarbourLayout[];
+  /** the main harbour (kept for main.ts and other sessions' tools) */
+  get harbourLayout(): HarbourLayout {
+    return this.harbourLayouts[0];
+  }
+  /** cargo and ports (merchant only), set up by initTrade */
+  trade: TradeLayer | null = null;
+  private gen: WorldGenResult;
   /** world walk geometry (terrain + quay, houses, temple) and ship-local deck solids */
   readonly walk: WalkGeometry;
   readonly shipSolids = new WalkGeometry(null);
   private shipPose: ShipPose;
   readonly harbourRig: HarbourRig;
   readonly berthMarker: BerthMarker;
-  readonly dock = new DockPanel();
+  readonly dock: DockPanel;
   readonly crosshair = new Crosshair();
   readonly builder: DeckBuilder;
   private invShip = new THREE.Matrix4();
@@ -98,6 +116,8 @@ export class Game {
   private shipPos = new THREE.Vector3();
   private shipQuat = new THREE.Quaternion();
   private waveRetarget = 0;
+  /** wave size by place (docs/sea-state-spec.md); null when the world has no sea state bake */
+  seaState: SeaStateField | null = null;
   running = false;
   /** title-screen camera orbit; gameplay input disabled */
   cinematic = false;
@@ -105,7 +125,7 @@ export class Game {
   showHud = true;
   private frameMs: number[] = [];
   private islands: { name: string; x: number; z: number; r: number; kind: string }[] = [];
-  private harbour: { x: number; z: number; name: string } | null = null;
+  private harbours: { x: number; z: number; name: string }[] = [];
 
   /** Selected exposure restored by F after the sail has been fully brailed. */
   get sailDeploymentSelection() { return this.sailSelection; }
@@ -113,7 +133,7 @@ export class Game {
   /** nearest named place (island or its harbour) to the camera, for the location title */
   nearestIsland() {
     const p = this.player.mode === 'eagle' ? this.camera.position : this.shipPos;
-    if (this.harbour && Math.hypot(p.x - this.harbour.x, p.z - this.harbour.z) < 450) return { name: this.harbour.name, dist: 0, kind: 'Harbour' };
+    for (const h of this.harbours) if (Math.hypot(p.x - h.x, p.z - h.z) < 450) return { name: h.name, dist: 0, kind: 'Harbour' };
     let best: { name: string; dist: number; kind: string } | null = null;
     for (const i of this.islands) {
       const d = Math.max(0, Math.hypot(p.x - i.x, p.z - i.z) - i.r);
@@ -138,7 +158,7 @@ export class Game {
     const ripple = dataTexture(tex.ripple, 512, 8);
 
     T('textures');
-    this.sky = new SkySystem(r, this.clock);
+    this.sky = new SkySystem(r, this.clock, quality.environmentSize);
     this.scene.add(this.sky.group, this.sky.light, this.sky.light.target, this.sky.hemi);
     this.clouds = new Clouds(tex.cloudShape, tex.cloudDetail, dataTexture(tex.cloudWeather, 256), quality.cloudScale || 0.3);
     this.clouds.enabled = quality.cloudScale > 0;
@@ -178,6 +198,22 @@ export class Game {
     this.fft = new OceanFFT(quality.fftSize);
     this.fft.retarget(this.wind.meanSpeed, this.wind.from + Math.PI, this.waves.fetch, true);
     this.ocean = new Ocean(this.waves, this.fft, { ripple, noise, height: this.terrain.heightTexture, terrainSize: gen.worldSize }, { grid: quality.oceanGrid, levels: 13, cell0: 0.25 });
+    // sea state (docs/sea-state-spec.md): wave size by place from the baked fetch, shelter and depth.
+    // The waves, the ocean shader and the sail's wind all read the same envelope.
+    if (gen.seaState) {
+      const sea = new SeaStateField(gen.seaState, this.waves, [this.fft.cascades[0].kMin, this.fft.cascades[0].kMax]);
+      this.seaState = sea;
+      sea.compose(this.wind.meanSpeed, this.wind.from, this.waves.swellFrom);
+      this.waves.field = sea;
+      this.ocean.setSeaState(sea);
+      const e0 = new Float64Array(4), e1 = new Float64Array(4);
+      this.wind.shelterAt = (x, z, out) => {
+        sea.sample(x, z, e0, e1);
+        out.s = e1[1];
+        out.g = e1[3];
+      };
+      console.info(`Sea state bake: ${Math.round(gen.seaState.ms)} ms`);
+    }
     this.scene.add(this.ocean.group);
     this.reflection = new PlanarReflection(quality.reflectionScale || 0.5);
     this.reflection.enabled = quality.reflectionScale > 0;
@@ -209,10 +245,15 @@ export class Game {
       ? new MerchantModel(assets.planks, this.ship.rowing.slots, this.models, design)
       : new Trireme(assets.planks, this.ship.rowing.slots, this.models);
     this.scene.add(this.model.group);
-    this.harbourLayout = buildHarbour(gen, this.terrain);
-    this.ship.mooring.setHarbour(this.harbourLayout);
+    this.crewAnimator = design.oars.system === 'crew' && design.oars.crew?.animated && this.ship.rowing instanceof CrewRowing
+      ? new CrewAnimator(this.models, this.model.group, this.ship.rowing, design)
+      : null;
+    this.crewSolids = this.crewAnimator ? new CrewSolids(this.shipSolids, design) : null;
+    this.gen = gen;
+    this.harbourLayouts = buildHarbours(gen, this.terrain);
+    this.ship.mooring.setHarbours(this.harbourLayouts);
     this.walk = new WalkGeometry(this.terrain);
-    for (const sol of this.harbourLayout.solids) this.walk.add(sol);
+    for (const l of this.harbourLayouts) for (const sol of l.solids) this.walk.add(sol);
     for (const sol of this.props.solids) this.walk.add(sol);
     this.buildShipSolids();
     this.shipPose = { origin: new THREE.Vector3(), quat: new THREE.Quaternion(), cgWorld: new THREE.Vector3(), vel: new THREE.Vector3(), angVel: new THREE.Vector3(), plank: null, solids: this.shipSolids };
@@ -220,11 +261,13 @@ export class Game {
     this.harbourRig.setPlankModel(this.models.get('gangplank'), 3);
     this.harbourRig.setAnchorModel(this.models.get('anchor'));
     this.scene.add(this.harbourRig.group);
-    this.berthMarker = new BerthMarker(this.harbourLayout);
+    this.berthMarker = new BerthMarker(this.harbourLayouts, design);
     this.scene.add(this.berthMarker.group);
     this.ship.place(gen.sites.start.x, gen.sites.start.z, gen.sites.start.heading);
     // settle on the water before the player arrives
     for (let i = 0; i < 240; i++) this.ship.step(SIM_DT);
+    // one clock: the wind starts where the ship's time is
+    this.wind.update(this.ship.time - this.wind.time);
     this.ship.vel.set(0, 0, 0);
     this.ship.angVel.set(0, 0, 0);
 
@@ -236,23 +279,35 @@ export class Game {
     this.chart = new Chart(gen, this.terrain);
     this.minimap = new Minimap(this.chart, gen);
     this.hud.mount(this.minimap.root);
+    const hull = design.hull;
+    this.dock = new DockPanel({
+      halfLength: (hull.length + hull.bowOverhang + hull.sternOverhang) / 2,
+      halfBeam: this.ship.mooring.faceOffset - design.docking.gap,
+      faceOffset: this.ship.mooring.faceOffset,
+      capture: design.docking.capture,
+    });
     this.hud.mount(this.dock.root);
     this.hud.mount(this.crosshair.root);
     this.builder = new DeckBuilder(this.models, this.model.group, this.ship.payload, this.shipSolids, this.player.interactions, this.crew, design.buildingEnabled);
     this.hud.mount(this.builder.ui.root);
-    this.minimap.setBerths(this.harbourLayout.berths);
-    this.chart.setBerths(this.harbourLayout.berths);
+    const allBerths = this.harbourLayouts.flatMap((l) => l.berths);
+    this.minimap.setBerths(allBerths);
+    this.chart.setBerths(allBerths);
+    const ports = gen.sites.harbours ?? [];
+    this.chart.setPorts(ports.map((h) => ({ name: h.name, x: h.pier.x, z: h.pier.z })));
     // named places, described from their terrain
     for (const i of gen.islands) {
       if (!i.name) continue;
       const kind = i.area > 4e6 ? (i.peak > 220 ? 'Mountainous island' : 'Island') : i.area > 6e5 ? 'Islet' : 'Rocky islet';
       this.islands.push({ name: i.name, x: i.cx, z: i.cz, r: Math.sqrt(i.area / Math.PI), kind });
     }
-    if (gen.islands[0]?.name) this.harbour = { x: gen.sites.harbour.x, z: gen.sites.harbour.z, name: `Harbour of ${gen.islands[0].name}` };
+    if (ports.length) for (const h of ports) this.harbours.push({ x: h.harbour.x, z: h.harbour.z, name: `Harbour of ${h.name}` });
+    else if (gen.islands[0]?.name) this.harbours.push({ x: gen.sites.harbour.x, z: gen.sites.harbour.z, name: `Harbour of ${gen.islands[0].name}` });
 
 
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    this.advanceCloudWeather(0);
     this.sky.updateLighting(0, this.camera, true);
     this.updateCloudInputs(0);
     this.sky.updateEnvironment(0, true);
@@ -281,33 +336,73 @@ export class Game {
     const deckY = (s: number) => d.deck.deckY(s);
     const zOf = (s: number) => d.hull.zOf(s);
     this.shipSolids.add({ kind: 'cyl', cx: 0, cz: zOf(d.rig.mastStation), r: 0.18, y0: deckY(d.rig.mastStation), y1: deckY(d.rig.mastStation) + d.rig.mastHeight, surface: 'wood', walkTop: false });
-    for (const [, x, s] of d.crewSpots) this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r: 0.25, y0: deckY(s), y1: deckY(s) + 1.75, surface: 'wood', walkTop: false });
+    // crew ships: the animated rowers replace the static stand-ins, so no fixed cylinders here
+    // the deck figures' colliders, unless they are an animated crew's stand-ins (CrewSolids moves with the rowers)
+    if (!(d.oars.system === 'crew' && d.oars.crew?.animated)) for (const [, x, s] of d.crewSpots) this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r: 0.25, y0: deckY(s), y1: deckY(s) + 1.75, surface: 'wood', walkTop: false });
   }
 
   resize() {
     this.pipeline.setSize(window.innerWidth, window.innerHeight);
   }
 
-  /** Keep the cloud pass and sky environment capture on the same weather and celestial state. */
-  private updateCloudInputs(dt: number) {
-    const sunY = this.clock.sunDir.y;
-    const day = clamp((sunY + 0.08) / 0.33, 0, 1);
-    const daylight = day * day * (3 - 2 * day);
-    const phase = 0.5 - 0.5 * Math.cos(this.clock.moonPhase * Math.PI * 2);
-    const moonlight = phase * smoothstep(-0.02, 0.1, this.clock.moonDir.y) * this.sky.night;
-    // Faint airglow remains under a new moon; the stronger blue lunar fill follows phase and altitude.
-    const airglow = 0.012;
-    const solarFill = airglow + (1 - airglow) * daylight;
-    this.cloudAmbTop.setRGB(
-      0.36 * solarFill + 0.018 * moonlight,
-      0.46 * solarFill + 0.027 * moonlight,
-      0.62 * solarFill + 0.045 * moonlight,
-    );
-    this.cloudAmbBottom.setRGB(
-      0.09 * solarFill + 0.004 * moonlight,
-      0.1 * solarFill + 0.006 * moonlight,
-      0.115 * solarFill + 0.01 * moonlight,
-    );
+  /**
+   * Put her straight into the docked state at a berth (a new start, or a loaded voyage): place her by her
+   * design CG on the berth pose, attach lines and plank, settle, and stand the player on deck at the plank.
+   */
+  placeDocked(b: Berth, bowOut: boolean) {
+    const ship = this.ship;
+    const moor = ship.mooring;
+    const p = moor.berthPose(b, { x: 0, z: 0 });
+    ship.place(p.x, p.z, Math.atan2(b.ax, -b.az) + (bowOut ? 0 : Math.PI));
+    // the berth pose is for the design CG; cargo may have moved the CG, so land that hull point on it
+    const r = ship.refPoint(new THREE.Vector3());
+    ship.pos.x += p.x - r.x;
+    ship.pos.z += p.z - r.z;
+    ship.prevPos.copy(ship.pos);
+    moor.restoreDocked(b, bowOut);
+    for (let i = 0; i < 240; i++) ship.step(SIM_DT);
+    ship.vel.set(0, 0, 0);
+    ship.angVel.set(0, 0, 0);
+    const d = this.design;
+    this.player.walker.placeOnDeck(new THREE.Vector3(0, d.deck.deckY(d.docking.plankS), d.hull.zOf(d.docking.plankS)));
+  }
+
+  /** the default start: docked at the main harbour, bow out (the merchant's voyage does this itself) */
+  startInHarbour() {
+    const b = this.harbourLayouts[0]?.berths[0];
+    if (b && this.design.docking.enabled) this.placeDocked(b, true);
+  }
+
+  /** time-skip is allowed docked or lying to the anchor */
+  get timeSkipAllowed() {
+    const m = this.ship.mooring;
+    return m.linePhase === 'docked' || m.anchorPhase === 'holding';
+  }
+
+  /** the ledger owns the keyboard */
+  get ledgerOpen() {
+    return !!this.trade?.ledgerOpen;
+  }
+
+  /** cargo and ports for a merchant: continue this world's saved voyage or start a new one docked at home */
+  initTrade(world: { seed: number; heightmapSize: number }): 'continue' | 'new' | null {
+    if (!this.design.cargo || !this.gen.sites.harbours?.length) return null;
+    this.trade = new TradeLayer(this, this.gen, this.harbourLayouts, world);
+    return this.trade.init();
+  }
+
+
+  /** Integrate weather once before evaluating this frame's light and capture inputs. */
+  private advanceCloudWeather(dt: number) {
+    this.clouds.coverage = 0.36 + 0.18 * noise1(this.clock.hours / 5 + this.simTime / 3000, 17);
+    this.clouds.advanceWeather(dt, this.wind.vx, this.wind.vz);
+  }
+
+  /** Live clouds and environment captures share the same evaluated celestial light. */
+  private updateCloudInputs(_dt: number) {
+    const state = this.sky.lightingState;
+    this.cloudAmbTop.fromArray(state.cloudAmbTopRGB);
+    this.cloudAmbBottom.fromArray(state.cloudAmbBottomRGB);
     const direct = shared.uSunColor.value;
     const elapsedHours = Math.abs((this.clock.dayCount - this.lastCloudDayCount) * 24 + this.clock.hours - this.lastCloudHour);
     const priorDirect = Math.max(this.lastCloudLightColor.r, this.lastCloudLightColor.g, this.lastCloudLightColor.b);
@@ -333,10 +428,38 @@ export class Game {
     this.lastCloudHour = this.clock.hours;
     this.lastCloudDayCount = this.clock.dayCount;
     this.cloudLightingReady = true;
-    // Weather advances even while presentation is suppressed by fastForward().
-    this.clouds.coverage = 0.36 + 0.18 * noise1(this.clock.hours / 5 + this.simTime / 3000, 17);
-    this.clouds.step(dt, this.wind.vx, this.wind.vz, direct, this.cloudAmbTop, this.cloudAmbBottom, this.camera.position);
+    this.clouds.applyLighting(direct, this.cloudAmbTop, this.cloudAmbBottom, this.camera.position);
     return discontinuity;
+  }
+
+  /** Compile the settled and transition paths before the first playable frame. */
+  async prepareLightingShaders() {
+    const renderer = this.pipeline.renderer;
+    const cameraLayerMask = this.camera.layers.mask;
+    const renderTarget = renderer.getRenderTarget();
+    const activeCubeFace = renderer.getActiveCubeFace();
+    const activeMipmapLevel = renderer.getActiveMipmapLevel();
+    const renderLayerMasks = [cameraLayerMask, 1 << LAYER_REFRACT];
+    try {
+      this.ocean.prepareEnvironmentTextures(renderer);
+      // Scene draws happen into offscreen targets; Three keys those programs with
+      // the working color space, while a null target uses the display output space.
+      renderer.setRenderTarget(this.pipeline.refractTarget);
+      for (const blending of [true, false]) {
+        setEnvironmentShaderBlend(blending);
+        for (const layerMask of renderLayerMasks) {
+          this.camera.layers.mask = layerMask;
+          await renderer.compileAsync(this.scene, this.camera);
+        }
+        this.camera.layers.mask = cameraLayerMask;
+        await this.reflection.compileEnvironmentVariant(renderer, this.scene, this.camera);
+        await this.clouds.compileEnvironmentVariant(renderer);
+      }
+    } finally {
+      setEnvironmentShaderBlend(false);
+      this.camera.layers.mask = cameraLayerMask;
+      renderer.setRenderTarget(renderTarget, activeCubeFace, activeMipmapLevel);
+    }
   }
 
   start() {
@@ -376,42 +499,52 @@ export class Game {
     if (inp.hit('KeyH')) this.hud.cycleDensity();
     if (inp.hit('F3') || inp.hit('Backquote')) this.hud.toggleDebug();
     if (inp.hit('KeyN')) this.audio.toggleMute();
-    if (inp.hit('BracketRight')) this.clock.timeScale = Math.min(480, this.clock.timeScale * 2);
-    if (inp.hit('BracketLeft')) this.clock.timeScale = Math.max(1, this.clock.timeScale / 2);
-    if (inp.hit('KeyT')) {
-      // jump to the next of dawn / midday / dusk / night
-      const marks = [5.6, 12.5, 19.3, 23.0];
-      const h = this.clock.hours;
-      const next = marks.find((m) => m > h + 0.05) ?? marks[0] + 24;
-      this.clock.hours = next % 24;
-      this.clock.compute();
-      this.lightingJump = true;
+    // time-skip only while docked or lying to the anchor (merchant plan §11.6)
+    const skipOk = this.timeSkipAllowed;
+    if (inp.hit('BracketRight') || inp.hit('BracketLeft') || inp.hit('KeyT')) {
+      if (!skipOk) this.hud.showToast('Speed up time when docked or at anchor');
+      else {
+        if (inp.hit('BracketRight')) this.clock.timeScale = Math.min(480, this.clock.timeScale * 2);
+        if (inp.hit('BracketLeft')) this.clock.timeScale = Math.max(1, this.clock.timeScale / 2);
+        if (inp.hit('KeyT')) {
+          // jump to the next of dawn / midday / dusk / night; time only ever runs forward
+          const marks = [5.6, 12.5, 19.3, 23.0];
+          const h = this.clock.hours;
+          const next = marks.find((m) => m > h + 0.05) ?? marks[0] + 24;
+          this.clock.advanceHours(next - h);
+          this.lightingJump = true;
+        }
+      }
     }
+    this.trade?.handleInput();
     // helm controls (orders are shouted from the helm; also allowed in chase view)
     const commanding = p.mode === 'helm' || (p.mode === 'chase' && p.prevShipMode === 'helm');
     const moor = this.ship.mooring;
     if (commanding) {
       if (inp.hit('KeyW') || inp.hit('KeyS')) {
-        if (moor.state === 'moored' || moor.state === 'warping') this.hud.showToast('Cast off first (R)');
-        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
+        // docked the oars are shipped; on the lines or at anchor the crew can still row to help
+        if (moor.linePhase === 'docked' || moor.linePhase === 'casting') this.hud.showToast('Docked · cast off first (R)');
         else this.crew.setOrder(this.crew.orderIndex + (inp.hit('KeyW') ? 1 : -1));
       }
       if (inp.hit('KeyR')) {
-        if (!this.design.dockingEnabled) this.hud.showToast("Docking isn't available on the merchant ship yet");
-        else if (moor.state === 'moored' || moor.state === 'warping') moor.castOff();
-        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
+        if (!this.design.docking.enabled) this.hud.showToast(`Docking isn't available on the ${this.design.name.toLowerCase()}`);
+        else if (moor.linePhase === 'casting') this.hud.showToast('Casting off');
+        else if (moor.onLines) {
+          if (!this.trade || this.trade.canCastOff()) moor.castOff();
+        }
         else if (!moor.approach) this.hud.showToast('No berth in range');
         else moor.makeFast();
       }
       if (inp.hit('KeyZ')) {
         const ph = moor.anchorPhase;
         if (!this.design.anchoringEnabled) this.hud.showToast("This ship can't anchor");
-        else if (moor.state === 'anchored' && (ph === 'holding' || ph === 'dropping')) moor.weighAnchor();
+        else if (ph === 'holding' || ph === 'dropping') moor.weighAnchor();
         else if (ph === 'weighing') this.hud.showToast('Weighing anchor');
         else if (ph === 'lifting') this.hud.showToast('Anchor coming up');
-        else if (moor.state === 'free') moor.dropAnchor();
+        else moor.dropAnchor();
       }
-      if (inp.hit('KeyF')) {
+      if (inp.hit('KeyF') && (moor.linePhase === 'docked' || moor.linePhase === 'casting')) this.hud.showToast('Docked · cast off first (R)');
+      else if (inp.hit('KeyF')) {
         if (this.ship.sailing.deploymentTarget > 0) {
           this.sailSelection = this.ship.sailing.deploymentTarget;
           this.ship.sailing.deploymentTarget = 0;
@@ -453,13 +586,21 @@ export class Game {
   private updateMooring(dt: number) {
     const moor = this.ship.mooring;
     for (const e of moor.drain()) {
-      if (e.type === 'made-fast') {
+      if (e.type === 'lines-out') {
+        // the crew stops rowing and brails the sail; the captain can order a stroke to help her in
         this.audio.ropeThrow();
         this.crew.setOrder(ORDER_STOP);
         this.crew.holdWater = false;
         this.ship.sailTarget = 0;
         this.hud.showToast('Lines out');
-      } else if (e.type === 'moored') this.dock.showRating(e.rating, e.contactSpeed);
+      } else if (e.type === 'docked') {
+        this.dock.showRating(e.rating, e.contactSpeed);
+        this.hud.showToast('Docked · R to cast off');
+        this.trade?.onDocked();
+      } else if (e.type === 'haul-stalled') this.hud.showToast(e.reason);
+      else if (e.type === 'haul-resumed') this.hud.showToast('Hauling in');
+      else if (e.type === 'lines-eased') this.hud.showToast('Lines eased · too much strain');
+      else if (e.type === 'casting-off') this.hud.showToast('Casting off');
       else if (e.type === 'cast-off') {
         this.audio.ropeThrow();
         this.hud.showToast('Cast off');
@@ -479,22 +620,31 @@ export class Game {
       } else if (e.type === 'plank') this.audio.plank(e.down);
       else if (e.type === 'denied') {
         this.audio.buildDeny();
-        this.hud.showToast(e.reason);
+        // during an approach the dock gauges answer (the one out of band pulses); no sentence
+        if (!this.dock.refuse()) this.hud.showToast(e.reason);
       }
     }
     // the crew won't let the ship wander off with the captain ashore or overboard
-    if (this.player.walker.frame === 'world' && moor.state === 'free') {
+    if (this.player.walker.frame === 'world' && !moor.onLines && !moor.anchorOut) {
       if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
       if (this.design.anchoringEnabled && Math.hypot(this.ship.vel.x, this.ship.vel.z) < 1.2 && moor.dropAnchor(true)) this.hud.showNote('Anchor dropped while you are off the ship', 5);
     }
     // ship oars on the quay side for the last metres, both sides once she's tied up
+    // docked: oars shipped, sail brailed, no orders (the ladder is locked at the keys)
+    const docked = moor.linePhase === 'docked' || moor.linePhase === 'casting';
+    if (docked) {
+      if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
+      if (this.ship.sailing.deploymentTarget > 0) this.ship.sailing.deploymentTarget = 0;
+    }
     const a = moor.approach;
-    const tied = moor.state === 'warping' || moor.state === 'moored';
+    const tied = moor.onLines;
     const side = tied ? moor.plank?.side ?? 1 : a?.side ?? 1;
     const quaySide = tied || (!!a && a.dist < 30 && Math.abs(a.lateral) < 6 && this.crew.orderIndex === ORDER_STOP);
     const si = side < 0 ? 0 : 1;
     this.model.oarStowTarget[si] = quaySide ? 1 : 0;
-    this.model.oarStowTarget[1 - si] = moor.state === 'moored' ? 1 : 0;
+    this.model.oarStowTarget[1 - si] = docked ? 1 : 0;
+    this.ship.rowing.setShipped(side < 0 ? -1 : 1, quaySide);
+    this.ship.rowing.setShipped(side < 0 ? 1 : -1, docked);
     this.harbourRig.update(moor, this.model.group);
     const t = this.ship.time;
     this.berthMarker.exposure = this.sky.exposure;
@@ -507,10 +657,13 @@ export class Game {
     let tension = 0;
     for (const l of moor.lines) tension = Math.max(tension, l.tension);
     this.audio.lineCreak(tension);
-    const h = this.harbourLayout;
-    const mx = h.root.x + h.dir.x * h.length * 0.6,
-      mz = h.root.y + h.dir.y * h.length * 0.6;
-    this.audio.setHarbourProximity(clamp(1 - (Math.hypot(this.camera.position.x - mx, this.camera.position.z - mz) - 60) / 400, 0, 1));
+    let near = Infinity;
+    for (const h of this.harbourLayouts) {
+      const mx = h.root.x + h.dir.x * h.length * 0.6,
+        mz = h.root.y + h.dir.y * h.length * 0.6;
+      near = Math.min(near, Math.hypot(this.camera.position.x - mx, this.camera.position.z - mz));
+    }
+    this.audio.setHarbourProximity(clamp(1 - (near - 60) / 400, 0, 1));
     for (const e of this.player.feel.events) {
       if (e.type === 'step') this.audio.footstep(e.kind, e.intensity);
       else if (e.type === 'land') this.audio.land(e.kind, e.speed);
@@ -563,23 +716,31 @@ export class Game {
     let cameraCut = false;
     if (!this.paused) {
       if (this.cinematic) this.player.chaseYaw += dt * 0.035;
-      else {
+      else if (!this.ledgerOpen) {
         const previousMode = this.player.mode;
         this.handleInput(dt);
         cameraCut = this.player.mode !== previousMode;
       }
+      if (this.clock.timeScale !== 1 && !this.timeSkipAllowed) this.clock.timeScale = 1;
       this.clock.update(dt);
-      this.wind.update(dt);
-      this.waveRetarget -= dt;
+      // one clock (sea-state spec §4.3): wind and sea advance by the simulated time of this frame's
+      // fixed steps, so they stay on the ship's time through frame hitches
+      let n = 0;
+      for (let a = this.acc + dt; a >= SIM_DT && n < 12; a -= SIM_DT) n++;
+      const simDt = n * SIM_DT;
+      this.wind.update(simDt);
+      this.waveRetarget -= simDt;
       if (this.waveRetarget <= 0) {
         this.waves.retarget(this.wind);
         this.fft.retarget(this.wind.meanSpeed, this.wind.from + Math.PI, this.waves.fetch);
         const wc = this.fft.whitecaps(this.wind.meanSpeed, this.waves.jVar);
         this.ocean.uniforms.uWhiteJ.value = wc.threshold;
         this.ocean.uniforms.uWhiteRamp.value = wc.ramp;
+        this.seaState?.compose(this.wind.meanSpeed, this.wind.from, this.waves.swellFrom);
         this.waveRetarget = 1;
       }
-      this.waves.update(dt);
+      this.waves.update(simDt);
+      this.seaState?.tick(simDt);
       shared.uWindDir.value.set(this.wind.dirX, this.wind.dirZ);
       shared.uWindStrength.value = clamp(this.wind.speed / 12, 0, 1.3);
 
@@ -613,8 +774,8 @@ export class Game {
     hints.steering = this.steeringInput;
     hints.yawRate = -this.ship.angVel.y;
     const ap = this.ship.mooring.approach;
-    const st = this.ship.mooring.state;
-    hints.docking = ap && (st === 'free' || st === 'warping') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
+    const lp = this.ship.mooring.linePhase;
+    hints.docking = ap && (lp === 'none' || lp === 'out' || lp === 'hauling') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
     // felt contact: shake only for real contact (grounding here, quay bumps in updateMooring); the
     // swell already moves the ship, and bowSlam is a column sum that runs high in an ordinary sea
     if (!this.paused && !this.cinematic && this.ship.grounding > 0.02) this.player.addTrauma(Math.min(0.6, this.ship.grounding) * dt * 3);
@@ -625,16 +786,23 @@ export class Game {
     sp.vel.copy(this.ship.vel);
     sp.angVel.copy(this.ship.angVel);
     sp.plank = this.ship.mooring.plank;
+    if (this.crewSolids && this.ship.rowing instanceof CrewRowing) this.crewSolids.update(this.ship.rowing.crewView, this.ship.rowing);
     this.player.update(dt, sp, this.walk, this.terrain, this.waves, this.ship.time);
-    if (!this.paused) this.updateMooring(dt);
+    if (!this.paused) {
+      this.updateMooring(dt);
+      this.trade?.update();
+    }
     // world systems
+    this.advanceCloudWeather(dt);
     this.sky.updateLighting(dt, this.camera, this.lightingJump);
     this.model.update(this.ship, this.crew, this.sky.night, this.ship.time, alpha);
+    this.crewAnimator?.update(dt, alpha, this.ship);
     const lightingDiscontinuity = this.updateCloudInputs(dt);
     if (cameraCut || this.lightingJump || lightingDiscontinuity) this.clouds.resetHistory();
     const timed = present && fixedDt === undefined;
+    this.pipeline.profileEnvironment = this.sky.environmentProfiler.enabled;
     if (timed) this.pipeline.beginGpuTimer();
-    this.sky.updateEnvironment(dt, this.lightingJump);
+    this.sky.updateEnvironment(dt, this.lightingJump, present);
     this.lightingJump = false;
     if (this.scene.environment !== this.sky.envMap) this.scene.environment = this.sky.envMap;
     this.pipeline.grade.uniforms.get('exposure')!.value = this.sky.exposure;

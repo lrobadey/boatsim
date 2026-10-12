@@ -1,0 +1,839 @@
+[
+  {
+    "name": "deck-0900",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/deck-0900.jpg",
+    "hours": 9,
+    "phase": 0.43,
+    "sunAlt": 49.19918589617948,
+    "moonAlt": -67.7756360884338,
+    "night": 0,
+    "exposure": 0.4019791763364374,
+    "direct": [
+      3.6565014973570293,
+      3.355902090687889,
+      2.7897453902619787
+    ],
+    "gpuEmaMs": 14.165816112518979,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7940123244489,
+      4.681163519859136,
+      -263.284719938873
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 7,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.29999999701976776
+  },
+  {
+    "name": "deck-1230",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/deck-1230.jpg",
+    "hours": 12.5,
+    "phase": 0.43,
+    "sunAlt": 74.62863110378075,
+    "moonAlt": -58.54890552252051,
+    "night": 0,
+    "exposure": 0.3687399121653656,
+    "direct": [
+      3.7668246428975634,
+      3.521361530955135,
+      3.045641387756583
+    ],
+    "gpuEmaMs": 13.904183631646331,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7940123244489,
+      4.681163519859136,
+      -263.284719938873
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 13,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "deck-1700",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/deck-1700.jpg",
+    "hours": 23.99,
+    "phase": 0.43,
+    "sunAlt": -29.16005317957852,
+    "moonAlt": 25.089134513460206,
+    "night": 1,
+    "exposure": 5.630562932860323,
+    "direct": [
+      0.11524203667419418,
+      0.14248106352445825,
+      0.20953097577126212
+    ],
+    "gpuEmaMs": 13.635334676895413,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8844209711933,
+      4.496624171018375,
+      -263.28470689178226
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 57,
+    "lastBakeCpuMs": 0.20000000298023224,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "before-deck-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/before-deck-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 5.584656532188321,
+    "direct": [
+      0.11524203667419418,
+      0.14248106352445825,
+      0.20953097577126212
+    ],
+    "gpuEmaMs": 14.077522597329104,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7462645874928,
+      4.704296385563717,
+      -263.26651882639743
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 19,
+    "lastBakeCpuMs": 0.30000000074505806,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "before-moon-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/before-moon-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 5.584656532188321,
+    "direct": [
+      0.11524203667419418,
+      0.14248106352445825,
+      0.20953097577126212
+    ],
+    "gpuEmaMs": 14.736590536715061,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7462645874928,
+      10.704296385563717,
+      -263.26651882639743
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 26,
+    "lastBakeCpuMs": 0.20000000298023224,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "after-moon-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-moon-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 16.140922297537266,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      1218,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      10.69912318108875,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 10,
+    "lastBakeCpuMs": 0.09999999776482582,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "after-deck-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 13.983268202087231,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 14,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "after-sail-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-sail-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 14.613316709096779,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 18,
+    "lastBakeCpuMs": 0.10000000149011612,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "after-deck-0536",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-0536.jpg",
+    "hours": 5.6,
+    "phase": 0.43,
+    "sunAlt": 9.521550541501108,
+    "moonAlt": -28.5824413855138,
+    "night": 0,
+    "exposure": 0.6113252641727743,
+    "direct": [
+      2.2733758484615882,
+      1.5547004908390147,
+      0.6858187236217851
+    ],
+    "gpuEmaMs": 14.250272433125733,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 28,
+    "lastBakeCpuMs": 0.10000000149011612,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "after-deck-0900",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-0900.jpg",
+    "hours": 9,
+    "phase": 0.43,
+    "sunAlt": 49.19918589617948,
+    "moonAlt": -67.7756360884338,
+    "night": 0,
+    "exposure": 0.4019791763364374,
+    "direct": [
+      3.6565014973570293,
+      3.355902090687889,
+      2.7897453902619787
+    ],
+    "gpuEmaMs": 13.998528230925096,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 29,
+    "lastBakeCpuMs": 0.4000000022351742,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-deck-1230",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-1230.jpg",
+    "hours": 12.5,
+    "phase": 0.43,
+    "sunAlt": 74.62863110378075,
+    "moonAlt": -58.54890552252051,
+    "night": 0,
+    "exposure": 0.3687399121653656,
+    "direct": [
+      3.7668246428975634,
+      3.521361530955135,
+      3.045641387756583
+    ],
+    "gpuEmaMs": 13.94389350403401,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 30,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-deck-1700",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-1700.jpg",
+    "hours": 17,
+    "phase": 0.43,
+    "sunAlt": 25.483265983129538,
+    "moonAlt": -6.237561139237789,
+    "night": 0,
+    "exposure": 0.48377237823070773,
+    "direct": [
+      3.2938100091559988,
+      2.833724384064642,
+      2.049383710943134
+    ],
+    "gpuEmaMs": 14.235105684095767,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 32,
+    "lastBakeCpuMs": 0.3999999985098839,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-deck-1918",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-1918.jpg",
+    "hours": 19.3,
+    "phase": 0.43,
+    "sunAlt": -0.09699795978186584,
+    "moonAlt": 16.02159235948555,
+    "night": 0.15194869509133488,
+    "exposure": 0.9504162430668706,
+    "direct": [
+      0.04506542389051423,
+      0.004085158808374234,
+      0.000023202490386518538
+    ],
+    "gpuEmaMs": 12.844044315339564,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 33,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-deck-2000",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-2000.jpg",
+    "hours": 20,
+    "phase": 0.43,
+    "sunAlt": -7.055123847852975,
+    "moonAlt": 21.226750007009628,
+    "night": 0.9170793589058538,
+    "exposure": 2.5778081496094365,
+    "direct": [
+      0.046367356018061565,
+      0.05151928446451285,
+      0.06439910558064106
+    ],
+    "gpuEmaMs": 14.28196776158175,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.7584574660373,
+      4.6991231810887495,
+      -263.2713403954427
+    ],
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 35,
+    "lastBakeCpuMs": 0.09999999776482582,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-moon-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-moon-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 13.21117013418358,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8038263598598,
+      10.675291629460919,
+      -263.28818988207655
+    ],
+    "view": "moon",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 8,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.3999999985098839
+  },
+  {
+    "name": "moon-blocked-by-sail",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/moon-blocked-by-sail.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 14.816062762992901,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1968.0629537328416,
+      1.2135963505876486,
+      -293.5184824501135
+    ],
+    "view": "occlusion",
+    "raisedSail": 1,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 11,
+    "lastBakeCpuMs": 0.20000000298023224,
+    "maxBakeCpuMs": 0.3999999985098839
+  },
+  {
+    "name": "moon-revealed-sail-lowered",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/moon-revealed-sail-lowered.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "gpuEmaMs": 10.99778339497899,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1968.0629537328416,
+      1.2135963505876486,
+      -293.5184824501135
+    ],
+    "view": "occlusion",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 13,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.3999999985098839
+  },
+  {
+    "name": "after-deck-1918",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-1918.jpg",
+    "hours": 19.3,
+    "phase": 0.43,
+    "sunAlt": -0.09699795978186584,
+    "moonAlt": 16.02159235948555,
+    "night": 0.15194869509133488,
+    "exposure": 0.9504162430668706,
+    "direct": [
+      0.04506542389051423,
+      0.004085158808374234,
+      0.000023202490386518538
+    ],
+    "gpuEmaMs": 13.428342597419473,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8038263598598,
+      4.6752916294609195,
+      -263.28818988207655
+    ],
+    "view": "deck",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 15,
+    "lastBakeCpuMs": 0.30000000074505806,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-deck-1936",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-deck-1936.jpg",
+    "hours": 19.6,
+    "phase": 0.43,
+    "sunAlt": -3.144160911431094,
+    "moonAlt": 18.371264589224737,
+    "night": 0.49891730278424284,
+    "exposure": 1.6061294525973036,
+    "direct": [
+      0.0016311291156228668,
+      0.0018123656840254077,
+      0.0022654571050317596
+    ],
+    "gpuEmaMs": 12.633352935690437,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8038263598598,
+      4.6752916294609195,
+      -263.28818988207655
+    ],
+    "view": "deck",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 16,
+    "lastBakeCpuMs": 0.09999999776482582,
+    "maxBakeCpuMs": 0.4000000022351742
+  },
+  {
+    "name": "after-moon-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/after-moon-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "frameMeanMs": 16.666108786623347,
+    "frameP95Ms": 16.800000000745058,
+    "presentedFrames": 239,
+    "gpuEmaMs": 12.987105943206133,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8133349760933,
+      10.669127068168326,
+      -263.2914338174637
+    ],
+    "view": "moon",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 11,
+    "lastBakeCpuMs": 0.20000000298023224,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "moonless-night-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/moonless-night-2300.jpg",
+    "hours": 23,
+    "phase": 0,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": -27.543258944948885,
+    "night": 1,
+    "exposure": 2.8692749169890894,
+    "direct": [
+      0,
+      0,
+      0
+    ],
+    "frameMeanMs": 16.666945606688326,
+    "frameP95Ms": 17,
+    "presentedFrames": 239,
+    "gpuEmaMs": 11.986356677717762,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.8133349760933,
+      10.669127068168326,
+      -263.2914338174637
+    ],
+    "view": "moon",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 16,
+    "lastBakeCpuMs": 0.20000000298023224,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "live-high-night",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/live-high-night.jpg",
+    "hours": 0.17807166666564564,
+    "phase": 0.46386386725364037,
+    "sunAlt": -29.11000855428421,
+    "moonAlt": 24.961879408844897,
+    "night": 1,
+    "exposure": 2.795288113385061,
+    "direct": [
+      0.05686083898373697,
+      0.06317870998192997,
+      0.07897338747741246
+    ],
+    "frameMeanMs": 16.665271966527197,
+    "frameP95Ms": 16.900000002235174,
+    "presentedFrames": 239,
+    "gpuEmaMs": 13.09711999982779,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1965.6527710645896,
+      5.190760699549479,
+      -264.17865147837284
+    ],
+    "view": "deck",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": false,
+    "fixedClouds": false,
+    "cloudCoverage": 0.37239422525576216,
+    "bakeCount": 62,
+    "lastBakeCpuMs": 0.30000000074505806,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "experiment-cloud-filtering-2300",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/experiment-cloud-filtering-2300.jpg",
+    "hours": 23,
+    "phase": 0.43,
+    "sunAlt": -27.543258944948885,
+    "moonAlt": 28.76520061050543,
+    "night": 1,
+    "exposure": 2.788328126546034,
+    "direct": [
+      0.054859019111021354,
+      0.06095446567891262,
+      0.07619308209864077
+    ],
+    "frameMeanMs": 16.666945606688326,
+    "frameP95Ms": 16.800000000745058,
+    "presentedFrames": 239,
+    "gpuEmaMs": 14.86489906891159,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.4343391189102,
+      10.742959600487472,
+      -263.1253453673999
+    ],
+    "view": "moon",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 18,
+    "lastBakeCpuMs": 0.19999999925494194,
+    "maxBakeCpuMs": 0.30000000074505806
+  },
+  {
+    "name": "experiment-cloud-filtering-0900",
+    "path": "/Users/lucarobadey/Developer/boatsim/docs/lighting-review/experiment-cloud-filtering-0900.jpg",
+    "hours": 9,
+    "phase": 0.43,
+    "sunAlt": 49.19918589617948,
+    "moonAlt": -67.7756360884338,
+    "night": 0,
+    "exposure": 0.4019791763364374,
+    "direct": [
+      3.6565014973570293,
+      3.355902090687889,
+      2.7897453902619787
+    ],
+    "frameMeanMs": 16.666945606703912,
+    "frameP95Ms": 16.800000000745058,
+    "presentedFrames": 239,
+    "gpuEmaMs": 15.988149146834418,
+    "scale": 1,
+    "quality": "high",
+    "viewport": [
+      801,
+      775
+    ],
+    "camera": [
+      1970.4343391189102,
+      4.742959600487472,
+      -263.1253453673999
+    ],
+    "view": "deck",
+    "raisedSail": 0,
+    "reversedDepth": true,
+    "frozen": true,
+    "fixedClouds": true,
+    "cloudCoverage": 0.4,
+    "bakeCount": 20,
+    "lastBakeCpuMs": 0.30000000074505806,
+    "maxBakeCpuMs": 0.3999999985098839
+  }
+]

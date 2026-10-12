@@ -1,4 +1,5 @@
-import type { RowingSystem, RowEventCursor } from '../ship/rowing';
+import type { RowEventCursor } from '../ship/rowing';
+import type { OarPropulsion } from '../ship/oarPropulsion';
 import type { Game } from '../game';
 import type { Crew } from '../ship/crew';
 import { clamp } from '../core/util';
@@ -303,7 +304,7 @@ export class AudioEngine {
   /** the keleustes' drum on each catch (trireme only) */
   drumEnabled = true;
   private contactBins = new Map<number, { bin: number; side: number; enter: boolean; energy: number }>();
-  rowingEvents(rowing: RowingSystem, renderTime: number) {
+  rowingEvents(rowing: OarPropulsion, renderTime: number) {
     if (!this.rowingCursor || this.rowingCursor.epoch !== rowing.events.generation) {
       this.rowingCursor = { next: rowing.events.oldestId, epoch: rowing.events.generation };
       this.lastBeatTime = -Infinity;
@@ -649,7 +650,9 @@ export class AudioEngine {
     const sp = Math.abs(ship.speed);
     const aw = ship.apparentWind.length();
     const eagleSpeed = eagle ? g.player.eagleVel.length() : 0;
-    this.seaGain.gain.setTargetAtTime((0.35 + g.waves.hs * 0.3) * nearSea, t, 0.3);
+    // the sea's voice follows the local wave size: a sheltered harbour is quiet
+    const seaRatio = clamp(g.waves.seaRatio(g.camera.position.x, g.camera.position.z), 0, 1);
+    this.seaGain.gain.setTargetAtTime((0.35 + g.waves.hs * 0.3) * (0.3 + 0.7 * seaRatio) * nearSea, t, 0.6);
     this.washGain.gain.setTargetAtTime(eagle ? 0 : clamp(sp / 5, 0, 1.2) * 0.5, t, 0.2);
     this.washFilter.frequency.setTargetAtTime(600 + sp * 160, t, 0.2);
     const windLevel = eagle ? clamp(eagleSpeed / 40, 0.2, 1.4) : clamp(aw / 12, 0.05, 1.2);

@@ -22,6 +22,8 @@ hold the display's refresh rate.
 | **F** | raise / brail the sail |
 | **G** | select full / half sail area |
 | **J / L** | hold to trim the yard manually · **K** return to crew trim |
+| **R** | near a berth: throw the lines and haul in · hauling: let go · docked: cast off |
+| **Z** | drop / weigh the anchor (it can stay down while you warp in to a quay) |
 | **E** | take / leave the helm; on deck **WASD** walk, **Shift** run |
 | **C** | chase camera (wheel zooms) · **Q** Ikaros, the eagle |
 | **RMB** | spyglass · **M** sea chart |
@@ -37,11 +39,12 @@ hold the display's refresh rate.
   coverage follows Monahan's empirical wind law, derived statistically from the spectrum. The wake is
   made of Kelvin arms, stern slick and oar puddles.
 - **Ship** — a 6-DOF rigid body at 120 Hz. The hull is lofted from one set of functions that also gives
-  its buoyancy columns, displacement and inertia. All 170 oars share bank geometry and continuous
-  catch, drive, extraction, feather and recovery poses with the rendered animation. Each blade samples
-  local immersion and water flow; passive drag is bounded by handle force, work and crew reserves.
-  Low-speed hard helm backs the inner bank, and hold-water brakes through submerged blade drag. This
-  is a reduced-order traction model, without shaft dynamics or unsteady blade vortices. It also has steering
+  its buoyancy columns, displacement and inertia. All 170 oars are rowed by an agent crew: each rower
+  is a physical force balance on his own oar, with his own strength, fatigue and timing. He keeps time
+  by the keleustes' call and the man ahead of him, reads the water at his blade, and shortens his stroke
+  to catch up. The crew shares out the helm's turn between the sides, and holds water through the blades.
+  Speed is not tuned to a target: it emerges from the rowers' power and the oars (docs/trireme-crew-plan.md).
+  This is a reduced-order model, without shaft dynamics or unsteady blade vortices. It also has steering
   oars modelled as lifting plates, a square sail with apparent-wind crew trim and partial deployment,
   crew stamina, and grounding. Sailing couples distributed sail pressure, rigid-body apparent wind,
   and shallow-hull leeway. Its aerodynamic and hull coefficients are bounded engineering approximations,
@@ -57,8 +60,11 @@ hold the display's refresh rate.
 
 `PLAN.md` holds the original design and scope.
 
-The researched rowing contract is in [docs/rowing-spec.md](docs/rowing-spec.md). Run
-`npm run test:rowing` for geometry, transitions, power, control and sea-stability checks.
+The trireme's crew rowing is described in [docs/trireme-crew-plan.md](docs/trireme-crew-plan.md); run
+`npm run test:trireme-crew` for its timing, speed, sprint, hold, turning, shipping, sea and CPU checks, and
+`node scripts/measure-trireme-rowing.mjs --sprint` for a calm-water trial. The older scripted rowing
+(selectable as `oars.system: 'banks'`) has its contract in [docs/rowing-spec.md](docs/rowing-spec.md);
+`npm run test:rowing` checks it.
 Opt-in browser review scenes use `?dev&hud=1&rowingReview=forward` (or `back`, `hold`, `pivot`, `rest`, `transition`).
 
 The coupled sailing contract, including its research basis and limits, is in

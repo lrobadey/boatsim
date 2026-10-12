@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { createNoise2D } from 'simplex-noise';
-import type { WorldGenRequest, WorldGenResult, IslandInfo, Sites, House } from './worldgenTypes';
+import type { WorldGenRequest, WorldGenResult, IslandInfo, Sites, House, HarbourSite, PortProfile } from './worldgenTypes';
+import { bakeSeaState, pierMole, seaStateBuffers } from './seaState';
 
 /**
  * Seeded archipelago generator.
@@ -39,7 +40,7 @@ const post = (msg: any, transfer: Transferable[] = []) => (self as unknown as Wo
 self.onmessage = (e: MessageEvent<WorldGenRequest>) => {
   const req = e.data;
   const res = generate(req, (p, label) => post({ type: 'progress', p, label }));
-  post({ type: 'done', result: res }, [res.heights.buffer, res.vegetation.buffer, res.ao.buffer]);
+  post({ type: 'done', result: res }, [res.heights.buffer, res.vegetation.buffer, res.ao.buffer, ...(res.seaState ? seaStateBuffers(res.seaState) : [])]);
 };
 
 function generate(req: WorldGenRequest, progress: (p: number, label: string) => void): WorldGenResult {
@@ -81,6 +82,9 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     }
     return a;
   };
+
+  /** vegetation moisture (the expression the planting uses), for the port profiles (§3.1, §4.3) */
+  const moistAt = (x: number, z: number) => 0.5 + 0.5 * n2a(x / 700, z / 700) + 0.2 * n2c(x / 150, z / 150);
 
   // ---------- 1. island layout ----------
   progress(0.02, 'Placing islands');
@@ -293,74 +297,148 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     for (let d = 30; d < maxD; d += 30) if (sample(x + dx * d, z + dz * d) > 0) return d;
     return -1;
   };
+  /** lim.open: the open-run and nearest-land limits apply (off for the fallback). island: the nearest land must
+   *  belong to that island (a `lab` id, §3.1 step 2); null = no island rule (the main harbour). */
+  const scoreSite = (x: number, z: number, lim: { open: boolean; maxRun: number; maxD: number }, island: number | null): { score: number; openA: number } | null => {
+    const h = sample(x, z);
+    if (h > -4 || h < -18) return null;
+    let enclosed = 0,
+      windExposed = 0,
+      bestOpenRun = 0,
+      run = 0,
+      runStart = 0,
+      openCenter = 0,
+      minD = 1e9,
+      nearA = -1;
+    const hits: number[] = [];
+    for (let k = 0; k < RAYS; k++) {
+      const a = (k / RAYS) * Math.PI * 2;
+      const d = rayLand(x, z, a, 1400);
+      hits.push(d);
+      if (d > 0) {
+        enclosed += 1 - d / 1400;
+        if (d < minD) {
+          minD = d;
+          nearA = a;
+        }
+      } else {
+        // open to the sea in this direction: bad if that is where the wind/waves come from
+        const ex = Math.cos(a) * wfx + Math.sin(a) * wfz;
+        windExposed += Math.max(0, ex);
+      }
+    }
+    // navigable entrance: longest run of open rays
+    for (let k = 0; k < RAYS * 2; k++) {
+      if (hits[k % RAYS] < 0) {
+        if (run === 0) runStart = k;
+        run++;
+        if (run > bestOpenRun) {
+          bestOpenRun = run;
+          openCenter = runStart + run / 2;
+        }
+      } else run = 0;
+    }
+    if (!(minD < 1400)) return null; // no land along any ray
+    if (island !== null && islandAt(x + Math.cos(nearA) * minD, z + Math.sin(nearA) * minD) !== island) return null;
+    if (lim.open && (bestOpenRun < 2 || bestOpenRun > lim.maxRun || minD > lim.maxD || minD < 60)) return null;
+    // gentle land to build on nearby
+    let gentle = 0;
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      const lx = x + Math.cos(a) * (minD + 120),
+        lz = z + Math.sin(a) * (minD + 120);
+      const lh = sample(lx, lz);
+      if (lh > 1 && lh < 60 && slopeAt(lx, lz) < 0.3) gentle++;
+    }
+    const score = enclosed * 1.0 - windExposed * 1.6 + gentle * 0.6 - Math.abs(h + 9) * 0.05;
+    return { score, openA: (openCenter / RAYS) * Math.PI * 2 };
+  };
+  /** the `lab` id of the land at (x, z): the cell's own label, else the first labelled 8-neighbour; -1 = none (§3.1) */
+  const islandAt = (x: number, z: number): number => {
+    const ci = Math.floor((x + half) / gc), cj = Math.floor((z + half) / gc);
+    if (ci < 0 || cj < 0 || ci >= G || cj >= G) return -1;
+    if (lab[cj * G + ci] !== -1) return lab[cj * G + ci];
+    for (let dj = -1; dj <= 1; dj++)
+      for (let di = -1; di <= 1; di++) {
+        const i = ci + di, j = cj + dj;
+        if ((di === 0 && dj === 0) || i < 0 || j < 0 || i >= G || j >= G) continue;
+        if (lab[j * G + i] !== -1) return lab[j * G + i];
+      }
+    return -1;
+  };
   let best = { score: -1e9, x: 0, z: 0, openA: 0 };
   const hstep = 45;
+  const mainLim = { open: true, maxRun: RAYS * 0.6, maxD: 450 };
   for (let z = mainIsland.cz - 3200; z < mainIsland.cz + 3200; z += hstep)
     for (let x = mainIsland.cx - 3200; x < mainIsland.cx + 3200; x += hstep) {
-      const h = sample(x, z);
-      if (h > -4 || h < -18) continue;
-      // near the main island's shore
-      let nearLand = rayLand(x, z, 0, 1) ;
-      let enclosed = 0,
-        windExposed = 0,
-        bestOpenRun = 0,
-        run = 0,
-        runStart = 0,
-        openCenter = 0,
-        minD = 1e9;
-      const hits: number[] = [];
-      for (let k = 0; k < RAYS; k++) {
-        const a = (k / RAYS) * Math.PI * 2;
-        const d = rayLand(x, z, a, 1400);
-        hits.push(d);
-        if (d > 0) {
-          enclosed += 1 - d / 1400;
-          minD = Math.min(minD, d);
-        } else {
-          // open to the sea in this direction: bad if that is where the wind/waves come from
-          const ex = Math.cos(a) * wfx + Math.sin(a) * wfz;
-          windExposed += Math.max(0, ex);
-        }
-      }
-      // navigable entrance: longest run of open rays
-      for (let k = 0; k < RAYS * 2; k++) {
-        if (hits[k % RAYS] < 0) {
-          if (run === 0) runStart = k;
-          run++;
-          if (run > bestOpenRun) {
-            bestOpenRun = run;
-            openCenter = runStart + run / 2;
-          }
-        } else run = 0;
-      }
-      if (bestOpenRun < 2 || bestOpenRun > RAYS * 0.6 || minD > 450 || minD < 60) continue;
-      // gentle land to build on nearby
-      let gentle = 0;
-      for (let k = 0; k < 8; k++) {
-        const a = (k / 8) * Math.PI * 2;
-        const lx = x + Math.cos(a) * (minD + 120),
-          lz = z + Math.sin(a) * (minD + 120);
-        const lh = sample(lx, lz);
-        if (lh > 1 && lh < 60 && slopeAt(lx, lz) < 0.3) gentle++;
-      }
-      const onMain = lab[Math.floor((z + half) / gc) * G + Math.floor((x + half) / gc)];
-      const score = enclosed * 1.0 - windExposed * 1.6 + gentle * 0.6 - Math.abs(h + 9) * 0.05 + nearLand * 0;
-      if (score > best.score) best = { score, x, z, openA: (openCenter / RAYS) * Math.PI * 2 };
+      const r = scoreSite(x, z, mainLim, null);
+      if (r && r.score > best.score) best = { score: r.score, x, z, openA: r.openA };
     }
   const harbour = { x: best.x, z: best.z, openAngle: best.openA };
-  // shore point: nearest land toward the inside of the bay (opposite of the opening)
-  let shore = { x: harbour.x, z: harbour.z };
-  {
-    let bd = 1e9;
-    for (let k = 0; k < 72; k++) {
-      const a = (k / 72) * Math.PI * 2;
-      const d = rayLand(harbour.x, harbour.z, a, 900);
-      if (d > 0 && d < bd) {
-        bd = d;
-        shore = { x: harbour.x + Math.cos(a) * d, z: harbour.z + Math.sin(a) * d };
+
+  /** shore point and mole of a harbour, and the dredge of its berth zone (§3.1 step 3) */
+  const buildPier = (hb: { x: number; z: number; openAngle: number }) => {
+    // shore point: nearest land toward the inside of the bay (opposite of the opening)
+    let shore = { x: hb.x, z: hb.z };
+    {
+      let bd = 1e9;
+      for (let k = 0; k < 72; k++) {
+        const a = (k / 72) * Math.PI * 2;
+        const d = rayLand(hb.x, hb.z, a, 900);
+        if (d > 0 && d < bd) {
+          bd = d;
+          shore = { x: hb.x + Math.cos(a) * d, z: hb.z + Math.sin(a) * d };
+        }
       }
     }
-  }
+    // mole axis from the shore to the harbour; the berth zone is dredged (see the dredge below)
+    const pdx = hb.x - shore.x,
+      pdz = hb.z - shore.z;
+    const plen = Math.hypot(pdx, pdz);
+    const ux = pdx / plen,
+      uz = pdz / plen; // shore -> sea
+    const lx = -uz,
+      lz = ux; // lateral
+    const at = (d: number, lat: number) => sample(shore.x + ux * d + lx * lat, shore.z + uz * d + lz * lat);
+    // d0: first point along the axis where the seabed is 3 m deep on the centre line and 9 m either side
+    let d0 = plen;
+    for (let d = 0; d <= plen; d += 1)
+      if (at(d, 0) <= -3 && at(d, 9) <= -3 && at(d, -9) <= -3) {
+        d0 = d;
+        break;
+      }
+    // berth zone [d0, d0 + 48], pier max 170 m; land beyond shortens the mole but keeps 40 m of berth
+    let L = Math.min(d0 + 48, 170);
+    if (L < d0 + 40) L = d0 + 40;
+    for (let d = d0; d <= L; d += 2)
+      if (at(d, 0) > -1.5) {
+        L = Math.max(d0 + 40, d);
+        break;
+      }
+    // dredge: H = min(H, -3.8) over [d0 - 6, L + 14] x ±18 m, smooth falloff over the next 14 m. Never raises.
+    const DREDGE = -3.8;
+    const a0 = d0 - 6,
+      a1 = L + 14;
+    for (let j = 0; j < N; j++) {
+      const z = -half + (j + 0.5) * cell;
+      for (let i = 0; i < N; i++) {
+        const x = -half + (i + 0.5) * cell;
+        const dx = x - shore.x,
+          dz = z - shore.z;
+        const along = dx * ux + dz * uz,
+          lat = dx * lx + dz * lz;
+        const out = Math.hypot(Math.max(0, a0 - along, along - a1), Math.max(0, Math.abs(lat) - 18));
+        const w = 1 - smoothstep(0, 14, out);
+        if (w <= 0) continue;
+        const k = j * N + i;
+        // only the seabed is dug out: beaches and cliffs beside the mole keep their shape
+        H[k] += (Math.min(H[k], DREDGE) - H[k]) * w * (1 - smoothstep(-1.5, 0.5, H[k]));
+      }
+    }
+    const pier = { x: shore.x, z: shore.z, angle: Math.atan2(uz, ux), length: L, width: 6, top: 1.8, berthStart: d0 };
+    // the dredge rectangle in the mole's frame (§3.1 step 5 filters vegetation out of it)
+    return { shore, pier, rect: { sx: shore.x, sz: shore.z, ux, uz, lx, lz, a0, a1 } };
+  };
 
   // --- temple: prominent, near the harbour, with a sea view, reasonably flat ---
   progress(0.82, 'Placing the temple');
@@ -388,50 +466,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
 
   // --- pier: a mole from the shore into the harbour, its berth zone dredged to working depth.
   // Runs before the village, the start and vegetation so they all sample the dredged heights.
-  const pdx = harbour.x - shore.x,
-    pdz = harbour.z - shore.z;
-  const plen = Math.hypot(pdx, pdz);
-  const ux = pdx / plen,
-    uz = pdz / plen; // shore -> sea
-  const lx = -uz,
-    lz = ux; // lateral
-  const at = (d: number, lat: number) => sample(shore.x + ux * d + lx * lat, shore.z + uz * d + lz * lat);
-  // d0: first point along the axis where the seabed is 3 m deep on the centre line and 9 m either side
-  let d0 = plen;
-  for (let d = 0; d <= plen; d += 1)
-    if (at(d, 0) <= -3 && at(d, 9) <= -3 && at(d, -9) <= -3) {
-      d0 = d;
-      break;
-    }
-  // berth zone [d0, d0 + 48], pier max 170 m; land beyond shortens the mole but keeps 40 m of berth
-  let L = Math.min(d0 + 48, 170);
-  if (L < d0 + 40) L = d0 + 40;
-  for (let d = d0; d <= L; d += 2)
-    if (at(d, 0) > -1.5) {
-      L = Math.max(d0 + 40, d);
-      break;
-    }
-  // dredge: H = min(H, -3.8) over [d0 - 6, L + 14] x ±18 m, smooth falloff over the next 14 m. Never raises.
-  const DREDGE = -3.8;
-  const a0 = d0 - 6,
-    a1 = L + 14;
-  for (let j = 0; j < N; j++) {
-    const z = -half + (j + 0.5) * cell;
-    for (let i = 0; i < N; i++) {
-      const x = -half + (i + 0.5) * cell;
-      const dx = x - shore.x,
-        dz = z - shore.z;
-      const along = dx * ux + dz * uz,
-        lat = dx * lx + dz * lz;
-      const out = Math.hypot(Math.max(0, a0 - along, along - a1), Math.max(0, Math.abs(lat) - 18));
-      const w = 1 - smoothstep(0, 14, out);
-      if (w <= 0) continue;
-      const k = j * N + i;
-      // only the seabed is dug out: beaches and cliffs beside the mole keep their shape
-      H[k] += (Math.min(H[k], DREDGE) - H[k]) * w * (1 - smoothstep(-1.5, 0.5, H[k]));
-    }
-  }
-  const pier = { x: shore.x, z: shore.z, angle: Math.atan2(uz, ux), length: L, width: 6, top: 1.8, berthStart: d0 };
+  const { shore, pier } = buildPier(harbour);
 
   // --- village: houses on gentle slopes around the harbour shore, density falling off with distance ---
   progress(0.86, 'Building the village');
@@ -535,6 +570,149 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
       veg.push(jx, sample(jx, jz), jz, sc, pr() * Math.PI * 2, type);
     }
 
+  // --- other harbours (§3.1 steps 1-5): after vegetation, before the AO bake. Searches first, then piers,
+  // villages and the vegetation filter; no draws from the existing RNG streams.
+  progress(0.93, 'Finding the other harbours');
+  const cands: number[] = []; // island indices, area order
+  for (let i = 1; i < infos.length && cands.length < 2; i++) if (infos[i].name !== '' && infos[i].area >= 1.0e6) cands.push(i);
+  const placed: { x: number; z: number }[] = [harbour];
+  const found: { island: number; harbour: { x: number; z: number; openAngle: number } }[] = [];
+  for (const i of cands) {
+    const I = infos[i];
+    const hw = 2.6 * Math.sqrt(I.area / Math.PI) + 600;
+    // strict limits first; if no point passes, the fallback drops the open-run and nearest-land limits
+    for (const strict of [true, false]) {
+      const lim = { open: strict, maxRun: RAYS * 0.75, maxD: 600 };
+      let pick: { score: number; x: number; z: number; openA: number } | null = null;
+      for (let z = I.cz - hw; z < I.cz + hw; z += 45)
+        for (let x = I.cx - hw; x < I.cx + hw; x += 45) {
+          if (placed.some((p) => Math.hypot(p.x - x, p.z - z) < 1500)) continue;
+          const r = scoreSite(x, z, lim, I.id);
+          if (r && (!pick || r.score > pick.score)) pick = { score: r.score, x, z, openA: r.openA };
+        }
+      if (pick) {
+        found.push({ island: i, harbour: { x: pick.x, z: pick.z, openAngle: pick.openA } });
+        placed.push(pick);
+        break;
+      }
+    }
+  }
+  const piers = found.map((f) => buildPier(f.harbour));
+
+  // village of a new harbour (§3.1 step 4): the main village's placement rules, no temple
+  const villageAt = (rng: () => number, c: { x: number; z: number }, radius: number, maxHouses: number) => {
+    const out: House[] = [];
+    for (let t = 0; t < 9000 && out.length < maxHouses; t++) {
+      const a = rng() * Math.PI * 2;
+      const d = Math.pow(rng(), 0.7) * radius;
+      const x = c.x + Math.cos(a) * d,
+        z = c.z + Math.sin(a) * d;
+      const h = sample(x, z);
+      if (h < 2.2 || h > 70) continue;
+      const sl = slopeAt(x, z);
+      if (sl > 0.42) continue;
+      if (rng() > Math.exp(-d / 320)) continue;
+      const w = 4 + rng() * 5,
+        l = 5 + rng() * 6;
+      let clash = false;
+      for (const o of out) if (Math.hypot(o.x - x, o.z - z) < (Math.max(w, l) + Math.max(o.w, o.l)) * 0.62) { clash = true; break; }
+      if (clash) continue;
+      // face downhill (toward the sea)
+      const gx = sample(x + 3, z) - sample(x - 3, z);
+      const gz = sample(x, z + 3) - sample(x, z - 3);
+      const rot = Math.atan2(-gx, -gz);
+      // base = lowest ground under the footprint so the house never floats
+      let minH = h;
+      for (const [ox, oz] of [[-w / 2, -l / 2], [w / 2, -l / 2], [-w / 2, l / 2], [w / 2, l / 2]]) minH = Math.min(minH, sample(x + ox, z + oz));
+      out.push({ x, z, y: minH, w, l, hgt: 3 + rng() * 2.5 + (rng() < 0.25 ? 3 : 0), rot, maxY: Math.max(h, minH) });
+    }
+    return out;
+  };
+  const villages = found.map((f, k) => {
+    const ar = infos[f.island].area / mainIsland.area;
+    const maxHouses = Math.min(140, Math.max(12, Math.round(140 * Math.pow(ar, 0.8))));
+    return villageAt(mulberry(seed + 31 + 1000 * (k + 1)), piers[k].shore, 650 * Math.pow(ar, 0.4), maxHouses);
+  });
+
+  // vegetation filter (§3.1 step 5): drop plants on the new house footprints (same rule as the main village)
+  // and inside the new dredge rectangles. Filter only: no draws from the vegetation RNG.
+  {
+    const newHouses = villages.flat();
+    if (newHouses.length || piers.length) {
+      let o = 0;
+      for (let v = 0; v < veg.length; v += 6) {
+        const vx = veg[v],
+          vz = veg[v + 2];
+        let drop = newHouses.some((hs) => Math.abs(hs.x - vx) < 9 && Math.abs(hs.z - vz) < 9);
+        for (const p of piers) {
+          if (drop) break;
+          const r = p.rect;
+          const dx = vx - r.sx,
+            dz = vz - r.sz;
+          const along = dx * r.ux + dz * r.uz,
+            lat = dx * r.lx + dz * r.lz;
+          if (along >= r.a0 && along <= r.a1 && Math.abs(lat) <= 18) drop = true;
+        }
+        if (drop) continue;
+        for (let q = 0; q < 6; q++) veg[o++] = veg[v + q];
+      }
+      veg.length = o;
+    }
+  }
+
+  // port profiles (§4.3): a fixed 48 m grid over the island's window, land cells of that island only
+  const PCELL = 48;
+  const profileOf = (I: IslandInfo, houseCount: number): PortProfile => {
+    const hw = 2.6 * Math.sqrt(I.area / Math.PI) + 600;
+    const nI = Math.ceil((2 * hw) / PCELL);
+    const pt = (i: number, j: number): [number, number] => [I.cx - hw + (i + 0.5) * PCELL, I.cz - hw + (j + 0.5) * PCELL];
+    const land = new Uint8Array(nI * nI);
+    let landCells = 0;
+    for (let j = 0; j < nI; j++)
+      for (let i = 0; i < nI; i++) {
+        const [x, z] = pt(i, j);
+        if (sample(x, z) > 0.5 && islandAt(x, z) === I.id) {
+          land[j * nI + i] = 1;
+          landCells++;
+        }
+      }
+    const features: PortProfile['features'] = { wine: 0, oil: 0, wheat: 0, almonds: 0, fish: 0, honey: 0, firewood: 0, pitch: 0 };
+    const A = PCELL * PCELL;
+    for (let j = 0; j < nI; j++)
+      for (let i = 0; i < nI; i++) {
+        if (!land[j * nI + i]) continue;
+        const [x, z] = pt(i, j);
+        const h = sample(x, z),
+          sl = slopeAt(x, z),
+          m = moistAt(x, z);
+        if (h > 2 && h < 80 && sl < 0.12) features.wheat += A;
+        if (h > 10 && h < 300 && sl > 0.1 && sl < 0.4) features.wine += A * Math.max(0, 1.2 - m);
+        if (h > 2 && h < 160 && sl < 0.3) features.oil += A * m;
+        if (h > 10 && h < 250 && sl > 0.08 && sl < 0.35) features.almonds += A;
+        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([di, dj]) => sample(x + di * PCELL, z + dj * PCELL) <= 0.5)) features.fish += A;
+        if (sl > 0.3 || h > 250) features.honey += A;
+        if (h < 220 && sl < 0.7 && m > 0.35) {
+          features.firewood += A * (m - 0.35);
+          if (h > 60) features.pitch += A * (m - 0.35);
+        }
+      }
+    return { houses: houseCount, area: landCells * A, features };
+  };
+  const harbourSites: HarbourSite[] = [
+    { id: 0, island: 0, name: mainIsland.name, harbour, shore, pier, houses, detail: 1, profile: profileOf(mainIsland, houses.length) },
+    ...found.map((f, k): HarbourSite => ({
+      id: k + 1,
+      island: f.island,
+      name: infos[f.island].name,
+      harbour: f.harbour,
+      shore: piers[k].shore,
+      pier: piers[k].pier,
+      houses: villages[k],
+      detail: k + 2,
+      profile: profileOf(infos[f.island], villages[k].length),
+    })),
+  ];
+
   // --- ambient occlusion: horizon-based sky visibility on a coarser grid ---
   progress(0.95, 'Baking ambient occlusion');
   const AO = 512;
@@ -572,9 +750,24 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
       ao[j * AO + i] = Math.round(Math.max(0, Math.min(1, vis / dirs)) * 255);
     }
 
+  // sea state (docs/sea-state-spec.md §3): fetch, wind shelter and swell exposure per direction, on the
+  // world grid and a 4 m grid over 512 m around the harbour that includes the mole
+  progress(0.97, 'Mapping sea shelter');
+  // one detail region per harbour, main first (spec §3.1 step 6)
+  const seaState = bakeSeaState({
+    heights: H,
+    N,
+    worldSize: S,
+    detail: harbourSites.map((hs) => {
+      const p = hs.pier;
+      const mid = { x: p.x + Math.cos(p.angle) * p.length * 0.5, z: p.z + Math.sin(p.angle) * p.length * 0.5 };
+      return { cx: mid.x, cz: mid.z, size: 512, n: 128, moles: [pierMole(p)] };
+    }),
+  });
+
   progress(0.98, 'Placing the ship');
-  const sites: Sites = { harbour, shore, temple: { x: tb.x, z: tb.z, y: tb.h }, houses, pier, start };
-  return { heights: H, size: N, worldSize: S, islands: infos, sites, vegetation: new Float32Array(veg), ao, aoSize: AO };
+  const sites: Sites = { harbour, shore, temple: { x: tb.x, z: tb.z, y: tb.h }, houses, pier, start, harbours: harbourSites };
+  return { heights: H, size: N, worldSize: S, islands: infos, sites, vegetation: new Float32Array(veg), ao, aoSize: AO, seaState };
 }
 
 function smoothstep(a: number, b: number, x: number) {

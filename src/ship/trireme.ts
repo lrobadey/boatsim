@@ -12,6 +12,7 @@ import { Crew } from './crew';
 import type { ModelKit } from '../gfx/models';
 import type { ShipPhysics } from './physics';
 import type { ShipVisual } from './shipVisual';
+import { WindTells } from './windTells';
 import { SAIL_RIG } from './sailGeometry';
 
 const smooth = (a: number, b: number, x: number) => {
@@ -55,6 +56,7 @@ export class Trireme implements ShipVisual {
   private oarFx: THREE.InstancedBufferAttribute[] = [];
   private lastTime = 0;
   readonly mastTop = new THREE.Vector3();
+  private windTells: WindTells;
   /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
   readonly oarStow = [0, 0];
   readonly oarStowTarget = [0, 0];
@@ -257,6 +259,7 @@ export class Trireme implements ShipVisual {
     this.sailMesh.castShadow = true;
     this.sailMesh.frustumCulled = false;
     this.yard.add(this.sailMesh);
+    this.windTells = new WindTells(g, this.mastTop, this.sailMesh, SAIL_RIG.width, SAIL_RIG.height);
 
     // rigging
     const ropeMat = mat({ color: 0x6b5a40, roughness: 0.95 }, 'rope');
@@ -652,7 +655,8 @@ export class Trireme implements ShipVisual {
     for (let i = 0; i < 2; i++) this.oarStow[i] += Math.max(-dtv * 0.45, Math.min(dtv * 0.45, this.oarStowTarget[i] - this.oarStow[i]));
     for (const slot of this.slots) {
       physics.rowing.renderPose(slot.id, alpha, this.oarPose);
-      const st = this.oarStow[slot.side < 0 ? 0 : 1];
+      // a crew ships its oars physically (the pose already has them in); the visual stow is for scripted banks
+      const st = physics.design.oars.system === 'crew' ? 0 : this.oarStow[slot.side < 0 ? 0 : 1];
       if (st > 0) {
         // boated: from the rest pose each oar swings aft and levels off, lying fore-and-aft along
         // the outrigger, clear of a quay alongside
@@ -692,6 +696,7 @@ export class Trireme implements ShipVisual {
     su.uBillow.value = lerp(sail.previous.pressure, sail.current.pressure, alpha);
     su.uFlutter.value = lerp(sail.previous.flutter, sail.current.flutter, alpha);
     this.yard.rotation.y = lerp(sail.previous.yardAngle, sail.current.yardAngle, alpha);
+    this.windTells.update(physics, time, deployment, su.uBillow.value, su.uFlutter.value);
 
     // steering oars twist with the rudder angle
     for (const s of this.steer) {

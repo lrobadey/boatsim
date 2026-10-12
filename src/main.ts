@@ -4,6 +4,7 @@ import type { WorldGenResult } from './world/worldgenTypes';
 import { DEFAULT_WIND_SPEED, Wind } from './world/wind';
 import { Game } from './game';
 import { DESIGNS, chosenShipKind } from './ship/design';
+import { RowingSystem } from './ship/rowing';
 import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
 import { loadVisualAssets } from './gfx/assets';
 import { loadModels } from './gfx/models';
@@ -99,6 +100,29 @@ async function boot() {
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
   const game = new Game(canvas, quality, gen, tex, assets, models, design);
+  // cargo and ports (merchant): continue this world's saved voyage, or a new one docked at the main harbour
+  const voyage = game.initTrade({ seed, heightmapSize: quality.heightmapSize });
+  // every ship starts docked at the main harbour (the merchant's voyage has already placed her);
+  // ?start=sea keeps the old start outside the harbour mouth
+  if (!voyage && params.get('start') !== 'sea') game.startInHarbour();
+  // ?wind=<m/s at 10 m> sets the prevailing wind; the sea starts fully developed for it.
+  // 3 is light airs, 6 a gentle breeze, 12 the default meltemi, 16+ a near gale.
+  const windParam = params.get('wind');
+  const windSpeed = windParam === null || windParam.trim() === '' ? NaN : Number(windParam);
+  // ?windFrom=<compass degrees> sets the prevailing wind's direction (the world itself is unchanged)
+  const fromParam = params.get('windFrom');
+  const windFrom = fromParam === null || fromParam.trim() === '' ? NaN : Number(fromParam);
+  if (Number.isFinite(windSpeed)) game.wind.baseSpeed = Math.max(0, Math.min(20, windSpeed));
+  if (Number.isFinite(windFrom)) game.wind.baseFrom = (((windFrom % 360) + 360) % 360) * (Math.PI / 180);
+  if (Number.isFinite(windSpeed) || Number.isFinite(windFrom)) {
+    game.wind.update(0);
+    game.waves.retarget(game.wind);
+    game.waves.update(Infinity);
+    game.fft.retarget(game.wind.meanSpeed, game.wind.from + Math.PI, game.waves.fetch, true);
+    game.seaState?.compose(game.wind.meanSpeed, game.wind.from, game.waves.swellFrom, true);
+  }
+  // ?debug=seastate tints the water by local wave size (blue calm, red exposed): a tuning aid
+  if (params.get('debug') === 'seastate') game.ocean.uniforms.uSeaDebug.value = 1;
   if (dev && params.get('inspect') === 'harbour') {
     const h = gen.sites.harbour;
     const towardShore = gen.sites.pier.angle + Math.PI;
@@ -135,7 +159,7 @@ async function boot() {
       reviewState.textContent = JSON.stringify({ scenario: rowingReview, time: game.ship.time,
         speedKn: game.ship.speed * 1.943844, heading: game.ship.heading, heel: game.ship.heel,
         stamina: game.crew.stamina, rate: game.crew.rate, phase: game.crew.phase,
-        sides: game.ship.rowing.sides.map(s => ({ mode: s.mode, direction: s.direction, effort: s.effort })),
+        sides: (game.ship.rowing instanceof RowingSystem ? game.ship.rowing.sides : []).map(s => ({ mode: s.mode, direction: s.direction, effort: s.effort })),
         rowing: game.ship.rowing.telemetry, gpuMs: game.pipeline.gpuMs,
         oarMeshes: game.model.group.children.filter(o => (o as THREE.InstancedMesh).isInstancedMesh && o.layers.isEnabled(1)).map(o => (o as THREE.InstancedMesh).count) });
       if (game.running) requestAnimationFrame(observeRowing);
@@ -208,6 +232,7 @@ async function boot() {
   (window as any).game = game;
   if (dev) console.log('[boot] game built', performance.now().toFixed(0));
   fill.style.width = '100%';
+  await game.prepareLightingShaders();
   game.start();
   // warm up shaders a frame before revealing
   await new Promise((r) => setTimeout(r, 250));
@@ -224,7 +249,7 @@ async function boot() {
       ${MEANDER_SVG}
       ${shipSeg()}
       <div class="actions">
-        <button class="pill primary board">Set sail</button>
+        ${voyage === 'continue' ? '<button class="pill primary board">Continue voyage</button><button class="pill ghost new-voyage">New voyage</button>' : '<button class="pill primary board">Set sail</button>'}
         <button class="pill ghost open-settings">Settings</button>
       </div>
     </div>
@@ -369,6 +394,10 @@ async function boot() {
     game.input.lock();
   };
   title.querySelector('.board')!.addEventListener('click', board);
+  title.querySelector('.new-voyage')?.addEventListener('click', () => {
+    game.trade?.newVoyage();
+    board();
+  });
   title.querySelector('.open-settings')!.addEventListener('click', () => showSettings('title'));
   resumeBtn.addEventListener('click', () => (settingsFrom === 'title' ? closeTitleSettings() : board()));
   // a click starts or resumes the voyage (and retries the lock); while playing without the lock it is
@@ -381,7 +410,8 @@ async function boot() {
     else if (started && !game.input.hoverLook) setPaused(true); // Esc released the mouse
   };
   window.addEventListener('keydown', (e) => {
-    if (e.code !== 'Escape') return;
+    // the ledger closes itself on Esc (and marks the event handled); it never opens the pause menu
+    if (e.code !== 'Escape' || e.defaultPrevented || game.ledgerOpen) return;
     if (settingsFrom === 'title' && pause.style.display !== 'none') closeTitleSettings();
     // without pointer lock, Esc toggles the pause menu itself
     else if (started && !game.input.locked) setPaused(!game.paused);

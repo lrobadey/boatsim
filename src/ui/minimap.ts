@@ -1,4 +1,5 @@
 import { drawAnchorGlyph, type Chart } from './chart';
+import { addBezel } from './gauges';
 import type { WorldGenResult } from '../world/worldgenTypes';
 
 const PX = 132; // CSS size of the round minimap
@@ -33,6 +34,7 @@ export class Minimap {
     this.canvas.width = this.canvas.height = Math.round(PX * this.dpr);
     this.canvas.style.width = this.canvas.style.height = `${PX}px`;
     this.root.appendChild(this.canvas);
+    addBezel(this.root, PX);
     this.ctx = this.canvas.getContext('2d')!;
   }
 

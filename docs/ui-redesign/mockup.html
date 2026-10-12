@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HUD mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter+Tight:wght@300;400;500;600&family=Marcellus&display=swap" rel="stylesheet" />
+<style>
+/* Tokens copied from src/ui/style.css, plus the proposed legibility floor. */
+:root {
+  --bone: #f3eee4; --t1: #f3eee4; --t2: rgba(243,238,228,.78); --t3: rgba(243,238,228,.5); --t4: rgba(243,238,228,.22);
+  --terra: #d0693e; --bronze: #d2a65e; --bronze-hi: #f0cf8f; --bronze-lo: #7a5a2a;
+  --fair: #8fcb9b; --caution: #e8a25a; --danger: #e36a4b;
+  --glass: rgba(10,16,24,.5); --hair: rgba(243,238,228,.12);
+  --radius: 12px; --blur: blur(14px) saturate(1.15); --lift: 0 8px 28px rgba(0,0,0,.25);
+  --text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.6), 0 0 20px rgba(0,0,0,.4);
+  --f-ui: 'Inter Tight', system-ui, sans-serif; --f-name: 'Cormorant Garamond', Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0b121a; color: var(--t1); font: 400 14px/1.45 var(--f-ui); -webkit-font-smoothing: antialiased; }
+body { display: flex; flex-direction: column; overflow: hidden; }
+
+/* page chrome (not part of the HUD) */
+.bar { display: flex; align-items: center; gap: 18px; padding: 10px 16px; border-bottom: 1px solid var(--hair); flex-wrap: wrap; }
+.bar h1 { font: 500 22px var(--f-name); margin: 0 8px 0 0; }
+.tabs { display: flex; gap: 4px; background: rgba(243,238,228,.06); padding: 3px; border-radius: 999px; }
+.tabs button, .chip { font: 500 13px var(--f-ui); color: var(--t2); background: none; border: 0; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.tabs button.on { background: var(--bone); color: #0b121a; }
+.chip { border: 1px solid var(--hair); }
+.chip.on { color: var(--t1); border-color: var(--bronze); }
+.keys { color: var(--t3); font-size: 12.5px; margin-left: auto; }
+.wrap { flex: 1; display: flex; min-height: 0; }
+.viewport { flex: 1; position: relative; min-width: 0; }
+.notes { width: 300px; border-left: 1px solid var(--hair); padding: 16px 18px; overflow: auto; font-size: 13px; color: var(--t2); }
+.notes.off { display: none; }
+.notes h2 { font: 500 20px var(--f-name); color: var(--t1); margin: 0 0 4px; }
+.notes p.lead { margin: 0 0 14px; color: var(--t3); }
+.notes ol { padding: 0; margin: 0; list-style: none; display: grid; gap: 12px; }
+.notes li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.notes li b { color: var(--t1); font-weight: 600; display: block; }
+.pinno { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--bronze); color: #0b121a; font: 700 11px var(--f-ui); }
+@media (max-width: 900px) { .notes { display: none; } .pin { display: none !important; } }
+
+/* stage: a 1440x900 game frame scaled to fit */
+.stage { position: absolute; left: 50%; top: 50%; width: 1440px; height: 900px; transform-origin: 0 0; overflow: hidden; border-radius: 6px; background: #0b121a center/cover no-repeat; }
+.pin { position: absolute; z-index: 20; transition: opacity .2s; }
+.pins-off .pin { opacity: 0; }
+
+/* ---------- HUD ---------- */
+.hud { position: absolute; inset: 0; text-shadow: var(--text-shadow); }
+.glass { background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--lift); text-shadow: none; }
+.label { font: 600 12px/1.2 var(--f-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--t2); }
+.num { font-variant-numeric: tabular-nums; }
+kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 2px; font: 600 11px/1 var(--f-ui); color: var(--t1); border: 1px solid rgba(243,238,228,.32); border-bottom-width: 2px; border-radius: 4px; background: rgba(10,16,24,.35); text-shadow: none; }
+.fade { transition: opacity .5s, transform .5s; }
+
+/* top left: time and sky */
+.sky { position: absolute; left: 32px; top: 26px; display: flex; align-items: center; gap: 12px; }
+.sky .t { font: 300 22px var(--f-ui); }
+.sky .h { font-size: 13px; color: var(--t3); margin-top: 2px; }
+.sky .h kbd { margin-left: 0; }
+
+/* top centre: heading tape */
+.tape { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; }
+.tape canvas { width: 460px; height: 40px; }
+.tape .row { display: flex; align-items: baseline; gap: 14px; }
+.tape .hdg { font: 400 20px var(--f-ui); }
+.tape .wind { font-size: 14px; color: var(--t2); display: flex; align-items: center; gap: 6px; }
+.tape .wind i { width: 7px; height: 7px; border-radius: 50%; background: var(--bronze); display: inline-block; }
+
+/* top right: minimap */
+.map { position: absolute; right: 26px; top: 16px; width: 148px; height: 148px; }
+
+/* bottom panels */
+.panel { position: absolute; bottom: 30px; width: 252px; padding: 14px 16px 14px; }
+.panel.left { left: 32px; }
+.panel.right { right: 32px; }
+.phead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.status { font: 500 15px var(--f-ui); }
+.status.luff { color: var(--caution); }
+.status.aback { color: var(--danger); }
+.sub { font-size: 12.5px; color: var(--t3); }
+.dial { display: block; width: 220px; height: 220px; margin: 0 auto; }
+.meter { display: grid; grid-template-columns: 44px 1fr 58px; align-items: center; gap: 8px; font-size: 13px; color: var(--t2); margin-top: 6px; }
+.meter .v { text-align: right; color: var(--t1); font-size: 14px; }
+.track { position: relative; height: 6px; border-radius: 3px; background: rgba(243,238,228,.12); overflow: visible; }
+.track .zero { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--t3); }
+.track .fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, var(--bronze-lo), var(--bronze-hi)); }
+.track .fill.neg { background: var(--danger); }
+.track .fill.side { background: rgba(243,238,228,.55); }
+.datarow { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--hair); font-size: 13px; color: var(--t2); }
+.datarow b { color: var(--t1); font-weight: 500; }
+
+/* oar panel */
+.ladder { display: grid; gap: 3px; margin: 6px 0 10px; }
+/* oar instruments */
+.oarsvg { display: block; width: 232px; margin: 2px auto 0; overflow: visible; }
+.ordrow { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
+.ordname { font: 500 24px var(--f-name); letter-spacing: .01em; }
+.ordname.ram { color: var(--danger); }
+.ordname.back { color: var(--caution); }
+.pips { display: flex; gap: 5px; }
+.pips i { width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid rgba(210,166,94,.6); }
+.pips i.on { background: var(--bronze); box-shadow: 0 0 6px rgba(210,166,94,.6); }
+.pips i.ram.on { background: var(--danger); border-color: var(--danger); box-shadow: 0 0 6px var(--danger); }
+.pips i.hide { display: none; }
+.v-tele .pips { display: none; }
+
+/* antique finish */
+.antique .glass { background: linear-gradient(180deg, rgba(20,17,14,.62), rgba(10,10,11,.6)); border-color: rgba(205,182,140,.18); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+/* no cards: instruments sit on the scene; an edgeless vignette carries legibility */
+.antique .panel.glass, .antique .dock.glass, .antique .event.glass { background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+  text-shadow: var(--text-shadow); }
+.antique .panel { padding: 0; }
+.antique .panel.left { left: 36px; bottom: 34px; }
+.antique .panel.right { right: 36px; bottom: 34px; }
+.antique .dial { width: 236px; height: 236px; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.antique .oarsvg { width: 252px; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.antique .phead { padding: 0 2px; margin: 6px 0 2px; }
+.antique .panel:not(.compact), .antique .panel .full { display: flex; flex-direction: column; }
+.antique #sail .phead { order: 2; }
+.antique #sail .dial { order: 1; }
+.antique #sail .meter, .antique #sail .datarow { order: 3; }
+.antique #oars .full .phead { order: 2; }
+.antique #oars .full .oarsvg { order: 1; }
+.antique #oars .full .ordrow { order: 2; margin-top: -4px; }
+.antique #oars .full .stam { order: 3; }
+.antique .label { color: #e2cfa6; }
+.antique .meter, .antique .datarow, .antique .stam .top { color: rgba(241,232,214,.88); }
+.antique .dock .g .gl { color: rgba(241,232,214,.9); }
+.antique .meter, .antique .datarow, .antique .stam { padding: 0 2px; }
+.antique .datarow { border-top-color: rgba(205,182,140,.22); }
+.antique .event { font-size: 22px; }
+.antique .label { font: 500 11px/1.1 var(--f-ui); letter-spacing: .22em; text-transform: uppercase; color: #cdb68c; }
+.antique .status { font: 500 20px var(--f-name); color: #f1e8d6; }
+.antique .event { font: 500 20px var(--f-name); letter-spacing: .01em; }
+.antique .meter, .antique .datarow, .antique .stam .top, .antique .helm { color: rgba(236,222,196,.8); }
+.antique .track, .antique .g .gt { height: 5px; border-radius: 3px; background: linear-gradient(180deg, #050403, #1a140d); box-shadow: inset 0 1.5px 3px rgba(0,0,0,.9), 0 1px 0 rgba(240,207,143,.18); }
+.antique .track .fill { top: 1px; bottom: 1px; border-radius: 2px; background: linear-gradient(180deg, #e9d8b4, #a88a5a); box-shadow: none; }
+.antique .track .fill.neg { background: linear-gradient(180deg, #e98a72, #9c3420); }
+.antique .track .fill.side { background: linear-gradient(180deg, #e9d8b4, #a88a5a); opacity: .45; }
+.antique .stam .track .fill { background: linear-gradient(180deg, #f1e8d6, #b9a888); }
+.antique .stam.low .track .fill { background: linear-gradient(180deg, #ffb39c 0%, #c8432a 40%, #6e160a 100%); }
+.antique .track .zero { background: #d9b46e; box-shadow: 0 0 2px #000; }
+.antique .g .band { top: 1.5px; bottom: 1.5px; background: linear-gradient(180deg, rgba(160,220,170,.45), rgba(70,130,85,.45)); border-color: rgba(183,230,192,.7); }
+.antique .g .nd { width: 2px; top: -5px; height: 15px; background: linear-gradient(90deg, #7a5320, #fff1cc 45%, #b98a45); box-shadow: 1px 2px 2px rgba(0,0,0,.7); }
+.antique .g.bad .nd { background: linear-gradient(90deg, #6e160a, #ffb39c 45%, #c8432a); }
+.antique .tape .hdg { font-weight: 300; }
+.antique .sky .t { font: 500 26px var(--f-name); }
+
+.rung { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--t3); padding: 3px 8px; border-radius: 6px; }
+.rung i { width: 6px; height: 6px; border-radius: 50%; background: var(--t4); }
+.rung.on { color: var(--t1); background: rgba(208,105,62,.18); }
+.rung.on i { background: var(--terra); box-shadow: 0 0 8px var(--terra); }
+.rung.hide { display: none; }
+.rate { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.rate b { font: 400 22px var(--f-ui); }
+.beat { width: 10px; height: 10px; border-radius: 50%; background: var(--terra); opacity: .15; transition: opacity .08s; }
+.beat.hit { opacity: 1; transition: none; }
+.stam { margin-top: 10px; }
+.stam .top { display: flex; justify-content: space-between; font-size: 13px; color: var(--t2); margin-bottom: 5px; }
+.stam .track .fill { background: var(--bone); }
+.stam.low .track .fill { background: var(--danger); }
+.trend { font-size: 12px; margin-left: 6px; color: var(--t2); }
+.trend.down { color: var(--caution); }
+.trend.up { color: var(--fair); }
+.panel.compact { padding: 10px 14px; }
+.panel.compact .full { display: none; }
+.panel:not(.compact) .mini { display: none; }
+.mini { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+
+/* bottom centre: speed + helm */
+.speed { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 6px; }
+.speed b { font: 300 52px/1 var(--f-ui); }
+.speed small { font-size: 16px; color: var(--t2); }
+.speed .car { font-size: 15px; width: 14px; }
+.speed .car.up { color: var(--fair); }
+.speed .car.down { color: var(--caution); }
+.depth { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); font-size: 14px; color: var(--t2); }
+.depth b { color: var(--t1); font-weight: 500; }
+.helm { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); width: 300px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; font-size: 12.5px; color: var(--t2); }
+.helm .bar2 { position: relative; height: 26px; }
+.helm .line { position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: rgba(243,238,228,.25); }
+.helm .mid { position: absolute; left: 50%; top: 6px; width: 1px; height: 14px; background: var(--t3); }
+.helm .turn { position: absolute; top: 11px; height: 4px; background: var(--bronze); border-radius: 2px; }
+.helm .needle { position: absolute; top: 2px; width: 2px; height: 22px; background: var(--bronze-hi); margin-left: -1px; box-shadow: 0 0 6px var(--bronze); }
+.helm .actual { position: absolute; top: 7px; width: 12px; height: 12px; margin-left: -6px; border: 1.5px solid var(--bone); border-radius: 50%; }
+.helm .rt { position: absolute; left: 0; right: 0; top: -18px; text-align: center; color: var(--t2); font-size: 13px; }
+
+/* event line */
+.event { position: absolute; left: 50%; bottom: 186px; transform: translate(-50%, 8px); font: 500 16px var(--f-ui); opacity: 0; padding: 7px 16px; transition: opacity .3s, transform .3s; }
+.event.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* dock card */
+.dock { position: absolute; top: 104px; left: 50%; transform: translateX(-50%); width: 420px; text-align: center; }
+.dhead { display: flex; justify-content: center; align-items: baseline; gap: 14px; }
+.dhead .name { font: 500 26px var(--f-name); }
+.dhead .num { color: var(--t2); font-size: 15px; }
+.minis { display: flex; justify-content: center; gap: 18px; margin-top: 6px; }
+.mini-g { width: 108px; height: 108px; overflow: visible; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+.mini-g.pulse { animation: mpulse .6s 2; }
+@keyframes mpulse { 50% { filter: drop-shadow(0 0 10px rgba(227,106,75,.95)); } }
+.dock .phead .name { font: 500 24px var(--f-name); }
+.gauges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 8px; }
+.g .gl { font-size: 12.5px; color: var(--t2); display: flex; justify-content: space-between; }
+.g .gl b { color: var(--t1); font-weight: 500; font-size: 15px; }
+.g .gt { position: relative; height: 8px; margin-top: 7px; border-radius: 4px; background: rgba(243,238,228,.1); }
+.g .band { position: absolute; top: 0; bottom: 0; background: rgba(143,203,155,.35); border-left: 1px solid var(--fair); border-right: 1px solid var(--fair); }
+.g .nd { position: absolute; top: -4px; width: 3px; height: 16px; margin-left: -1.5px; background: var(--bone); border-radius: 2px; }
+.g.bad .gl b { color: var(--danger); }
+.g.bad .nd { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.g.pulse .gt { animation: pulse .6s 2; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(227,106,75,.45); } }
+.cta { margin-top: 12px; font-size: 14px; color: var(--t3); text-align: center; }
+</style>
+</head>
+<body class="antique">
+<div class="bar">
+  <h1>HUD mockup</h1>
+  <div class="tabs" id="tabs">
+    <button data-s="trireme" class="on">Trireme under oars and sail</button>
+    <button data-s="merchant">Merchant ship sailing</button>
+    <button data-s="dock">Approaching a berth</button>
+  </div>
+  <button class="chip on" id="notesBtn">Notes</button>
+  <button class="chip" id="eventBtn">Show an event</button>
+  <button class="chip on" id="antBtn">Antique</button>
+  <div class="keys"><kbd>J</kbd><kbd>L</kbd> trim yard · <kbd>K</kbd> crew trim · <kbd>A</kbd><kbd>D</kbd> steer · <kbd>W</kbd><kbd>S</kbd> stroke order · <kbd>Space</kbd> hold water · <kbd>R</kbd> moor</div>
+</div>
+<div class="wrap">
+  <div class="viewport" id="vp">
+    <div class="stage" id="stage">
+      <div class="hud">
+        <div class="sky fade" data-k="sky">
+          <svg width="64" height="64" viewBox="-34 -34 68 68">
+            <defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f7fae"/><stop offset=".85" stop-color="#e2ad7c"/><stop offset="1" stop-color="#f0c08c"/></linearGradient><clipPath id="skc"><circle r="24"/></clipPath></defs>
+            <circle r="31" cy="1.5" fill="#000" opacity=".5" filter="url(#castBig)"/>
+            <circle r="26.5" fill="none" stroke="url(#brass)" stroke-width="3.5" filter="url(#metal)"/>
+            <g clip-path="url(#skc)">
+              <rect x="-24" y="-24" width="48" height="24" fill="url(#sk)"/>
+              <rect x="-24" y="0" width="48" height="24" fill="url(#faceG)" filter="url(#faceGrain)"/>
+              <circle cx="14" cy="-8" r="4.2" fill="#ffe7b4" filter="url(#cast)"/>
+              <circle r="27" fill="none" stroke="#000" stroke-width="8" opacity=".6" filter="url(#innerShadow)"/>
+            </g>
+            <line x1="-24" x2="24" y1="0" y2="0" stroke="#cdb68c" stroke-width=".6"/>
+            
+          </svg>
+          <div class="h"><kbd>?</kbd></div>
+        </div>
+
+        <div class="tape fade">
+          <canvas id="tape" width="920" height="80"></canvas>
+          <div class="row"><span class="hdg num" id="hdg">285°</span><span id="windTxt" style="display:none"></span></div>
+        </div>
+
+        <svg class="map" viewBox="-74 -74 148 148" style="overflow:visible">
+          <defs><clipPath id="mapc"><circle r="58"/></clipPath></defs>
+          <circle r="64" cy="2" fill="#000" opacity=".45" filter="url(#castBig)"/>
+          <g clip-path="url(#mapc)">
+            <circle r="58" fill="#0d1820"/><circle r="58" fill="rgba(120,170,190,.16)"/>
+            <path d="M-70 -30 C-40 -42 -20 -20 4 -34 C20 -44 30 -60 40 -70 L-70 -70 Z" fill="#cdbb95" opacity=".35" stroke="#cdb68c" stroke-width=".5"/>
+            <path d="M28 20 C40 10 56 18 70 8 L70 52 C52 48 36 40 28 20 Z" fill="#cdbb95" opacity=".35" stroke="#cdb68c" stroke-width=".5"/>
+            <path d="M-46 30 C-38 24 -28 30 -30 40 C-34 48 -48 44 -46 30 Z" fill="#cdbb95" opacity=".35" stroke="#cdb68c" stroke-width=".5"/>
+            <g id="mapShip" filter="url(#cast)"><path d="M0 -8 L5 6 L0 3 L-5 6 Z" fill="#d0693e"/></g>
+            <circle r="62" fill="none" stroke="#000" stroke-width="10" opacity=".7" filter="url(#innerShadow)"/>
+          </g>
+          <circle r="61" fill="none" stroke="url(#brass)" stroke-width="5" filter="url(#metal)"/><circle r="58.4" fill="none" stroke="#000" stroke-width=".8"/><text y="-49" text-anchor="middle" font-size="7.5" letter-spacing="1" fill="#cdb68c" font-family="Inter Tight" font-weight="500">N</text>
+        </svg>
+
+        <div class="dock fade" id="dock">
+          <div class="dhead"><span class="num">41 m</span></div>
+          <div class="minis">
+            <svg class="mini-g" id="mgSpeed" viewBox="-50 -50 100 100"></svg>
+            <svg class="mini-g" id="mgOff" viewBox="-50 -50 100 100"></svg>
+            <svg class="mini-g" id="mgAng" viewBox="-50 -50 100 100"></svg>
+          </div>
+          <div class="cta"><kbd>R</kbd></div>
+        </div>
+
+        <div class="panel left glass fade" id="sail">
+          <svg class="dial" viewBox="-110 -110 220 220" id="dial">
+            <defs><clipPath id="faceClip"><circle r="98"/></clipPath></defs>
+            <circle r="104" cy="2" fill="#000" opacity=".45" filter="url(#castBig)"/>
+            <circle r="101.5" fill="none" stroke="url(#brass)" stroke-width="5.5" filter="url(#metal)"/>
+            <circle r="98.4" fill="none" stroke="#000" stroke-width="1"/>
+            <circle r="98" fill="url(#faceG)" filter="url(#faceGrain)"/>
+            <g clip-path="url(#faceClip)"><circle r="6" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="9" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="12" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="15" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="18" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="21" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="24" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="27" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="30" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="33" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="36" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="39" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="42" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="45" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="48" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="51" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="54" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="57" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="60" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="63" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="66" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="69" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="72" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="75" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="78" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="81" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="84" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="87" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="90" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="93" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/><circle r="104" fill="none" stroke="#000" stroke-width="12" opacity=".7" filter="url(#innerShadow)"/></g>
+            <circle r="92" fill="none" stroke="#b39466" stroke-width=".5" opacity=".7"/>
+            <circle r="70" fill="none" stroke="#b39466" stroke-width=".4" opacity=".35"/>
+            <g id="ticks"></g>
+            <path id="hull" fill="rgba(232,220,196,.05)" stroke="#c9b083" stroke-width=".9"/>
+            <line x1="0" y1="-52" x2="0" y2="50" stroke="#c9b083" stroke-width=".4" opacity=".5" id="keel"/>
+            <path id="belly" fill="rgba(232,220,196,.10)" stroke="#d9c7a3" stroke-width=".7"/>
+            <g id="driveScale">
+              <line x1="-3" x2="3" y1="-12" y2="-12" stroke="#cdb68c" stroke-width=".5" opacity=".7"/><line x1="-3" x2="3" y1="-24" y2="-24" stroke="#cdb68c" stroke-width=".5" opacity=".7"/>
+              <line x1="-3" x2="3" y1="-36" y2="-36" stroke="#cdb68c" stroke-width=".5" opacity=".7"/><line x1="-4" x2="4" y1="-48" y2="-48" stroke="#cdb68c" stroke-width=".6" opacity=".9"/>
+            </g>
+            <g filter="url(#cast)"><line id="sideBar" x1="0" y1="0" x2="0" y2="0" stroke="#d6dadb" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+              <line id="driveBar" x1="0" y1="0" x2="0" y2="0" stroke="#dcc08a" stroke-width="4" stroke-linecap="round"/></g>
+            
+            
+            
+            <path d="M-16.4 79.3 A81 81 0 0 0 16.4 79.3" fill="none" stroke="#000" stroke-width="6.5" stroke-linecap="round"/>
+            <path d="M-16.4 79.3 A81 81 0 0 0 16.4 79.3" fill="none" stroke="#cdb68c" stroke-opacity=".5" stroke-width=".5" transform="translate(0 2.6)"/>
+            <line x1="0" y1="76.5" x2="0" y2="83.5" stroke="#cdb68c" stroke-width=".5" opacity=".8"/>
+            <ellipse id="bubble" rx="3.2" ry="2.2" fill="#d9e7c8" fill-opacity=".85" stroke="#fff" stroke-opacity=".5" stroke-width=".4"/>
+            
+            <line id="yardT" stroke="rgba(217,199,163,.6)" stroke-width=".8" stroke-dasharray="2 2.5"/>
+            <g filter="url(#cast)"><line id="yard" stroke="url(#gilt)" stroke-width="2.6" stroke-linecap="round"/></g>
+            <g id="tw" filter="url(#cast)"><path d="M0 -90 L1.6 -80 L.7 -78 L.7 -14 L-.7 -14 L-.7 -78 L-1.6 -80 Z" fill="url(#blued)"/><g id="barbs" stroke="#6f97c2" stroke-width="1.3" stroke-linecap="round"></g></g>
+            <g id="aw" filter="url(#cast)"><path d="M0 -94 L2.4 -82 L1.1 -80 L1.1 -12 L2.6 -6 L0 -2 L-2.6 -6 L-1.1 -12 L-1.1 -80 L-2.4 -82 Z" fill="url(#gilt)"/><circle cy="-72" r="3.2" fill="none" stroke="url(#gilt)" stroke-width="1.1"/></g>
+            <circle r="4.2" fill="url(#dome)" filter="url(#cast)"/><circle r="1.3" fill="#1a1209"/>
+            <path d="M-96 -6 A96 96 0 0 1 6 -96 A110 110 0 0 0 -96 -6 Z" fill="#fff" opacity=".05"/>
+          </svg>
+          </div>
+
+        <div class="panel right glass fade" id="oars">
+          <svg class="oarsvg" id="oarSvg"></svg>
+        </div>
+
+        <div class="depth fade" id="depth"><svg width="10" height="16" viewBox="0 0 10 16" style="vertical-align:-3px;margin-right:6px"><line x1="5" y1="0" x2="5" y2="8" stroke="#e9dfc8" stroke-width="1"/><path d="M2.6 8 L7.4 8 L6.4 15 L3.6 15 Z" fill="#cdb68c"/></svg><b class="num">7 m</b></div>
+        <div class="event glass" id="event">Lines eased</div>
+        <div class="speed"><b class="num" id="spd">4.6</b><small>kn</small><span class="car" id="car"></span></div>
+        <div class="helm"><span></span><div class="bar2"><div class="rt" id="rt" style="display:none"></div><div class="line"></div><div class="mid"></div><div class="turn" id="turn"></div><div class="actual" id="act"></div><div class="needle" id="ndl"></div></div><span></span></div>
+      </div>
+      <div id="pins"></div>
+      <svg width="0" height="0" style="position:absolute"><defs>
+        <linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0cf8f"/><stop offset=".45" stop-color="#b98a45"/><stop offset="1" stop-color="#5e421c"/></linearGradient>
+        <!-- turned brass: alternating bands read as reflections on a rounded rim -->
+        <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#d9c7a3"/><stop offset=".2" stop-color="#9c7d50"/><stop offset=".42" stop-color="#4f3b22"/>
+          <stop offset=".6" stop-color="#8d6f45"/><stop offset=".72" stop-color="#cdb68c"/><stop offset=".88" stop-color="#5e4629"/><stop offset="1" stop-color="#2a1e10"/>
+        </linearGradient>
+        <linearGradient id="brassV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8e2b0"/><stop offset=".45" stop-color="#c3924a"/><stop offset="1" stop-color="#5a3d17"/></linearGradient>
+        <radialGradient id="faceG" cx=".45" cy=".38" r=".75"><stop offset="0" stop-color="#211d18"/><stop offset=".75" stop-color="#121010"/><stop offset="1" stop-color="#0a0909"/></radialGradient>
+        <radialGradient id="dome" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#efe2c4"/><stop offset=".35" stop-color="#a88a5a"/><stop offset=".8" stop-color="#4a3820"/><stop offset="1" stop-color="#241a0d"/></radialGradient>
+        <radialGradient id="jewel" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffd2c0"/><stop offset=".25" stop-color="#e0573a"/><stop offset=".8" stop-color="#7a1b0e"/><stop offset="1" stop-color="#3a0904"/></radialGradient>
+        <radialGradient id="ivory" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#f7efdc"/><stop offset=".7" stop-color="#d9caa6"/><stop offset="1" stop-color="#a8956c"/></radialGradient>
+        <linearGradient id="glassHi" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".55" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <linearGradient id="gilt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#efdcb2"/><stop offset=".5" stop-color="#c2a06a"/><stop offset="1" stop-color="#7d6239"/></linearGradient>
+        <linearGradient id="blued" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1d3550"/><stop offset=".5" stop-color="#5d86b3"/><stop offset="1" stop-color="#1d3550"/></linearGradient>
+        <linearGradient id="linen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3ead6" stop-opacity=".9"/><stop offset="1" stop-color="#bfae88" stop-opacity=".8"/></linearGradient>
+        <!-- rounded-metal bevel lit from the upper left, plus fine grain -->
+        <filter id="metal" x="-15%" y="-15%" width="130%" height="130%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.3" result="b"/>
+          <feSpecularLighting in="b" surfaceScale="2" specularConstant=".55" specularExponent="38" lighting-color="#f3e6cc" result="sp"><feDistantLight azimuth="225" elevation="38"/></feSpecularLighting>
+          <feComposite in="sp" in2="SourceAlpha" operator="in" result="spc"/>
+          <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .28 0" result="na"/>
+          <feComposite in="na" in2="SourceAlpha" operator="in" result="grain"/>
+          <feComposite in="SourceGraphic" in2="spc" operator="arithmetic" k2="1" k3=".75" result="lit"/>
+          <feMerge><feMergeNode in="lit"/><feMergeNode in="grain"/></feMerge>
+        </filter>
+        <filter id="faceGrain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="3" seed="2" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 .55  0 0 0 0 .45  0 0 0 0 .32  0 0 0 .05 0" result="na"/>
+          <feComposite in="na" in2="SourceAlpha" operator="in" result="g"/>
+          <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="g"/></feMerge>
+        </filter>
+        <filter id="cast" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="1" dy="1.6" stdDeviation=".8" flood-color="#000" flood-opacity=".7"/></filter>
+        <filter id="castBig" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity=".55"/></filter>
+        <!-- inlaid marking: bright metal sitting in a cut, dark lip above -->
+        <filter id="inlay" x="-20%" y="-20%" width="140%" height="140%">
+          <feOffset in="SourceAlpha" dx="-.4" dy="-.7" result="o"/><feFlood flood-color="#000" flood-opacity=".75"/><feComposite in2="o" operator="in" result="lip"/>
+          <feMerge><feMergeNode in="lip"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="innerShadow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="4"/></filter>
+      </defs></svg>
+    </div>
+  </div>
+  <aside class="notes" id="notes"></aside>
+</div>
+
+<script>
+// ---------- scenes ----------
+const SCENES = {
+  trireme: { bg: 'helm-trireme.jpg', hull: 'trireme', maxOrder: 5, order: 3, sail: true, dock: false, speed: 2.6, trueRel: 100, heading: 280,
+    title: 'Trireme under oars and sail',
+    lead: 'Both systems are working, so both panels are open. Try steering with A and D, and trimming with J and L.',
+    pins: [
+      [1, '.tape', 'Heading tape', 'Follows the bow, not the camera. The bronze tick is the true wind, with its live speed beside the heading. A hollow caret appears when you look away from the bow.'],
+      [2, '#sail', 'Sail dial', 'Top-down hull. The gilt hand is the apparent wind; the blued hand is the true wind, with barbs for its strength (long barb 10 kn, short 5). Drive grows along the keel against an engraved kN scale and side force grows to leeward, so you see the force the sail makes. The cloth tells the state: full, fluttering amber when luffing, red when aback. The spirit level shows heel. A dashed yard means manual trim. No numbers, no best angle.'],
+      [3, '.speed', 'Speed', 'Speed with a trend arrow. It is the quickest way to tell if a change helped.'],
+      [4, '.helm', 'Helm', 'Unchanged. Your order (needle) against the steering oars (hollow ring), and the turn rate.'],
+      [5, '#oars', 'Telegraph', 'Chevrons instead of words: one down is back water, the ring is oars up, one to three up is ahead, the red arrowhead is ramming speed. The hand swings to the order you give. The jewel sweeps the groove on each drive and drifts back on the recovery. The pale arc is crew stamina, with a small arrow while it falls or recovers. It dims when the oars are up.'],
+      [6, '.sky', 'Time and sky', 'The astrolabe moves here and shows only time and sky. Wind lives on the tape and the sail panel, so there is one source for it.'],
+    ] },
+  merchant: { bg: 'chase-merchant.jpg', hull: 'merchant', maxOrder: 4, order: 1, sail: true, dock: false, speed: 2.0, trueRel: 70, heading: 310,
+    title: 'Merchant ship sailing',
+    lead: 'The sail is the whole job here. The oars are resting, so their panel folds to one line until you press W.',
+    pins: [
+      [2, '#sail', 'Sail panel', 'The same instrument on a wider hull. Steer up toward the wind with A and watch drive fall and side force grow before the sail luffs.'],
+      [5, '#oars', 'Oars at rest', 'Folded to one line while the oars are up. Press W and the panel opens.'],
+      [1, '.tape', 'Heading tape', 'Bow heading and true wind. Gusts show as the wind number changing.'],
+    ] },
+  dock: { bg: 'berth-trireme.jpg', hull: 'trireme', maxOrder: 5, order: 2, sail: false, dock: true, speed: 1.5, trueRel: 140, heading: 200,
+    title: 'Approaching a berth',
+    lead: 'The dock card shows gauges and bands, never sentences. Press S to slow and watch the speed needle enter its band. Press R before you are lined up and the gauge that is out of its band pulses.',
+    pins: [
+      [7, '#dock', 'Dock gauges', 'Speed, distance off and angle, marked with small icons, each against its capture band in green. A hand outside its band turns red. Only the distance to the berth is a number.'],
+      [8, '#depth', 'Depth', 'Appears in shallow water. It serves anchoring and grounding alike.'],
+      [9, '#event', 'Event line', 'One line for crew callouts about events no instrument shows: lines eased, anchor holding, touching bottom. It replaces the toasts. Try the Show an event button.'],
+      [5, '#oars', 'Oar panel', 'Slow ahead. The sail is furled, so the sail panel is gone.'],
+    ] },
+};
+const ORDERS = [['Back water', -18, -0.35, 0.35], ['Oars up', 0, 0, 0], ['Slow', 18, 0.3, 0.2], ['Half', 26, 0.55, 0.42], ['Full', 31, 0.75, 0.7], ['Ramming speed', 46, 1.05, 1.25]];
+const EVENTS = ['Lines eased', 'Anchor holding', 'Touching bottom', 'Cast off'];
+
+// ---------- toy model (for the mockup only, not the game physics) ----------
+const D2R = Math.PI / 180;
+const S = { scene: 'trireme', trueFrom: 20, trueSpd: 8.7, heading: 280, speed: 2.6, helm: 0, helmAct: 0, yard: 0.5, yardT: 0.5, manual: false,
+  order: 3, stamina: 0.82, stTrend: 0, accel: 0, phase: 0, gust: 0, keys: {}, drive: 0, side: 0, status: 'Full', heel: 0, lastSpd: 2.6, t: 0 };
+
+function sailForces(yard, awFrom, awSpd) {
+  // boat frame: x = starboard, y = forward
+  const w = [-awSpd * Math.sin(awFrom), -awSpd * Math.cos(awFrom)];
+  const n = [-Math.sin(yard), Math.cos(yard)];
+  const wn = w[0] * n[0] + w[1] * n[1];
+  const sinA = Math.abs(wn) / Math.max(awSpd, 0.01);
+  let k = 0.028 * awSpd * wn;
+  const luff = sinA < 0.14;
+  if (luff) k *= sinA / 0.14;
+  return { drive: k * n[1], side: k * n[0], luff, wn };
+}
+function crewTrim(awFrom, awSpd) {
+  let best = S.yard, bs = -1e9;
+  for (let y = -0.78; y <= 0.78; y += 0.02) {
+    const f = sailForces(y, awFrom, awSpd); const s = f.drive - 0.35 * Math.abs(f.side);
+    if (s > bs) { bs = s; best = y; }
+  }
+  return best;
+}
+function apparent() {
+  const rel = (S.trueFrom - S.heading) * D2R;
+  const spd = S.trueSpd * (1 + S.gust);
+  const wx = -spd * Math.sin(rel), wy = -spd * Math.cos(rel) - S.speed;
+  return { from: Math.atan2(-wx, -wy), spd: Math.hypot(wx, wy), rel };
+}
+
+// ---------- DOM ----------
+const $ = (id) => document.getElementById(id);
+const stage = $('stage'), vp = $('vp');
+function fit() {
+  const s = Math.min(vp.clientWidth / 1440, vp.clientHeight / 900) * 0.98;
+  stage.style.transform = `scale(${s}) translate(-50%, -50%)`;
+}
+addEventListener('resize', fit);
+
+// dial ticks
+(() => {
+  const g = $('ticks'); let h = '';
+  for (let a = 0; a < 360; a += 10) {
+    const long = a % 30 === 0, r1 = 92, r2 = long ? 85 : 88.5;
+    const s = Math.sin(a * D2R), c = -Math.cos(a * D2R);
+    h += `<line x1="${s * r1}" y1="${c * r1}" x2="${s * r2}" y2="${c * r2}" stroke="#cdb68c" stroke-opacity="${long ? .95 : .55}" stroke-width="${long ? .9 : .5}"/>`;
+  }
+  for (let a = 0; a < 360; a += 2) { if (a % 10) { const s = Math.sin(a * D2R), c = -Math.cos(a * D2R); h += `<line x1="${s * 92}" y1="${c * 92}" x2="${s * 90.5}" y2="${c * 90.5}" stroke="#cdb68c" stroke-opacity=".3" stroke-width=".35"/>`; } }
+  h += `<path d="M0 -92 L2.6 -86.5 L-2.6 -86.5 Z" fill="#c9502f"/>`;
+  g.innerHTML = h;
+})();
+const HULLS = {
+  trireme: 'M0 -60 C7 -42 9.5 -18 9.5 8 C9.5 30 7 44 0 54 C-7 44 -9.5 30 -9.5 8 C-9.5 -18 -7 -42 0 -60 Z',
+  merchant: 'M0 -50 C13 -34 17 -10 17 7 C17 26 12 40 0 46 C-12 40 -17 26 -17 7 C-17 -10 -13 -34 0 -50 Z',
+};
+
+const SHORT = ['Back', 'Up', 'Slow', 'Half', 'Full', 'Ram'];
+// order glyphs: chevrons up = ahead (more = harder), chevron down = astern, ring = oars up, solid red = ramming
+const chev = (y, up = true) => `<path d="M-4.5 ${y + (up ? 2.2 : -2.2)} L0 ${y + (up ? -2.2 : 2.2)} L4.5 ${y + (up ? 2.2 : -2.2)}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`;
+const GLYPH = [
+  `<g color="#e0a868">${chev(0, false)}</g>`,
+  `<circle r="3" fill="none" stroke="currentColor" stroke-width="1.2"/>`,
+  chev(0), chev(-2.3) + chev(2.3), chev(-4.4) + chev(0) + chev(4.4),
+  `<path d="M0 -5.5 L5 4 L0 1.8 L-5 4 Z" fill="#d0563a" stroke="#d0563a" stroke-width=".6" stroke-linejoin="round"/>`,
+];
+const GUILL_T = Array.from({ length: 30 }, (_, k) => `<circle r="${6 + k * 3}" fill="none" stroke="#e8dcc4" stroke-opacity=".035" stroke-width=".5"/>`).join('');
+let OV = 'tele', NOARS = 9;
+const pt = (r, a) => [r * Math.cos(a * D2R), -r * Math.sin(a * D2R)];
+// 240° sweep gauges for docking: value window at the bottom, capture band in verdigris
+const MG = { mgSpeed: { icon: 'speed', label: 'SPEED', min: 0, max: 4, band: [0, 2.5], unit: 'kn', v: 2.9 }, mgOff: { icon: 'off', label: 'OFF QUAY', min: -2, max: 6, band: [-0.8, 4], unit: 'm', v: 2.1 }, mgAng: { icon: 'ang', label: 'ANGLE', min: -30, max: 30, band: [-15, 15], unit: '°', v: -6 } };
+const mgA = (g, v) => -120 + 240 * (Math.max(g.min, Math.min(g.max, v)) - g.min) / (g.max - g.min);
+const arcD = (r, a0, a1) => { const p0 = [r * Math.sin(a0 * D2R), -r * Math.cos(a0 * D2R)], p1 = [r * Math.sin(a1 * D2R), -r * Math.cos(a1 * D2R)]; return `M${p0[0]} ${p0[1]} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${p1[0]} ${p1[1]}`; };
+function buildMini(id) {
+  const g = MG[id]; let h = `<circle r="46" cy="1.5" fill="#000" opacity=".4" filter="url(#castBig)"/>
+    <circle r="41" fill="url(#faceG)" filter="url(#faceGrain)"/>
+    <circle r="43.5" fill="none" stroke="url(#brass)" stroke-width="4" filter="url(#metal)"/>
+    <path d="${arcD(35, -120, 120)}" fill="none" stroke="#000" stroke-opacity=".7" stroke-width="5"/>
+    <path d="${arcD(35, mgA(g, g.band[0]), mgA(g, g.band[1]))}" fill="none" stroke="#7fb08a" stroke-opacity=".75" stroke-width="3.2"/>`;
+  for (let k = 0; k <= 12; k++) { const a = -120 + 20 * k, s1 = Math.sin(a * D2R), c1 = -Math.cos(a * D2R); h += `<line x1="${s1 * 39}" y1="${c1 * 39}" x2="${s1 * (k % 3 ? 37.5 : 36.5)}" y2="${c1 * (k % 3 ? 37.5 : 36.5)}" stroke="#cdb68c" stroke-width=".5" opacity="${k % 3 ? .45 : .85}"/>`; }
+  const ICON = {
+    // a hull with wake lines
+    speed: '<path d="M-6 0 L4 0 L7 -2.5 L4 -5 L-6 -5 Z" fill="none" stroke="#cdb68c" stroke-width=".9"/><path d="M-9 -1 H-13 M-9 -4 H-12" stroke="#cdb68c" stroke-width=".7" stroke-linecap="round"/>',
+    // hull beside a quay edge, gap between
+    off: '<rect x="-11" y="-7" width="3" height="10" fill="#cdb68c" opacity=".8"/><path d="M-5 -6 L6 -6 Q9 -2 6 2 L-5 2 Z" fill="none" stroke="#cdb68c" stroke-width=".9"/><path d="M-8 -2 H-5" stroke="#cdb68c" stroke-width=".6" stroke-dasharray="1 1"/>',
+    // two lines meeting at an angle
+    ang: '<path d="M-8 2 H8 M-8 2 L5 -7" fill="none" stroke="#cdb68c" stroke-width=".9" stroke-linecap="round"/><path d="M0 2 A8 8 0 0 0 -1.4 -2.6" fill="none" stroke="#cdb68c" stroke-width=".6"/>',
+  };
+  h += `<g transform="translate(0 20) scale(1.25)">${ICON[g.icon]}</g>
+    <g class="mgn" filter="url(#cast)"><path d="M-1.4 6 L-.8 -30 L0 -36 L.8 -30 L1.4 6 Z" fill="url(#gilt)"/></g>
+    <circle r="3.4" fill="url(#dome)" filter="url(#cast)"/>`;
+  $(id).innerHTML = h;
+}
+function setMini(id, v) {
+  const g = MG[id], el = $(id), bad = v < g.band[0] || v > g.band[1];
+  el.querySelector('.mgn').setAttribute('transform', `rotate(${mgA(g, v)})`);
+  el.querySelector('.mgn path').setAttribute('fill', bad ? '#d0563a' : 'url(#gilt)');
+}
+function buildOars() {
+  const max = S.maxOrder, N = max + 1, span = 180 / N, svg = $('oarSvg');
+  $('oars').classList.toggle('v-tele', OV === 'tele');
+  if (OV === 'tele') {
+    svg.setAttribute('viewBox', '-110 -110 220 126');
+    const half = (r) => `M${-r} 0 A${r} ${r} 0 0 1 ${r} 0`;
+    let h = `<defs><clipPath id="tFace"><path d="${half(98)} Z"/></clipPath></defs>
+      <path d="${half(104)} L104 4 L-104 4 Z" fill="#000" opacity=".45" filter="url(#castBig)"/>
+      <path d="${half(98)} Z" fill="url(#faceG)" filter="url(#faceGrain)"/>
+      <g clip-path="url(#tFace)">${GUILL_T}<path d="${half(106)}" fill="none" stroke="#000" stroke-width="12" opacity=".7" filter="url(#innerShadow)"/></g>
+      <path d="${half(101.5)}" fill="none" stroke="url(#brass)" stroke-width="5.5" filter="url(#metal)"/>`;
+    for (let i = 0; i < N; i++) {
+      const a0 = 180 - i * span, a1 = a0 - span, am = a0 - span / 2;
+      const [x0, y0] = pt(92, a0), [x1, y1] = pt(92, a1), [x2, y2] = pt(64, a1), [x3, y3] = pt(64, a0);
+      const tint = i === 0 ? 'rgba(200,140,70,.10)' : i === 5 ? 'rgba(170,50,30,.18)' : 'rgba(0,0,0,0)';
+      h += `<path class="sec" data-i="${i}" d="M${x0} ${y0} A92 92 0 0 1 ${x1} ${y1} L${x2} ${y2} A64 64 0 0 0 ${x3} ${y3} Z" fill="${tint}"/>`;
+      if (i) { const [lx0, ly0] = pt(92, a0), [lx1, ly1] = pt(64, a0); h += `<line x1="${lx0}" y1="${ly0}" x2="${lx1}" y2="${ly1}" stroke="#cdb68c" stroke-opacity=".7" stroke-width=".5"/>`; }
+      const [tx, ty] = pt(78, am);
+      h += `<g class="secl" data-i="${i}" transform="translate(${tx} ${ty})">${GLYPH[i]}</g>`;
+    }
+    for (let d = 0; d <= 180; d += 3) { const [ax, ay] = pt(92, d), [bx, by] = pt(d % 15 ? 90.5 : 89, d); h += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#cdb68c" stroke-opacity="${d % 15 ? .3 : .6}" stroke-width=".4"/>`; }
+    h += `<path d="${half(92)}" fill="none" stroke="#b39466" stroke-width=".5" opacity=".8"/>
+      <path d="${half(64)}" fill="none" stroke="#b39466" stroke-width=".4" opacity=".55"/>
+      <path d="M${pt(44, 158).join(' ')} A44 44 0 0 1 ${pt(44, 22).join(' ')}" fill="none" stroke="#000" stroke-opacity=".7" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M${pt(44, 158).join(' ')} A44 44 0 0 1 ${pt(44, 22).join(' ')}" fill="none" stroke="#cdb68c" stroke-opacity=".25" stroke-width=".5" transform="translate(0 1.3)"/>
+      <circle id="cadDot" r="2.3" fill="url(#jewel)"/>
+      <path d="M${pt(54, 160).join(' ')} A54 54 0 0 1 ${pt(54, 20).join(' ')}" fill="none" stroke="#000" stroke-opacity=".75" stroke-width="4" stroke-linecap="round"/>
+      <path id="stArc" pathLength="100" d="M${pt(54, 160).join(' ')} A54 54 0 0 1 ${pt(54, 20).join(' ')}" fill="none" stroke="#e9dfc8" stroke-width="2" stroke-linecap="round" stroke-dasharray="80 100"/>
+      ${[0.25, 0.5, 0.75].map((f) => { const a = 160 - 140 * f, [ax, ay] = pt(57, a), [bx, by] = pt(59, a); return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#cdb68c" stroke-width=".4" opacity=".6"/>`; }).join('')}
+      <text id="stTr" font-family="Inter Tight" font-size="6" text-anchor="middle" fill="#cdb68c"></text>
+
+
+      <g id="tNeedle" filter="url(#cast)"><path d="M-18 -1.6 L-6 -1.1 L84 -.7 L94 0 L84 .7 L-6 1.1 L-18 1.6 Z" fill="url(#gilt)"/><circle cx="-14" r="3.4" fill="none" stroke="url(#gilt)" stroke-width="1.2"/></g>
+      <rect x="-104.5" y="-.5" width="209" height="12" rx="1.5" fill="url(#brassV)" filter="url(#metal)"/>
+      <circle r="5" fill="url(#dome)" filter="url(#cast)"/><circle r="1.4" fill="#1a1209"/>
+      <path d="M-94 -6 A94 94 0 0 1 4 -94 A108 108 0 0 0 -94 -6 Z" fill="#fff" opacity=".045"/>`;
+    svg.innerHTML = h;
+    S.needle = S.needle ?? 180 - (S.order + .5) * span;
+  } else {
+    const merchant = SCENES[S.scene].hull === 'merchant'; NOARS = merchant ? 4 : 9;
+    svg.setAttribute('viewBox', '0 0 224 104');
+    const x0 = merchant ? 56 : 30, step = merchant ? 34 : 20;
+    const hull = merchant ? 'M30 40 C70 44 150 44 196 36 C192 52 176 62 150 64 L64 64 C44 62 32 52 30 40 Z'
+                          : 'M8 42 C60 46 150 46 206 40 L214 56 L198 58 C170 62 60 62 28 58 C16 54 10 48 8 42 Z';
+    let h = `<path d="M0 66 Q28 62 56 66 T112 66 T168 66 T224 66" fill="none" stroke="rgba(150,190,210,.45)" stroke-width="1.2"/>
+      <path d="${hull}" fill="rgba(28,22,15,.65)" stroke="url(#ringG)" stroke-width="1.6"/>
+      <path d="M${merchant ? 36 : 14} 46 C80 50 150 50 ${merchant ? 190 : 204} 44" fill="none" stroke="rgba(210,166,94,.35)" stroke-width=".8" stroke-dasharray="3 3"/>`;
+    for (let i = 0; i < NOARS; i++) {
+      const x = x0 + i * step;
+      h += `<line class="oar" data-x="${x}" stroke="#e8d7b4" stroke-width="1.6" stroke-linecap="round"/><ellipse class="blade" rx="2.6" ry="5" fill="#e8d7b4"/><circle class="spl" r="0" fill="rgba(243,238,228,.8)"/>`;
+    }
+    for (let i = 0; i < NOARS; i++) h += `<circle cx="${x0 + i * step}" cy="52" r="1.8" fill="#0b0d10" stroke="rgba(210,166,94,.6)" stroke-width=".6"/>`;
+    h += `<path d="M206 40 L222 50 L214 56 Z" fill="url(#ringG)" opacity="${merchant ? 0 : 1}"/>
+      <path id="sea" d="M0 66 Q28 62 56 66 T112 66 T168 66 T224 66 L224 104 L0 104 Z" fill="rgba(40,80,110,.55)"/>
+      <path d="M0 66 Q28 62 56 66 T112 66 T168 66 T224 66" fill="none" stroke="rgba(190,220,235,.55)" stroke-width="1"/>`;
+    svg.innerHTML = h;
+  }
+}
+S.jit = Array.from({ length: 12 }, () => Math.random() * 2 - 1);
+function updateOars(dt) {
+  const o = ORDERS[S.order], rate = Math.abs(o[1]), max = S.maxOrder, span = 180 / (max + 1);
+  const name = S.hold ? 'Hold water' : o[0];
+
+  const p = S.phase;
+  if (OV === 'tele') {
+    const target = 180 - (S.order + .5) * span;
+    S.needle += (target - S.needle) * Math.min(1, dt * 7);
+    const quiver = rate && p < 0.06 ? Math.sin(p / 0.06 * Math.PI) * 1.4 : 0;
+    $('tNeedle').setAttribute('transform', `rotate(${-(S.needle + quiver)})`);
+    document.querySelectorAll('.sec').forEach((e) => { const on = +e.dataset.i === S.order; e.setAttribute('stroke', 'none'); e.setAttribute('fill', on ? 'rgba(232,214,176,.09)' : (+e.dataset.i === 0 ? 'rgba(200,140,70,.10)' : +e.dataset.i === 5 ? 'rgba(170,50,30,.18)' : 'rgba(0,0,0,0)')); });
+    document.querySelectorAll('.secl').forEach((e) => { const on = +e.dataset.i === S.order; e.setAttribute('color', on ? '#f6ecd6' : '#9c8762'); e.setAttribute('opacity', on ? 1 : .8); });
+    // cadence: the dot sweeps across on the drive and drifts back on the recovery
+    let a = 90;
+    if (rate && !S.hold) { const drive = p < 0.38; const u = drive ? p / 0.38 : (p - 0.38) / 0.62; const e = (1 - Math.cos(Math.PI * u)) / 2; a = drive ? 150 - 120 * e : 30 + 120 * e; if (S.order === 0) a = 180 - a; }
+    const [cx, cy] = pt(44, a); const dot = $('cadDot'); dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', S.hold ? 3.4 : 2.3);
+    dot.setAttribute('opacity', rate || S.hold ? 1 : .35);
+  } else {
+    const amp = [11, 0, 8, 11, 13, 15][S.order];
+    const oars = document.querySelectorAll('#oarSvg .oar'), blades = document.querySelectorAll('#oarSvg .blade'), spl = document.querySelectorAll('#oarSvg .spl');
+    oars.forEach((ln, i) => {
+      const x = +ln.dataset.x; let bx, by;
+      if (S.order === 1 && !S.hold) { bx = x + 30; by = 34; }
+      else if (S.hold) { bx = x + 3; by = 76; }
+      else {
+        const ph = (p + S.jit[i] * (1 - S.stamina) * 0.14 + 1) % 1; const drive = ph < 0.38;
+        const u = drive ? ph / 0.38 : (ph - 0.38) / 0.62; const e = (1 - Math.cos(Math.PI * u)) / 2;
+        let off = drive ? amp - 2 * amp * e : -amp + 2 * amp * e; if (S.order === 0) off = -off;
+        bx = x + off; by = drive ? 74 : 74 - 9 * Math.sin(Math.PI * u);
+        const sp = spl[i]; const near = drive && u < 0.25; sp.setAttribute('cx', bx); sp.setAttribute('cy', 67); sp.setAttribute('r', near ? 3.5 * (1 - u / 0.25) : 0);
+      }
+      const hx = x, hy = 52;
+      ln.setAttribute('x1', hx); ln.setAttribute('y1', hy); ln.setAttribute('x2', bx); ln.setAttribute('y2', by);
+      const ang = Math.atan2(by - hy, bx - hx) / D2R - 90; blades[i].setAttribute('transform', `translate(${bx} ${by}) rotate(${ang})`);
+    });
+  }
+}
+function buildLadder(max) {
+  $('ladder').innerHTML = ORDERS.map((o, i) => `<div class="rung${i > max ? ' hide' : ''}" data-i="${i}"><i></i>${o[0]}</div>`).reverse().join('');
+}
+
+function setScene(name) {
+  const sc = SCENES[name]; S.scene = name;
+  stage.style.backgroundImage = `url(${sc.bg})`;
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.s === name));
+  $('hull').setAttribute('d', HULLS[sc.hull]);
+  S.maxOrder = sc.maxOrder; S.order = sc.order; S.hold = false; S.needle = null; buildOars();
+  if (sc.dock) { Object.keys(MG).forEach((id) => { buildMini(id); setMini(id, MG[id].v); }); } S.speed = sc.speed; S.heading = sc.heading;
+  S.trueFrom = sc.heading + sc.trueRel; S.manual = false; S.stamina = 0.82; S.helm = 0; S.helmAct = 0;
+  S.sail = sc.sail;
+  $('sail').style.display = sc.sail ? '' : 'none';
+  $('dock').style.display = sc.dock ? '' : 'none';
+  $('depth').style.display = sc.dock ? '' : 'none';
+  const a = apparent(); S.yard = S.yardT = crewTrim(a.from, a.spd);
+  $('notes').innerHTML = `<h2>${sc.title}</h2><p class="lead">${sc.lead}</p><ol>${sc.pins.map((p) => `<li><span class="pinno">${p[0]}</span><span><b>${p[2]}</b>${p[3]}</span></li>`).join('')}</ol>`;
+  $('pins').innerHTML = sc.pins.map((p) => `<span class="pin pinno" data-for="${p[1]}">${p[0]}</span>`).join('');
+}
+
+// heading tape
+const tctx = $('tape').getContext('2d');
+function drawTape() {
+  const W = 920, H = 80, ppd = W / 140; tctx.clearRect(0, 0, W, H);
+  const grd = tctx.createLinearGradient(0, 0, W, 0);
+  grd.addColorStop(0, 'rgba(243,238,228,0)'); grd.addColorStop(.18, 'rgba(243,238,228,1)'); grd.addColorStop(.82, 'rgba(243,238,228,1)'); grd.addColorStop(1, 'rgba(243,238,228,0)');
+  tctx.save(); tctx.font = '600 22px Inter Tight'; tctx.textAlign = 'center';
+  const names = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+  for (let d = Math.floor(S.heading - 72); d <= S.heading + 72; d++) {
+    if (d % 5) continue; const x = W / 2 + (d - S.heading) * ppd; const dd = ((d % 360) + 360) % 360;
+    const a = Math.max(0, 1 - Math.abs(x - W / 2) / (W / 2)); tctx.globalAlpha = Math.min(1, a * 1.6);
+    tctx.fillStyle = 'rgba(243,238,228,.8)';
+    const big = names[dd] !== undefined;
+    tctx.fillRect(x - 1, H - (big ? 26 : dd % 15 === 0 ? 18 : 12), 2, big ? 26 : dd % 15 === 0 ? 18 : 12);
+    if (big) tctx.fillText(names[dd], x, 26);
+  }
+  // true wind tick (world-fixed)
+  let wd = ((S.trueFrom - S.heading + 540) % 360) - 180;
+  tctx.globalAlpha = 1;
+  if (Math.abs(wd) <= 66) { const x = W / 2 + wd * ppd; tctx.fillStyle = '#d2a65e'; tctx.beginPath(); tctx.moveTo(x, H - 30); tctx.lineTo(x + 9, H - 46); tctx.lineTo(x - 9, H - 46); tctx.fill(); }
+  else { const left = wd < 0; const x = left ? 14 : W - 14; tctx.fillStyle = '#d2a65e'; tctx.beginPath(); tctx.moveTo(x + (left ? -8 : 8), H - 20); tctx.lineTo(x + (left ? 6 : -6), H - 30); tctx.lineTo(x + (left ? 6 : -6), H - 10); tctx.fill(); }
+  // lubber
+  tctx.fillStyle = '#d0693e'; tctx.fillRect(W / 2 - 2, H - 40, 4, 40);
+  tctx.restore();
+}
+
+// ---------- input ----------
+addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase(); if (S.keys[k]) return; S.keys[k] = true;
+  if (k === 'w' && S.order < S.maxOrder) S.order++;
+  if (k === 's' && S.order > 0) S.order--;
+  if (k === 'j' || k === 'l') { S.manual = true; S.yardT = Math.max(-0.78, Math.min(0.78, S.yardT + (k === 'l' ? 0.05 : -0.05))); }
+  if (k === 'k') { S.manual = false; }
+  if (k === ' ') { S.hold = true; e.preventDefault(); }
+  if (k === 'w' || k === 's') S.hold = false;
+  if (k === 'r' && SCENES[S.scene].dock) { const g = $('mgSpeed'); g.classList.remove('pulse'); void g.getBoundingClientRect(); if (S.speed * 1.944 > 2.5) g.classList.add('pulse'); }
+});
+addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); S.keys[k] = false; if (k === ' ') S.hold = false; });
+$('antBtn').onclick = () => { const on = document.body.classList.toggle('antique'); $('antBtn').classList.toggle('on', on); };
+document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => setScene(b.dataset.s));
+$('notesBtn').onclick = () => { const on = $('notes').classList.toggle('off'); $('notesBtn').classList.toggle('on', !on); stage.classList.toggle('pins-off', on); setTimeout(fit, 0); };
+let ev = 0, evT = 0;
+$('eventBtn').onclick = () => { $('event').textContent = EVENTS[ev++ % EVENTS.length]; $('event').classList.add('show'); evT = 3; };
+
+// ---------- loop ----------
+let last = performance.now(), cache = {};
+const set = (id, v, prop = 'textContent') => { if (cache[id + prop] !== v) { cache[id + prop] = v; $(id)[prop] = v; } };
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; S.t += dt;
+  const sc = SCENES[S.scene];
+  // helm
+  if (S.keys.a) S.helm = Math.max(-1, S.helm - 0.9 * dt); else if (S.keys.d) S.helm = Math.min(1, S.helm + 0.9 * dt); else S.helm *= Math.exp(-0.8 * dt);
+  S.helmAct += Math.max(-0.9 * dt, Math.min(0.9 * dt, S.helm - S.helmAct));
+  const rate = S.helmAct * 7 * Math.min(1, 0.25 + Math.abs(S.speed) / 2.5);
+  S.heading = (S.heading + rate * dt + 360) % 360;
+  // wind gusts
+  S.gust = 0.12 * Math.sin(S.t * 0.37) + 0.06 * Math.sin(S.t * 1.3 + 1);
+  const aw = apparent();
+  // yard
+  if (S.keys.j || S.keys.l) { S.manual = true; S.yardT = Math.max(-0.78, Math.min(0.78, S.yardT + (S.keys.l ? 0.35 : -0.35) * dt)); }
+  if (!S.manual && Math.floor(S.t * 4) !== Math.floor((S.t - dt) * 4)) S.yardT = crewTrim(aw.from, aw.spd);
+  S.yard += Math.max(-0.25 * dt, Math.min(0.25 * dt, S.yardT - S.yard));
+  const f = S.sail ? sailForces(S.yard, aw.from, aw.spd) : { drive: 0, side: 0, luff: false };
+  S.drive += (f.drive - S.drive) * Math.min(1, dt / 0.15); S.side += (f.side - S.side) * Math.min(1, dt / 0.15);
+  // oars
+  const o = ORDERS[S.order]; const oar = S.hold ? -0.5 * Math.sign(S.speed) * Math.min(1, Math.abs(S.speed)) : o[2] * (0.65 + 0.35 * Math.sqrt(S.stamina));
+  const dSt = (0.45 - o[3]) * 0.03; S.stamina = Math.max(0, Math.min(1, S.stamina + dSt * dt)); S.stTrend += (dSt - S.stTrend) * Math.min(1, dt / 0.8);
+  // hull
+  const acc = 0.55 * S.drive + oar - 0.045 * S.speed * Math.abs(S.speed); S.speed += acc * dt;
+  S.accel += (acc - S.accel) * Math.min(1, dt / 1.0);
+  S.heel += (S.side * 3.2 - S.heel) * Math.min(1, dt / 1.2);
+
+  // ---- render ----
+  const kn = Math.abs(S.speed) * 1.944;
+  set('spd', kn.toFixed(1));
+  const car = S.accel > 0.03 ? '▲' : S.accel < -0.03 ? '▼' : '';
+  set('car', car); $('car').className = 'car ' + (car === '▲' ? 'up' : car ? 'down' : '');
+  set('hdg', String(Math.round(S.heading) % 360).padStart(3, '0') + '°');
+  set('windTxt', `Wind ${Math.round(S.trueSpd * (1 + S.gust) * 1.944)} kn`);
+  drawTape();
+  $('mapShip').setAttribute('transform', `rotate(${S.heading})`);
+  // helm bar
+  $('ndl').style.left = (50 + S.helm * 50) + '%'; $('act').style.left = (50 + S.helmAct * 50) + '%';
+  const tw = Math.sqrt(Math.min(1, Math.abs(rate) / 8)) * 50;
+  $('turn').style.left = (rate < 0 ? 50 - tw : 50) + '%'; $('turn').style.width = tw + '%';
+  set('rt', Math.abs(rate) < 0.15 ? 'Steady' : `Turning ${Math.abs(rate).toFixed(1)}°/s ${rate > 0 ? 'stbd' : 'port'}`);
+  // sail dial
+  if (S.sail) {
+    const yx = 38 * Math.cos(S.yard), yy = -38 * Math.sin(S.yard);
+    const yd = $('yard'); yd.setAttribute('x1', -yx); yd.setAttribute('y1', -yy); yd.setAttribute('x2', yx); yd.setAttribute('y2', yy);
+    const t = $('yardT'); const tx = 38 * Math.cos(S.yardT), ty = -38 * Math.sin(S.yardT);
+    t.style.display = S.manual ? '' : 'none'; t.setAttribute('x1', -tx); t.setAttribute('y1', -ty); t.setAttribute('x2', tx); t.setAttribute('y2', ty);
+    // belly bulges along the force direction, shaped by how much the cloth is loaded
+    const mag = Math.hypot(S.drive, S.side); const nx = -Math.sin(S.yard), ny = Math.cos(S.yard);
+    const sg = Math.sign(f.wn || 1); const flog = f.luff ? Math.sin(S.t * 31) * 3 : 0;
+    const b = Math.min(22, mag * 18) + flog;
+    const cx = nx * b * sg, cy = -ny * b * sg;
+    $('belly').setAttribute('d', `M${-yx} ${-yy} Q${cx * 2} ${cy * 2} ${yx} ${yy} Z`); 
+    $('aw').setAttribute('transform', `rotate(${aw.from / D2R})`);
+    $('tw').setAttribute('transform', `rotate(${aw.rel / D2R})`);
+    const kN = 2.4; const dv = S.drive * kN, sv = S.side * kN, sc12 = 12;
+    const dl = Math.max(-36, Math.min(54, dv * sc12));
+    const db = $('driveBar'); db.setAttribute('y2', -dl); db.setAttribute('stroke', dv < 0 ? '#c8432a' : '#dcc08a');
+    const sb = $('sideBar'); sb.setAttribute('x2', Math.max(-54, Math.min(54, sv * sc12)));
+    const st = f.luff ? 'Luffing' : dv < -0.15 ? 'Aback' : 'Full';
+    const bel = $('belly'); bel.setAttribute('fill', st === 'Aback' ? 'rgba(200,67,42,.35)' : st === 'Luffing' ? 'rgba(232,162,90,.12)' : 'rgba(232,220,196,.16)');
+    bel.setAttribute('stroke', st === 'Aback' ? '#e36a4b' : st === 'Luffing' ? '#e8a25a' : '#d9c7a3');
+    const twk = Math.round(S.trueSpd * (1 + S.gust) * 1.944 / 5) * 5;
+    if (twk !== S.barbK) { S.barbK = twk; let bh = '', y = -88, n = twk;
+      while (n >= 10) { bh += `<line x1="0" y1="${y}" x2="8" y2="${y - 5}"/>`; y += 5; n -= 10; }
+      if (n >= 5) bh += `<line x1="0" y1="${y}" x2="4.5" y2="${y - 2.8}"/>`;
+      $('barbs').innerHTML = bh; }
+    const ha = (180 + Math.max(-11, Math.min(11, S.heel * 2.2))) * D2R; // bubble rides to the high side
+    $('bubble').setAttribute('cx', 81 * Math.sin(ha)); $('bubble').setAttribute('cy', -81 * Math.cos(ha)); $('bubble').setAttribute('transform', `rotate(${ha / D2R - 180} ${81 * Math.sin(ha)} ${-81 * Math.cos(ha)})`);
+  }
+  // oars: the telegraph carries order, cadence, rate and stamina
+  updateOars(dt);
+  $('oars').style.opacity = S.order === 1 && !S.hold ? .55 : 1;
+  if (o[1] && !S.hold) S.phase = (S.phase + Math.abs(o[1]) / 60 * dt) % 1;
+  const sa = $('stArc'); sa.setAttribute('stroke-dasharray', `${(S.stamina * 100).toFixed(1)} 100`); sa.setAttribute('stroke', S.stamina < 0.25 ? '#d0563a' : '#e9dfc8');
+  const trs = S.stTrend < -0.002 ? '▼' : S.stTrend > 0.002 && S.stamina < 0.995 ? '▲' : '';
+  const ea = (160 - 140 * S.stamina) * D2R; const st2 = $('stTr'); st2.setAttribute('x', 62 * Math.cos(ea)); st2.setAttribute('y', -62 * Math.sin(ea) + 2); st2.setAttribute('fill', trs === '▼' ? '#e8a25a' : '#9fcf9f'); set('stTr', trs);
+  if (sc.dock) setMini('mgSpeed', kn);
+  // pins follow their elements
+  const sr = stage.getBoundingClientRect(), k = sr.width / 1440;
+  document.querySelectorAll('.pin').forEach((pn) => { const el = stage.querySelector(pn.dataset.for); const r = el.getBoundingClientRect();
+    const vis = el.offsetParent !== null && getComputedStyle(el).opacity > 0.05; pn.style.display = vis ? '' : 'none';
+    pn.style.left = ((r.left - sr.left) / k - 10) + 'px'; pn.style.top = ((r.top - sr.top) / k - 10) + 'px'; });
+  // event line
+  if (evT > 0) { evT -= dt; if (evT <= 0) $('event').classList.remove('show'); }
+  requestAnimationFrame(frame);
+}
+setScene('trireme'); fit(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>

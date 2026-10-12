@@ -30,7 +30,17 @@ export class Wind {
   meanSpeed = this.baseSpeed;
   vx = 0;
   vz = 0;
+  /**
+   * Terrain shelter at a point (docs/sea-state-spec.md §5): s = local mean wind / free wind, g = extra
+   * relative gustiness in the lee. Set by the game once the world exists; null = open everywhere.
+   */
+  shelterAt: ((x: number, z: number, out: { s: number; g: number }) => void) | null = null;
   private t = 0;
+  private shelter = { s: 1, g: 0 };
+  /** simulation time this wind has advanced to (s) */
+  get time() {
+    return this.t;
+  }
 
   constructor(private seed = 1) {
     this.update(0);
@@ -44,7 +54,7 @@ export class Wind {
     const fromBase = Number.isFinite(this.baseFrom) ? this.baseFrom : 0;
     const slow = 0.35 * windNoise1(t / 600, this.seed + 7);
     this.meanSpeed = speedBase * Math.max(0, 1 + slow);
-    this.sampleAt(0, 10, 0, t, _windSample);
+    this.sampleFree(0, 10, 0, t, _windSample);
     this.speed = Math.hypot(_windSample.x, _windSample.z);
     // `from` is the source bearing at the sea-surface origin; cached fields serve existing consumers.
     this.from = fromBase + 0.42 * windNoise1(t / 420, this.seed) + 0.08 * windNoise1(t / 37, this.seed + 3);
@@ -52,8 +62,15 @@ export class Wind {
     this.vz = _windSample.z;
   }
 
-  /** Pure, deterministic air flow at an absolute simulation time and world point. */
+  /** Pure, deterministic air flow at an absolute simulation time and world point, including terrain shelter. */
   sampleAt(x: number, y: number, z: number, time: number, out: import('three').Vector3) {
+    if (!this.shelterAt) return this.sampleFree(x, y, z, time, out);
+    this.shelterAt(x, z, this.shelter);
+    return this.sampleFree(x, y, z, time, out, this.shelter.s, this.shelter.g);
+  }
+
+  /** air flow without terrain shelter (s = 1, g = 0), or with the given shelter */
+  private sampleFree(x: number, y: number, z: number, time: number, out: import('three').Vector3, s = 1, g = 0) {
     const t = Number.isFinite(time) ? time : 0;
     const speedBase = Number.isFinite(this.baseSpeed) ? Math.max(0, this.baseSpeed) : 0;
     if (speedBase === 0) return out.set(0, 0, 0);
@@ -68,7 +85,9 @@ export class Wind {
       0.08 * windNoise1(t / 37 + x / 600 - z / 800, this.seed + 3);
     const height = Number.isFinite(y) ? Math.max(0.5, y) : 0.5;
     const heightFactor = Math.pow(height / 10, 0.11);
-    const speed = speedBase * Math.max(0, 1 + slow) * Math.max(0, 1 + gust) * heightFactor;
+    const speed = s === 1 && g === 0
+      ? speedBase * Math.max(0, 1 + slow) * Math.max(0, 1 + gust) * heightFactor
+      : speedBase * Math.max(0, 1 + slow) * Math.max(0, 1 + gust * (1 + g)) * heightFactor * s;
     const to = localFrom + Math.PI;
     return out.set(Math.sin(to) * speed, 0, -Math.cos(to) * speed);
   }

@@ -7,43 +7,20 @@
 
 /* ---------- docking ---------- */
 .dock-root { position: absolute; inset: 0; pointer-events: none; }
-.dock { position: absolute; left: 50%; bottom: calc(var(--safe) + 56px); transform: translateX(-50%) translateY(4px);
-  width: min(420px, calc(100vw - 32px)); padding: 16px 18px 14px; display: grid; grid-template-columns: 136px 1fr; gap: 12px 18px; align-items: center;
+.dock { position: absolute; left: 50%; top: calc(var(--safe) + 62px); transform: translateX(-50%) translateY(-4px); display: flex; flex-direction: column; align-items: center; gap: 4px;
   opacity: 0; transition: opacity 0.24s ease, transform 0.24s var(--ease-out); }
 .dock.on { opacity: 1; transform: translateX(-50%); transition-duration: 0.18s; }
 .hud.spy .dock, .hud.spy .dock.on { opacity: 0.12; }
-
-.dock-plan { grid-column: 1; grid-row: 1; display: block; width: 100%; height: auto; border-radius: 6px; overflow: hidden; background: rgba(60, 110, 140, 0.22); }
-.dock-plan .pier { fill: rgba(243, 238, 228, 0.24); }
-.dock-plan .bol { fill: var(--t2); }
-.dock-plan .slot { fill: none; stroke: rgba(210, 166, 94, 0.7); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
-.dock-plan .hull { fill: rgba(243, 238, 228, 0.16); stroke: var(--t1); stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke; transition: stroke 0.3s, fill 0.3s; }
-.dock.ok .dock-plan .hull { stroke: var(--fair); fill: rgba(143, 203, 155, 0.28); }
-
-.dock-side { grid-column: 2; grid-row: 1; min-width: 0; }
-.dock-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; white-space: nowrap; }
-.dock-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 500 19px/1.2 var(--f-name); color: var(--t1); }
-.dock-dist { flex: none; font: 500 13px/1 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
-.dock-gauges { display: grid; gap: 9px; }
-.dock .g { display: grid; grid-template-columns: 80px 1fr 52px; align-items: center; gap: 8px; font-size: 13px; }
-.dock .g-l { color: var(--t2); white-space: nowrap; }
-.dock .g-t { position: relative; height: 10px; }
-.dock .g-t::before { content: ''; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: var(--t3); }
-.dock .g-band { position: absolute; top: 2px; height: 6px; border-radius: 3px; background: rgba(143, 203, 155, 0.35); }
-.dock .g-n { position: absolute; top: 0; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--t1); transition: left 0.1s linear; }
-.dock .g-v { text-align: right; white-space: nowrap; color: var(--t1); font-variant-numeric: tabular-nums; }
-.dock .g.bad .g-n { background: var(--caution); }
-.dock .g.bad .g-v { color: var(--caution); }
-
-.dock-foot { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 12px; min-height: 22px; padding-top: 11px; border-top: 1px solid var(--hair);
-  font-size: 13px; white-space: nowrap; }
-.dock-reason { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--t2); }
-.dock-reason:empty { display: none; }
-.dock-prog { flex: 1; height: 2px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); display: none; }
+.dock-dist { font: 500 15px var(--f-ui); color: var(--t1); font-variant-numeric: tabular-nums; min-height: 1em; }
+.dock-gauges { display: none; gap: 16px; }
+.dock-gauges.on { display: flex; }
+.dock-prog { width: 180px; height: 3px; border-radius: 2px; background: rgba(10, 8, 6, 0.75); box-shadow: inset 0 1px 2px #000; display: none; margin-top: 6px; }
 .dock-prog.on { display: block; }
-.dock-prog i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--bronze); box-shadow: 0 0 6px var(--bronze-glow); transition: width 0.15s linear; }
-.dock-cta { margin-left: auto; font-weight: 500; color: var(--t1); }
+.dock-prog i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(180deg, #e9d8b4, #a88a5a); transition: width 0.15s linear; }
+.dock-prog.stalled i { background: linear-gradient(180deg, #f0b08a, #b0552f); }
+.dock-cta { display: flex; align-items: center; gap: 6px; color: #e9dfc8; min-height: 22px; }
 .dock-cta:empty { display: none; }
+.dock-cta svg { width: 16px; height: 16px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
 .dock-cta.pulse { color: var(--fair-soft); animation: dock-pulse 1.6s ease-in-out infinite; }
 .dock-cta.pulse kbd { color: var(--fair-soft); border-color: rgba(183, 230, 192, 0.5); }
 @keyframes dock-pulse { 0%, 100% { opacity: 0.62; } 50% { opacity: 1; } }

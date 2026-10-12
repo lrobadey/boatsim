@@ -1,7 +1,45 @@
 import * as THREE from 'three';
-import { WAVES_GLSL, WaveField } from './waves';
+import { SEA_ENV_GLSL, WAVES_GLSL, WaveField } from './waves';
+import type { SeaStateField } from './seaState';
 import type { OceanFFT } from './oceanFFT';
 import { FOG_PARS_GLSL, TERRAIN_LIGHT_GLSL, shared } from '../gfx/shared';
+import { registerEnvironmentMaterial } from '../gfx/environmentMaterials';
+
+/** Pack the static ripple and noise maps into one WebGL2 array sampler. The noise
+ * layer repeats its exact 256² source 2×2 inside the 512² layer; sampling its
+ * coordinates at half scale preserves the original normalized repeat period. */
+export function packOceanShortWaveTextures(ripple: THREE.Texture, noise: THREE.Texture): THREE.DataArrayTexture {
+  const imageOf = (texture: THREE.Texture) => texture.image as { data?: Uint8Array; width?: number; height?: number };
+  const ri = imageOf(ripple), ni = imageOf(noise);
+  if (ri.width !== 512 || ri.height !== 512 || ni.width !== 256 || ni.height !== 256 || !ri.data || !ni.data) {
+    throw new Error('Ocean short-wave textures must be 512² ripple and 256² noise RGBA data textures');
+  }
+  const layerSize = 512 * 512 * 4;
+  const data = new Uint8Array(layerSize * 2);
+  data.set(ri.data, 0);
+  const noiseOffset = layerSize;
+  for (let y = 0; y < 512; y++) {
+    const sy = y & 255;
+    for (let x = 0; x < 512; x++) {
+      const source = (sy * 256 + (x & 255)) * 4;
+      const target = noiseOffset + (y * 512 + x) * 4;
+      data[target] = ni.data[source];
+      data[target + 1] = ni.data[source + 1];
+      data[target + 2] = ni.data[source + 2];
+      data[target + 3] = ni.data[source + 3];
+    }
+  }
+  const packed = new THREE.DataArrayTexture(data, 512, 512, 2);
+  packed.format = THREE.RGBAFormat;
+  packed.type = THREE.UnsignedByteType;
+  packed.wrapS = packed.wrapT = THREE.RepeatWrapping;
+  packed.magFilter = THREE.LinearFilter;
+  packed.minFilter = THREE.LinearMipmapLinearFilter;
+  packed.generateMipmaps = true;
+  packed.anisotropy = ripple.anisotropy || 1;
+  packed.needsUpdate = true;
+  return packed;
+}
 
 /**
  * Ocean surface: camera-centred geometry clipmap. Each level is a square grid of N cells whose cell
@@ -19,7 +57,11 @@ export class Ocean {
   readonly group = new THREE.Group();
   readonly uniforms: Record<string, THREE.IUniform>;
   private levels: { mesh: THREE.Mesh; cell: number; mat: THREE.ShaderMaterial }[] = [];
+  /** Created by Ocean from the caller-owned static ripple/noise maps. */
+  private shortWaveTexture: THREE.DataArrayTexture;
+  private disposed = false;
   private params: OceanParams;
+  private sea: { field: SeaStateField; tex: THREE.DataTexture; version: number } | null = null;
 
   constructor(
     waves: WaveField,
@@ -30,13 +72,23 @@ export class Ocean {
     this.params = { grid: 128, levels: 12, cell0: 0.25, ...params };
     const { grid: N } = this.params;
 
+    this.shortWaveTexture = packOceanShortWaveTextures(textures.ripple, textures.noise);
     this.uniforms = {
       uWaveA: { value: waves.packedA },
       uWaveB: { value: waves.packedB },
+      uWaveC: { value: waves.packedC },
+      // sea state envelope (docs/sea-state-spec.md §7); off until setSeaState
+      uSeaOn: { value: 0 },
+      uSeaEnv: { value: null },
+      uSeaGlobal: { value: new THREE.Vector4(0, 0, 1, 2) },
+      uSeaDetail: { value: new THREE.Vector4(0, 0, 0, 0) },
+      uSeaDebug: { value: 0 },
       uTime: shared.uTime,
       uSunDir: shared.uSunDir,
       uSunColor: shared.uSunColor,
       uFogEnv: shared.uFogEnv,
+      uFogEnvNext: shared.uFogEnvNext,
+      uEnvBlend: shared.uEnvBlend,
       uFogDensity: shared.uFogDensity,
       uFogHeight: shared.uFogHeight,
       uFogEnvScale: shared.uFogEnvScale,
@@ -51,6 +103,7 @@ export class Ocean {
       uWindStrength: shared.uWindStrength,
       uRipple: { value: textures.ripple },
       uNoise: { value: textures.noise },
+      uShortWaveTex: { value: this.shortWaveTexture },
       uHeight: { value: textures.height },
       uTerrainSize: { value: textures.terrainSize },
       uRefract: { value: null },
@@ -67,7 +120,6 @@ export class Ocean {
       uSlopeA: { value: fft.slope(0) },
       uSlopeB: { value: fft.slope(1) },
       uDispA: { value: fft.disp(0) },
-      uFoamA: { value: fft.foam(0) },
       uLA: { value: fft.cascades[0].L },
       uWhiteJ: { value: 0.6 },
       uReflect: { value: null },
@@ -103,12 +155,34 @@ export class Ocean {
         side: THREE.FrontSide,
       });
       const mesh = new THREE.Mesh(l === 0 ? levelGeo0 : levelGeo, mat);
+      registerEnvironmentMaterial(mat);
       mesh.receiveShadow = true;
       mesh.frustumCulled = false;
       mesh.renderOrder = 10 + l; // near levels first (early-z)
       this.group.add(mesh);
       this.levels.push({ mesh, cell, mat });
     }
+  }
+
+  /** Release Ocean-owned GPU data; source ripple/noise textures and OceanFFT stay caller-owned. */
+  dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.shortWaveTexture.dispose();
+    this.sea?.tex.dispose();
+    const geometries = new Set<THREE.BufferGeometry>();
+    for (const { mesh, mat } of this.levels) {
+      geometries.add(mesh.geometry);
+      mat.dispose();
+    }
+    for (const geometry of geometries) geometry.dispose();
+    this.levels.length = 0;
+    this.group.clear();
+  }
+
+  /** Upload the packed transition-only array before the first blend needs its sampler. */
+  prepareEnvironmentTextures(renderer: THREE.WebGLRenderer) {
+    renderer.initTexture(this.shortWaveTexture);
   }
 
   /** grid in integer cell coordinates [-N/2, N/2]; optional hole where the finer level lives */
@@ -145,12 +219,47 @@ export class Ocean {
     return g;
   }
 
+  /**
+   * Bind the sea state envelope: the field's own Float32 arrays become the textures the vertex shader
+   * reads with texelFetch, so the GPU and the CPU sample the same bytes.
+   */
+  setSeaState(field: SeaStateField) {
+    const tex = new THREE.DataTexture(field.data, field.atlasWidth, 2 * field.n, THREE.RGBAFormat, THREE.FloatType);
+    tex.minFilter = tex.magFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    this.sea = { field, tex, version: field.version };
+    const g = field.global;
+    this.uniforms.uSeaEnv.value = tex;
+    (this.uniforms.uSeaGlobal.value as THREE.Vector4).set(g.originX, g.originZ, g.cell, g.n);
+    this.uniforms.uSeaOn.value = 1;
+  }
+
   update(camera: THREE.Camera) {
+    if (this.sea) {
+      const s = this.sea;
+      if (s.version !== s.field.version) {
+        s.version = s.field.version;
+        s.tex.needsUpdate = true;
+      }
+      // one detail slot: the region nearest the camera
+      let best = -1, bestD = Infinity;
+      s.field.details.forEach((m, k) => {
+        const half = (m.n * m.cell) / 2;
+        const d = Math.hypot(camera.position.x - (m.originX + half), camera.position.z - (m.originZ + half));
+        if (d < bestD) { bestD = d; best = k; }
+      });
+      const det = this.uniforms.uSeaDetail.value as THREE.Vector4;
+      if (best < 0) det.set(0, 0, 0, 0);
+      else {
+        const m = s.field.details[best];
+        det.set(m.originX, m.originZ, m.cell, (best + 1) * s.field.n);
+      }
+    }
     // FFT outputs ping-pong (persistent foam reads last frame's)
     this.uniforms.uSlopeA.value = this.fft.slope(0);
     this.uniforms.uSlopeB.value = this.fft.slope(1);
     this.uniforms.uDispA.value = this.fft.disp(0);
-    this.uniforms.uFoamA.value = this.fft.foam(0);
     const cx = camera.position.x,
       cz = camera.position.z;
     // camera height pushes the fine levels out: skip levels that would be sub-pixel
@@ -177,6 +286,7 @@ export class Ocean {
 const VERT = /* glsl */ `
 #include <shadowmap_pars_vertex>
 ${WAVES_GLSL}
+${SEA_ENV_GLSL}
 uniform float uCell;
 uniform sampler2D uDispA;
 uniform float uLA;
@@ -189,6 +299,8 @@ varying vec3 vN;
 varying float vJ;
 varying float vWaveH;
 varying float vViewDepth;
+varying vec4 vEnv0;
+varying vec2 vEnv1;
 void main() {
   vec2 local = position.xz * uCell;
   vec2 p = uCenter + local;
@@ -199,10 +311,15 @@ void main() {
   p -= odd * uCell * m;
   vGrid = p;
   float dist = length(vec3(p.x - cameraPosition.x, cameraPosition.y, p.y - cameraPosition.z));
+  // sea state envelope at the undisplaced point (same texels and arithmetic as the CPU buoyancy)
+  vec4 env0, env1;
+  seaEnv(p, env0, env1);
+  vEnv0 = env0;
+  vEnv1 = env1.xy;
   vec3 N; float J;
-  vec3 d = gerstner(p, dist, N, J);
+  vec3 d = gerstner(p, dist, env0, N, J);
   // short-wave chop from the FFT cascade, prefiltered to this level's vertex spacing
-  float fadeA = 1.0 - smoothstep(250.0, 900.0, dist);
+  float fadeA = (1.0 - smoothstep(250.0, 900.0, dist)) * env1.x;
   if (fadeA > 0.0) d += textureLod(uDispA, p / uLA, max(0.0, log2(uCell / uTexelA))).xyz * fadeA;
   vec3 wp = vec3(p.x + d.x, d.y, p.y + d.z);
   vWorld = wp;
@@ -233,8 +350,12 @@ ${WAVES_GLSL}
 uniform float uNight;
 uniform vec2 uWindDir;
 uniform float uWindStrength;
+#if SKY_ENV_BLEND
+uniform highp sampler2DArray uShortWaveTex;
+#else
 uniform sampler2D uRipple;
 uniform sampler2D uNoise;
+#endif
 uniform sampler2D uHeight;
 uniform sampler2D uRefract;
 uniform sampler2D uRefractDepth;
@@ -243,8 +364,8 @@ uniform float uNear;
 uniform float uFar;
 uniform sampler2D uSlopeA;
 uniform sampler2D uSlopeB;
+// the FFT displacement texture (also bound to the vertex stage: one unit) carries the persistent foam in .w
 uniform sampler2D uDispA;
-uniform sampler2D uFoamA;
 uniform float uLA;
 uniform float uLB;
 uniform float uWhiteJ;
@@ -271,6 +392,9 @@ varying vec3 vN;
 varying float vJ;
 varying float vWaveH;
 varying float vViewDepth;
+varying vec4 vEnv0; // sea state: swell, long, mid, short
+varying vec2 vEnv1; // sea state: FFT cascade A envelope, wind shelter
+uniform float uSeaDebug;
 
 float hullHalfWidth(float z) {
   // z: ship local (bow at -L/2). sample the 16-entry table
@@ -283,6 +407,24 @@ float hullHalfWidth(float z) {
   return mix(a, b, f);
 }
 
+vec4 sampleOceanNoise(vec2 uv) {
+#if SKY_ENV_BLEND
+  // Noise source is 256², duplicated 2×2 in the array layer. Half-scale UVs
+  // retain the old period; explicit isotropic LOD matches its former aniso=1.
+  vec2 dx = dFdx(uv * 256.0), dy = dFdy(uv * 256.0);
+  float lod = max(0.0, 0.5 * log2(max(dot(dx, dx), dot(dy, dy))));
+  return textureLod(uShortWaveTex, vec3(uv * 0.5, 1.0), lod);
+#else
+  return texture2D(uNoise, uv);
+#endif
+}
+vec2 sampleOceanRipple(vec2 uv) {
+#if SKY_ENV_BLEND
+  return texture(uShortWaveTex, vec3(uv, 0.0)).xy;
+#else
+  return texture2D(uRipple, uv).xy;
+#endif
+}
 void main() {
   // exact hole where the finer level renders
   if (uInnerHalf > 0.0) {
@@ -302,11 +444,11 @@ void main() {
   // ---- normal: Gerstner swell + FFT short waves + far macro variation ----
   vec2 wd = normalize(uWindDir + 1e-4);
   // cat's paws: gust patches drifting downwind roughen the short waves and ripples
-  float gust = texture2D(uNoise, vWorld.xz / 420.0 - wd * uTime * 0.011).r;
-  gust += 0.35 * (texture2D(uNoise, vWorld.xz / 110.0 - wd * uTime * 0.028).g - 0.5);
+  float gust = sampleOceanNoise(vWorld.xz / 420.0 - wd * uTime * 0.011).r;
+  gust += 0.35 * (sampleOceanNoise(vWorld.xz / 110.0 - wd * uTime * 0.028).g - 0.5);
   gust = smoothstep(0.28, 0.78, gust);
-  vec2 r4 = texture2D(uRipple, vWorld.xz / 61.0 + wd * uTime * 0.016).xy * 2.0 - 1.0;
-  vec2 r3 = texture2D(uRipple, vWorld.xz / 1.9 + wd * uTime * 0.092).xy * 2.0 - 1.0;
+  vec2 r4 = sampleOceanRipple(vWorld.xz / 61.0 + wd * uTime * 0.016) * 2.0 - 1.0;
+  vec2 r3 = sampleOceanRipple(vWorld.xz / 1.9 + wd * uTime * 0.092) * 2.0 - 1.0;
   float f2 = 1.0 - smoothstep(60.0, 500.0, dist);
   float f4 = 1.0 - smoothstep(1500.0, 6000.0, dist);
 
@@ -331,24 +473,26 @@ void main() {
   vec2 uvA = vGrid / uLA, uvB = vGrid / uLB;
   vec4 sA = texture2D(uSlopeA, uvA);
   vec4 sB = texture2D(uSlopeB, uvB);
-  float gA = mix(0.8, 1.15, gust) * (1.0 - 0.45 * slick);
+  // sea state: the 1-11 m chop follows the local envelope, the ripples the local (sheltered) wind
+  float gA = mix(0.8, 1.15, gust) * (1.0 - 0.45 * slick) * vEnv1.x;
   // the wake's turbulence flattens the ripples into a glassy slick
-  float gB = mix(0.3, 1.3, gust) * (1.0 - 0.85 * slick);
+  float gB = mix(0.3, 1.3, gust) * (1.0 - 0.85 * slick) * vEnv1.y;
   vec2 dS = sA.xy * gA + sB.xy * gB;
-  vec2 varS = max(sA.zw - sA.xy * sA.xy, 0.0) * gA * gA + max(sB.zw - sB.xy * sB.xy, 0.0) * gB * gB;
+  // slope textures carry (sx, sz, sx^2 + sz^2, J): the filtered total variance hidden in this pixel
+  float varS = max(sA.z - dot(sA.xy, sA.xy), 0.0) * gA * gA + max(sB.z - dot(sB.xy, sB.xy), 0.0) * gB * gB;
   dS += r4 * 0.05 * f4 * (0.6 + 0.4 * gust);
   dS += r3 * 0.06 * clamp(wake.r, 0.0, 1.0) * f2; // churned surface right in the foam
   // oar ripples and puddles bend the real surface: reflections and refraction wobble through them
   dS += clamp(oar.xy, -0.6, 0.6);
-  varS += vec2(0.25 * dot(oar.xy, oar.xy) + 0.004 * clamp(oar.b, 0.0, 1.0));
+  varS += 2.0 * (0.25 * dot(oar.xy, oar.xy) + 0.004 * clamp(oar.b, 0.0, 1.0));
 
   // Gerstner normal & Jacobian evaluated per pixel at the undisplaced position: identical across
   // clipmap levels (no seams) and sharper than per-vertex interpolation
   vec3 gN; float gJ;
-  gerstner(vGrid, dist, gN, gJ);
+  gerstner(vGrid, dist, vEnv0, gN, gJ);
   vec2 gS = -gN.xz / max(gN.y, 0.2);
   vec3 N = normalize(vec3(-(gS.x + dS.x), 1.0, -(gS.y + dS.y)));
-  float slopeVar = varS.x + varS.y + gLostVar;
+  float slopeVar = varS + gLostVar;
   // far away, flatten normals toward the mean (reduces sparkle aliasing & grazing-angle darkness)
   N = normalize(mix(N, vec3(0.0, 1.0, 0.0), smoothstep(3000.0, 25000.0, dist) * 0.85));
 
@@ -360,7 +504,7 @@ void main() {
   R.y = abs(R.y) * 0.9 + 0.02;
   // unresolved slope variance blurs the reflection (cube texel ~0.006 rad at lod 0)
   float lod = clamp(log2(1.0 + 330.0 * sqrt(slopeVar)), 0.0, 6.0);
-  vec3 sky = textureLod(uFogEnv, R, lod).rgb;
+  vec3 sky = sampleSkyEnv(R, lod);
   // planar reflection of the world (islands, hull, sail, lights) over the sky reflection; the wave
   // normal displaces it (more for near water) and slope variance blurs it via the mip chain
   if (uReflOn > 0.5) {
@@ -422,7 +566,7 @@ void main() {
   vec3 sigma = vec3(0.34, 0.075, 0.042);            // absorption+scatter extinction (1/m), clear Aegean
   vec3 T = exp(-sigma * thick);
   // light available under water
-  vec3 skyIrr = textureLod(uFogEnv, vec3(0.0, 1.0, 0.0), 5.0).rgb;
+  vec3 skyIrr = sampleSkyEnv(vec3(0.0, 1.0, 0.0), 5.0);
   vec3 light = uSunColor * max(L.y, 0.0) * 0.55 * sunVis + skyIrr * 1.1;
   vec3 scatterCol = vec3(0.012, 0.075, 0.105);
   vec3 inscatter = scatterCol * light * (1.0 - T);
@@ -444,13 +588,15 @@ void main() {
 
   // ---- foam ----
   vec2 fp = vWorld.xz;
-  float fn = texture2D(uNoise, fp * 0.045 + uTime * 0.004).r * 0.6 + texture2D(uNoise, fp * 0.18 - uTime * 0.01).g * 0.4;
+  float fn = sampleOceanNoise(fp * 0.045 + uTime * 0.004).r * 0.6 + sampleOceanNoise(fp * 0.18 - uTime * 0.01).g * 0.4;
   // whitecaps: break where the combined surface compresses (Jacobians compose multiplicatively);
   // the FFT's persistent foam then trails off the crests as streaks that fray and fade
   float fadeF = 1.0 - smoothstep(300.0, 2500.0, dist);
-  float JA = mix(1.0, texture2D(uDispA, uvA).w, fadeF);
+  // persistent foam from the displacement texture, the compression Jacobian from the slope sample above
+  vec2 foamJacobian = vec2(texture2D(uDispA, uvA).w, sA.w);
+  float JA = mix(1.0, 1.0 + vEnv1.x * (foamJacobian.g - 1.0), fadeF);
   float Jt = gJ * JA;
-  float trail = texture2D(uFoamA, uvA).r * fadeF;
+  float trail = foamJacobian.r * fadeF * vEnv1.x * vEnv1.x;
   // threshold set from the sea's statistics (see OceanFFT.whitecaps); gusts push more crests over
   float wj = uWhiteJ + (gust - 0.5) * uWhiteRamp;
   float crestSrc = smoothstep(wj + uWhiteRamp * 0.5, wj - uWhiteRamp, Jt) + trail * smoothstep(1.1, 0.85, gJ);
@@ -460,7 +606,7 @@ void main() {
   // wake foam as coverage of a lace pattern: dense foam covers solidly, thin foam survives only as
   // filaments and bubbles, so the wake frays naturally as it ages
   float wf = clamp(wake.r + oarAir * 0.85, 0.0, 2.0);
-  float lace = texture2D(uNoise, fp * 0.13 + uTime * 0.006).b * 0.55 + texture2D(uNoise, fp * 0.41 - uTime * 0.01).a * 0.3 + texture2D(uNoise, fp * 1.3).r * 0.15;
+  float lace = sampleOceanNoise(fp * 0.13 + uTime * 0.006).b * 0.55 + sampleOceanNoise(fp * 0.41 - uTime * 0.01).a * 0.3 + sampleOceanNoise(fp * 1.3).r * 0.15;
   lace = clamp((lace - 0.5) * 2.4 + 0.5, 0.0, 1.0); // the octave sum clusters near 0.5: restore contrast
   float wakeFoam = clamp((wf * 1.05 - (1.0 - lace)) * 3.5, 0.0, 1.0) * 0.95;
   float crestFoam = clamp((crestSrc * 1.1 - (1.0 - lace)) * 3.0, 0.0, 1.0);
@@ -470,6 +616,8 @@ void main() {
   // foam is bubbly, not flat paint: shade by the lace so dense patches still read as texture
   foamCol *= 0.78 + 0.35 * lace;
   col = mix(col, foamCol, foam * 0.9);
+  // dev view (?debug=seastate): blue = calm, red = exposed
+  if (uSeaDebug > 0.5) col = mix(col, mix(vec3(0.05, 0.25, 1.0), vec3(1.0, 0.15, 0.05), clamp(dot(vEnv0, vec4(0.25)), 0.0, 1.0)), 0.55);
 
   col = applyAerial(col, vWorld);
   gl_FragColor = vec4(col, 1.0);

@@ -56,7 +56,7 @@ export class Input {
 
   constructor(private el: HTMLElement) {
     window.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
+      if (e.repeat || this.frozen) return;
       this.keys.add(e.code);
       this.pressed.add(e.code);
       if (e.code === 'Enter' || e.code === 'NumpadEnter') this.clicked = true;
@@ -66,7 +66,7 @@ export class Input {
     window.addEventListener('blur', () => this.keys.clear());
     document.addEventListener('mousemove', (e) => {
       if (this.pressTravel >= 0) this.pressTravel += Math.hypot(e.movementX, e.movementY);
-      if (!this.mouseLook) return;
+      if (!this.mouseLook || this.frozen) return;
       // locked: always look. unlocked: look only while dragging with LMB, wherever the drag is.
       if (!this.locked && !this.lmb) return;
       this.mouseDX += e.movementX;
@@ -126,11 +126,21 @@ export class Input {
     };
   }
 
+  /** while a panel (the ledger) owns the keyboard, the game sees no keys, look or clicks */
+  frozen = false;
+  freeze(on: boolean) {
+    this.frozen = on;
+    this.keys.clear();
+    this.pressed.clear();
+    this.clicked = false;
+    this.mouseDX = this.mouseDY = 0;
+  }
+
   down(code: string) {
-    return this.keys.has(code);
+    return !this.frozen && this.keys.has(code);
   }
   hit(code: string) {
-    return this.pressed.has(code);
+    return !this.frozen && this.pressed.has(code);
   }
   endFrame() {
     this.pressed.clear();

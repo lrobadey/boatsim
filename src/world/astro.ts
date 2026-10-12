@@ -32,6 +32,24 @@ export class AstroClock {
     this.compute();
   }
 
+  /** absolute game hours: dayCount · 24 + hours (the trade clock's T) */
+  get totalHours() {
+    return this.dayCount * 24 + this.hours;
+  }
+
+  /** moves time forward by h game hours (h ≥ 0), crossing midnights exactly as update() does, then recomputes */
+  advanceHours(h: number) {
+    if (!(h >= 0)) throw new RangeError(`advanceHours needs h ≥ 0, got ${h}`);
+    this.hours += h;
+    while (this.hours >= 24) {
+      this.hours -= 24;
+      this.dayOfYear = (this.dayOfYear + 1) % 365;
+      this.dayCount++;
+      this.moonPhase = (this.moonPhase + 1 / 29.53) % 1;
+    }
+    this.compute();
+  }
+
   compute() {
     const decl = ((23.44 * Math.PI) / 180) * Math.sin(((2 * Math.PI) / 365) * (this.dayOfYear - 81));
     const H = ((this.hours - 12) / 24) * Math.PI * 2; // hour angle

@@ -1,0 +1,74 @@
+{
+  "added": 96,
+  "changes": [
+    [
+      "(0, '3', '45')",
+      1
+    ],
+    [
+      "(1, '4', '46')",
+      1
+    ],
+    [
+      "(53, '8388624', '8390672')",
+      1
+    ],
+    [
+      "(4, '0', '1')",
+      38
+    ],
+    [
+      "(6, 'srgb', 'srgb-linear')",
+      55
+    ],
+    [
+      "(5, 'srgb', 'srgb-linear')",
+      2
+    ]
+  ],
+  "examples": [
+    {
+      "before": "3,4,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,8388624,srgb,onBeforeCompile(",
+      "after": "45,46,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,8390672,srgb,onBeforeCompil",
+      "diff": [
+        [
+          0,
+          "3",
+          "45"
+        ],
+        [
+          1,
+          "4",
+          "46"
+        ],
+        [
+          53,
+          "8388624",
+          "8390672"
+        ]
+      ]
+    },
+    {
+      "before": "physical,STANDARD,,SKY_ENV_BLEND,0,highp,srgb-linear,306,1024,uv,false,false,false,false,uv,false,false,uv,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,1,2,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,8388688,85",
+      "after": "physical,STANDARD,,SKY_ENV_BLEND,1,highp,srgb-linear,306,1024,uv,false,false,false,false,uv,false,false,uv,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,1,2,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,8388688,85",
+      "diff": [
+        [
+          4,
+          "0",
+          "1"
+        ]
+      ]
+    },
+    {
+      "before": "physical,STANDARD,,SKY_ENV_BLEND,0,highp,srgb-linear,306,1024,uv,false,false,false,false,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,1,2,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,8388688",
+      "after": "physical,STANDARD,,SKY_ENV_BLEND,1,highp,srgb-linear,306,1024,uv,false,false,false,false,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,1,2,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,8388688",
+      "diff": [
+        [
+          4,
+          "0",
+          "1"
+        ]
+      ]
+    }
+  ]
+}

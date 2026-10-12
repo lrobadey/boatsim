@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Ledger (cargo spec §9): the port's goods, the notebook and the Hold book.
+   Built only from the style.css tokens: night glass, bone hairlines, Cormorant
+   for the port name, Inter Tight for figures and labels. Terracotta marks the
+   selected row, a red pulse marks a refused amount, fair and caution mark the
+   sign of an order.
+   ========================================================================== */
+
+.ledger-root { position: absolute; inset: 0; display: none; pointer-events: none; }
+.ledger-root.on { display: block; }
+
+.ledger { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(740px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+  padding: 22px 28px 18px; pointer-events: auto; color: var(--t1); text-shadow: none;
+  background: var(--glass-strong); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--lift); }
+
+/* header: port name (or Hold, Notebook) and the game clock */
+.ledger-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--hair); }
+.ledger-title { margin: 0; font: 500 30px/1.1 var(--f-name); letter-spacing: 0.01em; }
+.ledger-time { font: 500 13px var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+
+/* goods table and notebook share the table styling */
+.ledger-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ledger-table th { padding: 12px 10px 8px; text-align: left; font: 600 11px/1.2 var(--f-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--t3); }
+.ledger-table td { padding: 8px 10px; font: 500 15px/1.3 var(--f-ui); color: var(--t1); white-space: nowrap; border-top: 1px solid var(--hair); }
+.ledger-table .r { text-align: right; }
+.ledger-table td.nm { font-weight: 500; }
+.ledger-goods { display: table; }
+.ledger-nb { display: none; }
+
+/* selected row: a terracotta rule at its left edge (trade mode only, set by the panel) */
+.ledger-goods tbody tr.on td { background: rgba(243, 238, 228, 0.07); }
+.ledger-goods tbody tr.on td:first-child { box-shadow: inset 2px 0 0 var(--terra); }
+.ledger-goods tbody tr { cursor: pointer; }
+.ledger-goods td.c-order { font-weight: 600; }
+.ledger-goods td.c-order.buy { color: var(--fair-soft); }
+.ledger-goods td.c-order.sell { color: var(--caution); }
+
+/* notebook: a figure of two prices, its age on a faint second line */
+.ledger-nb td { padding: 7px 10px; }
+.nb-p { font: 500 15px/1.2 var(--f-ui); }
+.nb-a { margin-top: 2px; font: 400 11px/1.2 var(--f-ui); color: var(--t3); }
+.ledger-nb td.nb-none { color: var(--t4); }
+
+/* order footer: total, duty and porterage as figures; only in trade mode on the goods view */
+.ledger-order { display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); min-height: 44px; }
+.ledger-order .lo-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 26px; }
+.ledger-order .lo-tot { display: inline-flex; align-items: baseline; gap: 12px; }
+.lo-label { font: 600 11px/1.2 var(--f-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--t3); }
+.lo-val { font: 300 26px/1 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--t1); }
+.lo-val.in { color: var(--fair-soft); }
+.lo-val.out { color: var(--caution); }
+.lo-fig { font: 500 14px/1.2 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+.lo-fig b { font-weight: 500; color: var(--t1); }
+.lo-read { display: none; font: 500 15px/1.3 var(--f-ui); color: var(--t2); }
+
+/* purse and hold figures, always shown; a refused amount pulses one of them */
+.ledger-funds { display: flex; flex-wrap: wrap; gap: 6px 26px; margin-top: 14px; font: 500 14px/1.3 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+.ledger-funds span { color: var(--t2); }
+.ledger-funds .lf-purse { color: var(--t1); }
+
+/* the Hold book: wages and the cargo job */
+.ledger-extra { display: none; flex-wrap: wrap; gap: 6px 26px; margin-top: 8px; font: 500 14px/1.3 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+.lx-job:empty { display: none; }
+.lx-job { color: var(--bronze); }
+
+/* key line */
+.ledger-keys { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair); font: 500 12px/1.4 var(--f-ui); color: var(--t2); }
+.ledger-keys .kh { white-space: nowrap; }
+
+/* ---------- modes ---------- */
+/* read-only: no Order column, no order footer; the line says why */
+.ledger[data-mode="read"] .c-order { display: none; }
+.ledger[data-mode="read"] .lo-main { display: none; }
+.ledger[data-mode="read"] .ledger-order { display: block; }
+.ledger[data-mode="read"] .lo-read { display: block; }
+/* Hold book: no market columns; the Aboard column carries count and mass; wages and job show */
+.ledger[data-mode="hold"] .c-market, .ledger[data-mode="hold"] .c-order { display: none; }
+.ledger[data-mode="hold"] .ledger-extra { display: flex; }
+/* trade on the goods view: the cargo job line shows while a job runs (no wages here) */
+.ledger[data-mode="trade"][data-view="goods"] .ledger-extra { display: flex; }
+.ledger[data-mode="trade"] .lx-wages { display: none; }
+.ledger[data-mode="trade"][data-view="goods"] .ledger-extra:not(:has(.lx-job:not(:empty))) { display: none; }
+/* trade on the goods view: the order footer shows */
+.ledger[data-mode="trade"][data-view="goods"] .ledger-order { display: block; }
+.ledger[data-mode="trade"][data-view="goods"] .lo-main { display: flex; }
+/* notebook view: only the table, the funds and the keys */
+.ledger[data-view="notebook"] .ledger-goods { display: none; }
+.ledger[data-view="notebook"] .ledger-nb { display: table; }
+.ledger[data-view="notebook"] .ledger-order { display: none; }
+.ledger[data-view="notebook"] .ledger-extra { display: none; }
+
+@media (max-width: 720px) {
+  .ledger { padding: 16px 14px 14px; }
+  .ledger-title { font-size: 26px; }
+  .ledger-table th, .ledger-table td { padding-left: 6px; padding-right: 6px; }
+  .ledger-table td { font-size: 14px; }
+  .lo-val { font-size: 22px; }
+}
+
+/* ---------- HUD readout (hud.ts): draft and freeboard beside the speed, full density, merchant only ---------- */
+.hull-read { display: none; flex-direction: column; gap: 3px; padding-bottom: 6px; font: 500 13px/1.2 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hud.full .hull-read.on { display: flex; }

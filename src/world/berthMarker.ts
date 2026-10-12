@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import type { Berth, HarbourLayout } from './harbour';
 import type { Mooring } from '../ship/mooring';
-import { halfWidthAt, zOf } from '../ship/hull';
-import { outrigger } from '../ship/trireme';
+import type { ShipDesign } from '../ship/design';
 import { LAYER_NOREFLECT } from '../core/pipeline';
 
 /**
@@ -38,14 +37,16 @@ const toward = (v: number, t: number, step: number) => v + Math.max(-step, Math.
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 /** ship-local waterline outline (x = starboard, z = aft), closed: the last point repeats the first */
-function waterlineLoop(): THREE.Vector2[] {
+function waterlineLoop(design: ShipDesign): THREE.Vector2[] {
+  const { hull, deck } = design;
   const N = 40;
   const stbd: THREE.Vector2[] = [];
   const port: THREE.Vector2[] = [];
   for (let k = 0; k < N; k++) {
     const s = k / (N - 1);
-    const w = halfWidthAt(s, 0.4) + outrigger(s);
-    const z = zOf(s);
+    // hull at 0.4 m above the waterline plus anything outboard of the sheer (the trireme's outrigger)
+    const w = hull.halfWidthAt(s, 0.4) + Math.max(0, deck.outerHalfWidth(s) - hull.halfBeam(s));
+    const z = hull.zOf(s);
     stbd.push(new THREE.Vector2(w, z));
     port.unshift(new THREE.Vector2(-w, z)); // stern first, so the loop runs bow → stbd → stern → port
   }
@@ -199,13 +200,17 @@ export class BerthMarker {
   private quality = 0.5;
   private dist = Infinity;
   private shipX = 0;
+  /** the current ship's docked CoG at the shown berth */
+  private poseX = 0;
+  private poseZ = 0;
   private shipZ = 0;
   private yaw = 0;
   private waterY = 0;
 
-  constructor(layout: HarbourLayout) {
+  /** one layout or all of them: the berths of every harbour get a marker (global berth ids) */
+  constructor(layouts: HarbourLayout | HarbourLayout[], design: ShipDesign) {
     const U = this.U;
-    const loop = waterlineLoop();
+    const loop = waterlineLoop(design);
     const line = ribbonGeometry(loop, 0.22);
     const halo = ribbonGeometry(loop, 0.9);
     const fill = new THREE.ShapeGeometry(new THREE.Shape(loop.slice(0, -1))).rotateX(Math.PI / 2);
@@ -250,7 +255,8 @@ export class BerthMarker {
       return m;
     };
 
-    for (const b of layout.berths) {
+    const berths = (Array.isArray(layouts) ? layouts : [layouts]).flatMap((l) => l.berths);
+    for (const b of berths) {
       const root = new THREE.Group();
       const pose = new THREE.Group();
       const rings: THREE.Mesh[] = [];
@@ -295,19 +301,21 @@ export class BerthMarker {
     this.time += dt;
     this.U.uTime.value = this.time;
     const a = mooring.approach;
-    const live = mooring.state === 'free' && a !== null;
+    const live = !mooring.onLines && a !== null;
 
     if (a && live) {
       const b = a.berth;
       this.cur = this.sets.get(b.id) ?? this.cur;
       this.dist = a.dist;
-      // ship CoG from the berth-frame offsets (approach.along / lateral are along a and n)
-      this.shipX = b.cx + a.along * b.ax + a.lateral * b.nx;
-      this.shipZ = b.cz + a.along * b.az + a.lateral * b.nz;
+      // ship CoG from the docked-pose offsets (approach.along / lateral are along a and n)
+      this.shipX = a.poseX + a.along * b.ax + a.lateral * b.nx;
+      this.shipZ = a.poseZ + a.along * b.az + a.lateral * b.nz;
+      this.poseX = a.poseX;
+      this.poseZ = a.poseZ;
       // the allowed heading nearest to her current one: bowOut means bow along +a
       const hA = Math.atan2(b.ax, -b.az);
       const yawT = -(a.bowOut ? hA : hA + Math.PI);
-      const waterT = waveHeightAtBerth(b.cx, b.cz) + 0.05;
+      const waterT = waveHeightAtBerth(a.poseX, a.poseZ) + 0.05;
       const k = this.fade < 0.01 ? 1 : Math.min(1, dt * 4);
       this.yaw += wrap(yawT - this.yaw) * k;
       this.waterY += (waterT - this.waterY) * k;
@@ -325,7 +333,7 @@ export class BerthMarker {
     const shown = cur !== null && this.fade > 0.002;
     for (const s of this.sets.values()) s.root.visible = shown && s === cur;
     if (cur && shown) {
-      cur.pose.position.set(cur.berth.cx, this.waterY, cur.berth.cz);
+      cur.pose.position.set(this.poseX, this.waterY, this.poseZ);
       cur.pose.rotation.set(0, this.yaw, 0);
       for (const r of cur.rings) {
         const d = cameraPos.distanceTo(r.position);
@@ -344,8 +352,8 @@ export class BerthMarker {
       }
       const u = (this.time * 0.09 + i / 3) % 1;
       const p = 0.1 + 0.8 * u;
-      const bx = cur.berth.cx;
-      const bz = cur.berth.cz;
+      const bx = this.poseX;
+      const bz = this.poseZ;
       const dx = bx - this.shipX;
       const dz = bz - this.shipZ;
       const x = this.shipX + dx * p;

@@ -1,0 +1,1574 @@
+{
+ "generated": "2026-10-11T04:50:11.297Z",
+ "quick": false,
+ "source": "scripts/test-rowers.mjs",
+ "gates": {
+  "handP95": 0.01,
+  "handMax": 0.03,
+  "toe": 0.005,
+  "pop": 12,
+  "knee": 70,
+  "flip": 30,
+  "clear": 0.1,
+  "clearStroke": 0.085,
+  "cpuMedianUs": 30,
+  "handNote": "spec 12.3.1 gives p95 < 1 cm and max < 3 cm; median and p99 are reported only"
+ },
+ "sampling": {
+  "physicsHz": 120,
+  "renderHz": 60,
+  "warmFrames": 120,
+  "seconds": 60
+ },
+ "stance": {
+  "source": "src/crew/stance.ts",
+  "d0": 0.6,
+  "lateral": 0,
+  "lateralFrom": "mid-stroke grip midpoint, toward the oar side (spec 2.2 deviation)",
+  "facing": "aft",
+  "feet": {
+   "splitFwd": 0.32,
+   "splitBack": 0.25,
+   "width": 0.16
+  }
+ },
+ "capsuleRadiiM": "torso 0.16/0.12, head 0.10, thigh 0.10, shin 0.08, upper arm 0.07, forearm and hand 0.05/0.045, feet 0.06; loom radius 0.035",
+ "loomSign": 1,
+ "runs": {
+  "FULL": {
+   "order": 4,
+   "seconds": 60,
+   "hold": false,
+   "shipped": null,
+   "rough": false,
+   "windMs": 0,
+   "speedKn": 1.76,
+   "spm": 18.1,
+   "cpu": {
+    "medianUs": 18.8,
+    "p99Us": 51.9,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.04,
+     "plants": 2,
+     "popMaxDeg": 9.5,
+     "popAt": "forearm_L @12.33s station 0",
+     "kneeMinDeg": 78.6,
+     "flipMaxDeg": 8.6,
+     "elbowMinDeg": 58.3,
+     "clearanceMinM": 0.114,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.089,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 9.4,
+     "popAt": "forearm_R @9.00s station 1",
+     "kneeMinDeg": 81.6,
+     "flipMaxDeg": 7.9,
+     "elbowMinDeg": 56.4,
+     "clearanceMinM": 0.106,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.099,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.05,
+     "plants": 2,
+     "popMaxDeg": 8.7,
+     "popAt": "forearm_L @9.08s station 2",
+     "kneeMinDeg": 78.6,
+     "flipMaxDeg": 7,
+     "elbowMinDeg": 58,
+     "clearanceMinM": 0.111,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.121,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 9.4,
+     "popAt": "forearm_R @12.38s station 3",
+     "kneeMinDeg": 78.7,
+     "flipMaxDeg": 8,
+     "elbowMinDeg": 57.2,
+     "clearanceMinM": 0.107,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.109,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.03,
+     "plants": 2,
+     "popMaxDeg": 9.4,
+     "popAt": "forearm_L @12.25s station 4",
+     "kneeMinDeg": 81.5,
+     "flipMaxDeg": 8.6,
+     "elbowMinDeg": 59.4,
+     "clearanceMinM": 0.121,
+     "clearanceWhat": "spine-chest vs loom 4",
+     "upperArmToOwnLoomM": 0.092,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 10.2,
+     "popAt": "forearm_R @48.57s station 5",
+     "kneeMinDeg": 77.6,
+     "flipMaxDeg": 8.5,
+     "elbowMinDeg": 56.2,
+     "clearanceMinM": 0.096,
+     "clearanceWhat": "thigh_L-shin_L vs loom 5",
+     "upperArmToOwnLoomM": 0.109,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.373
+   },
+   "heldFrames": 20784,
+   "partialBodyWhileHandsOn": 0
+  },
+  "HALF": {
+   "order": 3,
+   "seconds": 60,
+   "hold": false,
+   "shipped": null,
+   "rough": false,
+   "windMs": 0,
+   "speedKn": 1.51,
+   "spm": 16,
+   "cpu": {
+    "medianUs": 17.6,
+    "p99Us": 38.8,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.05,
+     "plants": 2,
+     "popMaxDeg": 9.3,
+     "popAt": "forearm_L @6.40s station 0",
+     "kneeMinDeg": 78.5,
+     "flipMaxDeg": 8.4,
+     "elbowMinDeg": 50.2,
+     "clearanceMinM": 0.113,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.024,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 8.8,
+     "popAt": "forearm_R @6.37s station 1",
+     "kneeMinDeg": 81.2,
+     "flipMaxDeg": 7.2,
+     "elbowMinDeg": 57.5,
+     "clearanceMinM": 0.108,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.096,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.06,
+     "plants": 2,
+     "popMaxDeg": 8.1,
+     "popAt": "forearm_L @43.50s station 2",
+     "kneeMinDeg": 78.6,
+     "flipMaxDeg": 6.6,
+     "elbowMinDeg": 58.9,
+     "clearanceMinM": 0.113,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.122,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 9.3,
+     "popAt": "forearm_R @6.33s station 3",
+     "kneeMinDeg": 78.2,
+     "flipMaxDeg": 7.8,
+     "elbowMinDeg": 58.2,
+     "clearanceMinM": 0.108,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.093,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.04,
+     "plants": 2,
+     "popMaxDeg": 8.7,
+     "popAt": "forearm_L @6.30s station 4",
+     "kneeMinDeg": 81.4,
+     "flipMaxDeg": 7.9,
+     "elbowMinDeg": 56.9,
+     "clearanceMinM": 0.122,
+     "clearanceWhat": "spine-chest vs loom 4",
+     "upperArmToOwnLoomM": 0.053,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 11,
+     "popAt": "forearm_R @54.67s station 5",
+     "kneeMinDeg": 77.5,
+     "flipMaxDeg": 8.8,
+     "elbowMinDeg": 56.8,
+     "clearanceMinM": 0.096,
+     "clearanceWhat": "thigh_L-shin_L vs loom 5",
+     "upperArmToOwnLoomM": 0.107,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.33
+   },
+   "heldFrames": 20784,
+   "partialBodyWhileHandsOn": 0
+  },
+  "SLOW": {
+   "order": 2,
+   "seconds": 60,
+   "hold": false,
+   "shipped": null,
+   "rough": false,
+   "windMs": 0,
+   "speedKn": 0.49,
+   "spm": 13.8,
+   "cpu": {
+    "medianUs": 10.4,
+    "p99Us": 29.4,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 0,
+     "hand": null,
+     "toePlantDriftMaxCm": null,
+     "plants": 0,
+     "popMaxDeg": 1,
+     "popAt": "forearm_L @56.62s station 0",
+     "kneeMinDeg": 162.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 173.9,
+     "clearanceMinM": 0.454,
+     "clearanceWhat": "thigh_L-shin_L vs loom 0",
+     "upperArmToOwnLoomM": 0.615,
+     "gates": {
+      "hand": null,
+      "toe": null,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 0,
+     "hand": null,
+     "toePlantDriftMaxCm": 0.01,
+     "plants": 1,
+     "popMaxDeg": 1,
+     "popAt": "forearm_R @56.62s station 1",
+     "kneeMinDeg": 162.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 173.9,
+     "clearanceMinM": 0.388,
+     "clearanceWhat": "thigh_L-shin_L vs loom 1",
+     "upperArmToOwnLoomM": 0.632,
+     "gates": {
+      "hand": null,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.05,
+     "plants": 2,
+     "popMaxDeg": 8.6,
+     "popAt": "forearm_L @54.77s station 2",
+     "kneeMinDeg": 78.6,
+     "flipMaxDeg": 6.8,
+     "elbowMinDeg": 61.3,
+     "clearanceMinM": 0.118,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.131,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 8.7,
+     "popAt": "forearm_R @37.48s station 3",
+     "kneeMinDeg": 79.1,
+     "flipMaxDeg": 7.4,
+     "elbowMinDeg": 60.5,
+     "clearanceMinM": 0.112,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.119,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 0,
+     "hand": null,
+     "toePlantDriftMaxCm": 0.01,
+     "plants": 1,
+     "popMaxDeg": 1,
+     "popAt": "forearm_R @56.62s station 4",
+     "kneeMinDeg": 162.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 173.9,
+     "clearanceMinM": 0.461,
+     "clearanceWhat": "thigh_L-shin_L vs loom 4",
+     "upperArmToOwnLoomM": 0.613,
+     "gates": {
+      "hand": null,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 0,
+     "hand": null,
+     "toePlantDriftMaxCm": null,
+     "plants": 0,
+     "popMaxDeg": 1.7,
+     "popAt": "head @40.17s station 5",
+     "kneeMinDeg": 162.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 173.9,
+     "clearanceMinM": 0.424,
+     "clearanceWhat": "thigh_L-shin_L vs loom 5",
+     "upperArmToOwnLoomM": 0.727,
+     "gates": {
+      "hand": null,
+      "toe": null,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.526
+   },
+   "heldFrames": 6928,
+   "partialBodyWhileHandsOn": 0
+  },
+  "BACK": {
+   "order": 0,
+   "seconds": 60,
+   "hold": false,
+   "shipped": null,
+   "rough": false,
+   "windMs": 0,
+   "speedKn": -1.46,
+   "spm": 15,
+   "cpu": {
+    "medianUs": 17.3,
+    "p99Us": 32.8,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.05,
+     "plants": 2,
+     "popMaxDeg": 9.2,
+     "popAt": "forearm_L @50.35s station 0",
+     "kneeMinDeg": 77.1,
+     "flipMaxDeg": 7.1,
+     "elbowMinDeg": 46.7,
+     "clearanceMinM": 0.112,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.025,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.01,
+     "plants": 2,
+     "popMaxDeg": 8.4,
+     "popAt": "forearm_R @32.83s station 1",
+     "kneeMinDeg": 79.8,
+     "flipMaxDeg": 7.1,
+     "elbowMinDeg": 61.9,
+     "clearanceMinM": 0.107,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.092,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.06,
+     "plants": 2,
+     "popMaxDeg": 8.3,
+     "popAt": "forearm_L @13.12s station 2",
+     "kneeMinDeg": 76.4,
+     "flipMaxDeg": 6.9,
+     "elbowMinDeg": 63.8,
+     "clearanceMinM": 0.112,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.113,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.01,
+     "plants": 2,
+     "popMaxDeg": 7.8,
+     "popAt": "forearm_R @5.07s station 3",
+     "kneeMinDeg": 77,
+     "flipMaxDeg": 6.8,
+     "elbowMinDeg": 54.4,
+     "clearanceMinM": 0.104,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.051,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.05,
+     "plants": 2,
+     "popMaxDeg": 8.7,
+     "popAt": "forearm_L @50.30s station 4",
+     "kneeMinDeg": 80.4,
+     "flipMaxDeg": 7.3,
+     "elbowMinDeg": 44.4,
+     "clearanceMinM": 0.111,
+     "clearanceWhat": "neck-head vs loom 4",
+     "upperArmToOwnLoomM": 0.001,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0.54,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.01,
+     "plants": 2,
+     "popMaxDeg": 11.3,
+     "popAt": "forearm_R @56.63s station 5",
+     "kneeMinDeg": 75.8,
+     "flipMaxDeg": 9.6,
+     "elbowMinDeg": 61.5,
+     "clearanceMinM": 0.088,
+     "clearanceWhat": "spine-chest vs loom 5",
+     "upperArmToOwnLoomM": 0.113,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.365
+   },
+   "heldFrames": 20784,
+   "partialBodyWhileHandsOn": 0
+  },
+  "HOLD": {
+   "order": 4,
+   "seconds": 60,
+   "hold": true,
+   "shipped": null,
+   "rough": false,
+   "windMs": 0,
+   "speedKn": 0,
+   "spm": 0,
+   "cpu": {
+    "medianUs": 16.9,
+    "p99Us": 27.2,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 0.1,
+     "popAt": "head @25.17s station 0",
+     "kneeMinDeg": 116,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 84.7,
+     "clearanceMinM": 0.244,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.157,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 0.2,
+     "popAt": "head @30.18s station 1",
+     "kneeMinDeg": 120.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 81.4,
+     "clearanceMinM": 0.24,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.154,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 0.1,
+     "popAt": "head @30.15s station 2",
+     "kneeMinDeg": 116.3,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 81.7,
+     "clearanceMinM": 0.246,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.173,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 0.9,
+     "popAt": "head @55.17s station 3",
+     "kneeMinDeg": 116,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 83.6,
+     "clearanceMinM": 0.241,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.167,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 0.2,
+     "popAt": "head @45.15s station 4",
+     "kneeMinDeg": 120.4,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 84.8,
+     "clearanceMinM": 0.244,
+     "clearanceWhat": "spine-chest vs loom 4",
+     "upperArmToOwnLoomM": 0.168,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0,
+     "plants": 2,
+     "popMaxDeg": 2.1,
+     "popAt": "head @25.17s station 5",
+     "kneeMinDeg": 104.4,
+     "flipMaxDeg": 0,
+     "elbowMinDeg": 82.4,
+     "clearanceMinM": 0.25,
+     "clearanceWhat": "spine-chest vs loom 5",
+     "upperArmToOwnLoomM": 0.167,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.351
+   },
+   "heldFrames": 20784,
+   "partialBodyWhileHandsOn": 0
+  },
+  "SHIPPED": {
+   "order": 3,
+   "seconds": 60,
+   "hold": false,
+   "shipped": [
+    20,
+    40
+   ],
+   "rough": false,
+   "windMs": 0,
+   "speedKn": 1.14,
+   "spm": 16,
+   "cpu": {
+    "medianUs": 16.7,
+    "p99Us": 31.6,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 2106,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4212
+     },
+     "toePlantDriftMaxCm": 0.22,
+     "plants": 7,
+     "popMaxDeg": 9.3,
+     "popAt": "forearm_L @6.40s station 0",
+     "kneeMinDeg": 78.2,
+     "flipMaxDeg": 8.4,
+     "elbowMinDeg": 50.6,
+     "clearanceMinM": 0.113,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.029,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 2129,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4258
+     },
+     "toePlantDriftMaxCm": 0.18,
+     "plants": 7,
+     "popMaxDeg": 8.8,
+     "popAt": "forearm_R @6.37s station 1",
+     "kneeMinDeg": 81.4,
+     "flipMaxDeg": 7.2,
+     "elbowMinDeg": 57.9,
+     "clearanceMinM": 0.108,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.097,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 2129,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4258
+     },
+     "toePlantDriftMaxCm": 0.16,
+     "plants": 7,
+     "popMaxDeg": 8.1,
+     "popAt": "forearm_L @20.15s station 2",
+     "kneeMinDeg": 78.4,
+     "flipMaxDeg": 6.7,
+     "elbowMinDeg": 59.3,
+     "clearanceMinM": 0.06,
+     "clearanceWhat": "forearm_R-hand_R vs loom 0",
+     "upperArmToOwnLoomM": 0.123,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 2092,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4184
+     },
+     "toePlantDriftMaxCm": 0.21,
+     "plants": 7,
+     "popMaxDeg": 9.3,
+     "popAt": "forearm_R @6.33s station 3",
+     "kneeMinDeg": 78,
+     "flipMaxDeg": 7.8,
+     "elbowMinDeg": 58.6,
+     "clearanceMinM": 0.108,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": 0.09,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 2129,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4258
+     },
+     "toePlantDriftMaxCm": 0.19,
+     "plants": 7,
+     "popMaxDeg": 8.7,
+     "popAt": "forearm_L @6.30s station 4",
+     "kneeMinDeg": 81.5,
+     "flipMaxDeg": 7.9,
+     "elbowMinDeg": 58.2,
+     "clearanceMinM": 0.123,
+     "clearanceWhat": "spine-chest vs loom 4",
+     "upperArmToOwnLoomM": 0.061,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 2129,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 4258
+     },
+     "toePlantDriftMaxCm": 0.15,
+     "plants": 7,
+     "popMaxDeg": 11,
+     "popAt": "forearm_R @59.33s station 5",
+     "kneeMinDeg": 77.2,
+     "flipMaxDeg": 9,
+     "elbowMinDeg": 57.2,
+     "clearanceMinM": 0.077,
+     "clearanceWhat": "thigh_L-shin_L vs loom 5",
+     "upperArmToOwnLoomM": 0.109,
+     "gates": {
+      "hand": true,
+      "toe": true,
+      "pop": true,
+      "knee": true,
+      "flip": true,
+      "clear": true,
+      "armLoom": true
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.33
+   },
+   "heldFrames": 12714,
+   "partialBodyWhileHandsOn": 0
+  },
+  "ROUGH": {
+   "order": 4,
+   "seconds": 60,
+   "hold": false,
+   "shipped": null,
+   "rough": true,
+   "windMs": 10,
+   "speedKn": 2.28,
+   "spm": 18.3,
+   "cpu": {
+    "medianUs": 18,
+    "p99Us": 34.8,
+    "samples": 20880,
+    "pass": true
+   },
+   "stations": [
+    {
+     "station": 0,
+     "s": 0.17,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.11,
+     "plants": 2,
+     "popMaxDeg": 17.6,
+     "popAt": "forearm_L @48.50s station 0",
+     "kneeMinDeg": 74.6,
+     "flipMaxDeg": 15.2,
+     "elbowMinDeg": 48.7,
+     "clearanceMinM": 0.098,
+     "clearanceWhat": "spine-chest vs loom 0",
+     "upperArmToOwnLoomM": 0.015,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 1,
+     "s": 0.25,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.09,
+     "plants": 2,
+     "popMaxDeg": 20.8,
+     "popAt": "forearm_R @41.57s station 1",
+     "kneeMinDeg": 77.9,
+     "flipMaxDeg": 17.7,
+     "elbowMinDeg": 51.1,
+     "clearanceMinM": 0.101,
+     "clearanceWhat": "spine-chest vs loom 1",
+     "upperArmToOwnLoomM": 0.059,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 2,
+     "s": 0.33,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.13,
+     "plants": 2,
+     "popMaxDeg": 16.3,
+     "popAt": "forearm_L @48.50s station 2",
+     "kneeMinDeg": 74.4,
+     "flipMaxDeg": 14.5,
+     "elbowMinDeg": 52,
+     "clearanceMinM": 0.091,
+     "clearanceWhat": "spine-chest vs loom 2",
+     "upperArmToOwnLoomM": 0.036,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 3,
+     "s": 0.62,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 3.92,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.08,
+     "plants": 2,
+     "popMaxDeg": 17.6,
+     "popAt": "forearm_R @34.95s station 3",
+     "kneeMinDeg": 74.9,
+     "flipMaxDeg": 14.3,
+     "elbowMinDeg": 51.6,
+     "clearanceMinM": 0.092,
+     "clearanceWhat": "spine-chest vs loom 3",
+     "upperArmToOwnLoomM": -0.023,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 4,
+     "s": 0.7,
+     "manned": 3464,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0,
+      "max_cm": 0,
+      "n": 6928
+     },
+     "toePlantDriftMaxCm": 0.1,
+     "plants": 2,
+     "popMaxDeg": 18.3,
+     "popAt": "forearm_L @50.90s station 4",
+     "kneeMinDeg": 77.2,
+     "flipMaxDeg": 16.4,
+     "elbowMinDeg": 49.3,
+     "clearanceMinM": 0.104,
+     "clearanceWhat": "spine-chest vs loom 4",
+     "upperArmToOwnLoomM": 0.051,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    },
+    {
+     "station": 5,
+     "s": 0.78,
+     "manned": 3411,
+     "hand": {
+      "p50_cm": 0,
+      "p95_cm": 0,
+      "p99_cm": 0.93,
+      "max_cm": 5.94,
+      "n": 6822
+     },
+     "toePlantDriftMaxCm": 0.08,
+     "plants": 2,
+     "popMaxDeg": 19.1,
+     "popAt": "forearm_R @34.90s station 5",
+     "kneeMinDeg": 74,
+     "flipMaxDeg": 15.9,
+     "elbowMinDeg": 51.5,
+     "clearanceMinM": 0.065,
+     "clearanceWhat": "thigh_L-shin_L vs loom 5",
+     "upperArmToOwnLoomM": 0.037,
+     "gates": {
+      "hand": true,
+      "toe": null,
+      "pop": null,
+      "knee": null,
+      "flip": null,
+      "clear": null,
+      "armLoom": null
+     },
+     "failed": [],
+     "pass": true
+    }
+   ],
+   "cloneCheck": {
+    "skeletonsDistinct": true,
+    "headSeparationM": 6.47
+   },
+   "heldFrames": 20731,
+   "partialBodyWhileHandsOn": 0
+  }
+ },
+ "pass": true,
+ "failures": []
+}

@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test:lighting": "node scripts/test-lighting.mjs",
+    "test:skylight": "node scripts/test-skylight.mjs",
     "test:rowing": "node scripts/test-rowing.mjs",
+    "test:trireme-crew": "node scripts/test-trireme-crew.mjs",
     "test:sailing": "node scripts/test-sailing.mjs",
     "test:sailing-tuning": "node scripts/test-sailing-tuning.mjs",
     "test:walker": "node scripts/test-walker.mjs",
@@ -16,7 +19,16 @@
     "test:mooring": "node scripts/test-mooring.mjs",
     "test:build": "node scripts/test-build.mjs",
     "test:merchant": "node scripts/test-merchant.mjs",
-    "test:golden": "node scripts/test-golden.mjs"
+    "test:golden": "node scripts/test-golden.mjs",
+    "test:seakeeping": "node scripts/test-seakeeping.mjs",
+    "test:sea-state": "node scripts/test-sea-state.mjs",
+    "test:market": "node scripts/test-market.mjs",
+    "test:voyage": "node scripts/test-voyage.mjs",
+    "test:cargo": "node scripts/test-cargo-physics.mjs",
+    "test:hold": "node scripts/test-hold.mjs",
+    "test:ports": "node scripts/test-ports.mjs",
+    "test:ledger": "node scripts/test-ledger-source.mjs",
+    "lint:ui-text": "node scripts/lint-ui-text.mjs"
   },
   "dependencies": {
     "postprocessing": "^6.39.5",

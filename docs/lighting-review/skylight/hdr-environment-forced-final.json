@@ -1,0 +1,1110 @@
+{
+  "exposure": 1,
+  "hour": 9,
+  "mode": "environment-only",
+  "readback": {
+    "accuracyLimits": {
+      "bounds": "projected sphere bounds and center-pixel bounds are checked; occlusion by other geometry is not tested",
+      "cloudStageAvailable": true,
+      "composerBufferType": 1016,
+      "postGrade": "post-grade sample is after tone mapping and before final display encoding; it is not scene-linear radiance",
+      "postGradeStageAvailable": true,
+      "preGrade": "scene and cloud-composited buffers are linear HDR when the composer target is HalfFloatType",
+      "preGradeStageAvailable": true,
+      "precision": "HalfFloatType targets are decoded from binary16; target and quantization precision are reported per stage",
+      "readback": "one-shot synchronous GPU readback can stall the review frame; disabled unless requested",
+      "sample": "single pixel at the projected fixture center; not a surface-area average",
+      "sceneStageAvailable": true
+    },
+    "camera": [
+      1970.7880448990816,
+      4.684516235838322,
+      -263.28255623921075
+    ],
+    "capturedAt": "2026-10-11T04:10:44.210Z",
+    "cloudCoverage": 0.4,
+    "cloudWind": [
+      0,
+      0
+    ],
+    "fixedExposure": 1,
+    "hours": 9,
+    "lightingMode": "environment-only",
+    "phase": 0.5,
+    "stages": {
+      "cloudComposited": {
+        "colorSpace": "",
+        "format": 1023,
+        "height": 775,
+        "samples": [
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 166.65007648504695,
+              "right": 215.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Gray reference",
+            "name": "neutral-gray",
+            "ndc": [
+              -0.5223170519040258,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.10577392578125,
+                0.212158203125,
+                0.40673828125,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.1300631091735,
+              3.0458283473969043,
+              -267.12390642228144
+            ],
+            "x": 191,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504667,
+              "left": 236.65007648504667,
+              "right": 285.34992351495333,
+              "top": 245.34992351495333
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999943,
+            "label": "White reference",
+            "name": "neutral-white",
+            "ndc": [
+              -0.34821136793606305,
+              -0.4284444020226372,
+              0.019998366663944667
+            ],
+            "radiusPx": 24.349923514953332,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.3916015625,
+                0.7880859375,
+                1.5185546875,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.7123491845468,
+              3.0359379416121652,
+              -267.3642085369204
+            ],
+            "x": 261,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 305.6500764850464,
+              "right": 354.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.15",
+            "name": "roughness-015",
+            "ndc": [
+              -0.17410568396797063,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.222412109375,
+                0.425537109375,
+                0.80712890625,
+                1
+              ]
+            },
+            "roughness": 0.15,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.29463525992,
+              3.0260475358274257,
+              -267.6045106515594
+            ],
+            "x": 330,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 375.65007648504695,
+              "right": 424.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Roughness 0.35",
+            "name": "roughness-035",
+            "ndc": [
+              0,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.2049560546875,
+                0.41259765625,
+                0.8017578125,
+                1
+              ]
+            },
+            "roughness": 0.35,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.8769213352932,
+              3.0161571300426866,
+              -267.84481276619834
+            ],
+            "x": 400,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 445.6500764850464,
+              "right": 494.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.55",
+            "name": "roughness-055",
+            "ndc": [
+              0.17410568396797063,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1943359375,
+                0.394775390625,
+                0.76953125,
+                1
+              ]
+            },
+            "roughness": 0.55,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1969.4592074106663,
+              3.0062667242579475,
+              -268.0851148808373
+            ],
+            "x": 470,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 514.6500764850464,
+              "right": 563.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.75",
+            "name": "roughness-075",
+            "ndc": [
+              0.3482113679360041,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1800537109375,
+                0.3662109375,
+                0.71533203125,
+                1
+              ]
+            },
+            "roughness": 0.75,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.0414934860396,
+              2.996376318473208,
+              -268.3254169954763
+            ],
+            "x": 539,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 584.6500764850464,
+              "right": 633.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.95",
+            "name": "roughness-095",
+            "ndc": [
+              0.5223170519039747,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.171630859375,
+                0.348388671875,
+                0.68017578125,
+                1
+              ]
+            },
+            "roughness": 0.95,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.623779561413,
+              2.986485912688469,
+              -268.56571911011525
+            ],
+            "x": 609,
+            "y": 221
+          }
+        ],
+        "type": 1016,
+        "width": 801
+      },
+      "postGradeToneMapped": {
+        "colorSpace": "",
+        "format": 1023,
+        "height": 775,
+        "samples": [
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 166.65007648504695,
+              "right": 215.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Gray reference",
+            "name": "neutral-gray",
+            "ndc": [
+              -0.5223170519040258,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.09246826171875,
+                0.26123046875,
+                0.5166015625,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.1300631091735,
+              3.0458283473969043,
+              -267.12390642228144
+            ],
+            "x": 191,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504667,
+              "left": 236.65007648504667,
+              "right": 285.34992351495333,
+              "top": 245.34992351495333
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999943,
+            "label": "White reference",
+            "name": "neutral-white",
+            "ndc": [
+              -0.34821136793606305,
+              -0.4284444020226372,
+              0.019998366663944667
+            ],
+            "radiusPx": 24.349923514953332,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.513671875,
+                0.708984375,
+                0.85791015625,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.7123491845468,
+              3.0359379416121652,
+              -267.3642085369204
+            ],
+            "x": 261,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 305.6500764850464,
+              "right": 354.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.15",
+            "name": "roughness-015",
+            "ndc": [
+              -0.17410568396797063,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.28369140625,
+                0.50537109375,
+                0.73779296875,
+                1
+              ]
+            },
+            "roughness": 0.15,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.29463525992,
+              3.0260475358274257,
+              -267.6045106515594
+            ],
+            "x": 330,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 375.65007648504695,
+              "right": 424.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Roughness 0.35",
+            "name": "roughness-035",
+            "ndc": [
+              0,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.26025390625,
+                0.49462890625,
+                0.7373046875,
+                1
+              ]
+            },
+            "roughness": 0.35,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.8769213352932,
+              3.0161571300426866,
+              -267.84481276619834
+            ],
+            "x": 400,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 445.6500764850464,
+              "right": 494.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.55",
+            "name": "roughness-055",
+            "ndc": [
+              0.17410568396797063,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.2427978515625,
+                0.478515625,
+                0.72705078125,
+                1
+              ]
+            },
+            "roughness": 0.55,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1969.4592074106663,
+              3.0062667242579475,
+              -268.0851148808373
+            ],
+            "x": 470,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 514.6500764850464,
+              "right": 563.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.75",
+            "name": "roughness-075",
+            "ndc": [
+              0.3482113679360041,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.21826171875,
+                0.45068359375,
+                0.70703125,
+                1
+              ]
+            },
+            "roughness": 0.75,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.0414934860396,
+              2.996376318473208,
+              -268.3254169954763
+            ],
+            "x": 539,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 584.6500764850464,
+              "right": 633.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.95",
+            "name": "roughness-095",
+            "ndc": [
+              0.5223170519039747,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.20361328125,
+                0.432373046875,
+                0.6923828125,
+                1
+              ]
+            },
+            "roughness": 0.95,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.623779561413,
+              2.986485912688469,
+              -268.56571911011525
+            ],
+            "x": 609,
+            "y": 221
+          }
+        ],
+        "type": 1016,
+        "width": 801
+      },
+      "preGradeHDR": {
+        "colorSpace": "",
+        "format": 1023,
+        "height": 775,
+        "samples": [
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 166.65007648504695,
+              "right": 215.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Gray reference",
+            "name": "neutral-gray",
+            "ndc": [
+              -0.5223170519040258,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.10577392578125,
+                0.212158203125,
+                0.40673828125,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.1300631091735,
+              3.0458283473969043,
+              -267.12390642228144
+            ],
+            "x": 191,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504667,
+              "left": 236.65007648504667,
+              "right": 285.34992351495333,
+              "top": 245.34992351495333
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999943,
+            "label": "White reference",
+            "name": "neutral-white",
+            "ndc": [
+              -0.34821136793606305,
+              -0.4284444020226372,
+              0.019998366663944667
+            ],
+            "radiusPx": 24.349923514953332,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.3916015625,
+                0.7880859375,
+                1.5185546875,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.7123491845468,
+              3.0359379416121652,
+              -267.3642085369204
+            ],
+            "x": 261,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 305.6500764850464,
+              "right": 354.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.15",
+            "name": "roughness-015",
+            "ndc": [
+              -0.17410568396797063,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.222412109375,
+                0.425537109375,
+                0.80712890625,
+                1
+              ]
+            },
+            "roughness": 0.15,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.29463525992,
+              3.0260475358274257,
+              -267.6045106515594
+            ],
+            "x": 330,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 375.65007648504695,
+              "right": 424.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Roughness 0.35",
+            "name": "roughness-035",
+            "ndc": [
+              0,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.2049560546875,
+                0.41259765625,
+                0.8017578125,
+                1
+              ]
+            },
+            "roughness": 0.35,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.8769213352932,
+              3.0161571300426866,
+              -267.84481276619834
+            ],
+            "x": 400,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 445.6500764850464,
+              "right": 494.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.55",
+            "name": "roughness-055",
+            "ndc": [
+              0.17410568396797063,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1943359375,
+                0.394775390625,
+                0.76953125,
+                1
+              ]
+            },
+            "roughness": 0.55,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1969.4592074106663,
+              3.0062667242579475,
+              -268.0851148808373
+            ],
+            "x": 470,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 514.6500764850464,
+              "right": 563.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.75",
+            "name": "roughness-075",
+            "ndc": [
+              0.3482113679360041,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1800537109375,
+                0.3662109375,
+                0.71533203125,
+                1
+              ]
+            },
+            "roughness": 0.75,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.0414934860396,
+              2.996376318473208,
+              -268.3254169954763
+            ],
+            "x": 539,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 584.6500764850464,
+              "right": 633.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.95",
+            "name": "roughness-095",
+            "ndc": [
+              0.5223170519039747,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.171630859375,
+                0.348388671875,
+                0.68017578125,
+                1
+              ]
+            },
+            "roughness": 0.95,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.623779561413,
+              2.986485912688469,
+              -268.56571911011525
+            ],
+            "x": 609,
+            "y": 221
+          }
+        ],
+        "type": 1016,
+        "width": 801
+      },
+      "sceneBeforeClouds": {
+        "colorSpace": "",
+        "format": 1023,
+        "height": 775,
+        "samples": [
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 166.65007648504695,
+              "right": 215.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Gray reference",
+            "name": "neutral-gray",
+            "ndc": [
+              -0.5223170519040258,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.10577392578125,
+                0.212158203125,
+                0.40673828125,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.1300631091735,
+              3.0458283473969043,
+              -267.12390642228144
+            ],
+            "x": 191,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504667,
+              "left": 236.65007648504667,
+              "right": 285.34992351495333,
+              "top": 245.34992351495333
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999943,
+            "label": "White reference",
+            "name": "neutral-white",
+            "ndc": [
+              -0.34821136793606305,
+              -0.4284444020226372,
+              0.019998366663944667
+            ],
+            "radiusPx": 24.349923514953332,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.3916015625,
+                0.7880859375,
+                1.5185546875,
+                1
+              ]
+            },
+            "roughness": 0.82,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1967.7123491845468,
+              3.0359379416121652,
+              -267.3642085369204
+            ],
+            "x": 261,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 305.6500764850464,
+              "right": 354.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.15",
+            "name": "roughness-015",
+            "ndc": [
+              -0.17410568396797063,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.222412109375,
+                0.425537109375,
+                0.80712890625,
+                1
+              ]
+            },
+            "roughness": 0.15,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.29463525992,
+              3.0260475358274257,
+              -267.6045106515594
+            ],
+            "x": 330,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.65007648504695,
+              "left": 375.65007648504695,
+              "right": 424.34992351495305,
+              "top": 245.34992351495305
+            },
+            "centerInBounds": true,
+            "depth": 5,
+            "label": "Roughness 0.35",
+            "name": "roughness-035",
+            "ndc": [
+              0,
+              -0.42844440202263234,
+              0.01999836666394444
+            ],
+            "radiusPx": 24.349923514953055,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.2049560546875,
+                0.41259765625,
+                0.8017578125,
+                1
+              ]
+            },
+            "roughness": 0.35,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1968.8769213352932,
+              3.0161571300426866,
+              -267.84481276619834
+            ],
+            "x": 400,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 445.6500764850464,
+              "right": 494.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.55",
+            "name": "roughness-055",
+            "ndc": [
+              0.17410568396797063,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1943359375,
+                0.394775390625,
+                0.76953125,
+                1
+              ]
+            },
+            "roughness": 0.55,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1969.4592074106663,
+              3.0062667242579475,
+              -268.0851148808373
+            ],
+            "x": 470,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 514.6500764850464,
+              "right": 563.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.75",
+            "name": "roughness-075",
+            "ndc": [
+              0.3482113679360041,
+              -0.42844440202264206,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.1800537109375,
+                0.3662109375,
+                0.71533203125,
+                1
+              ]
+            },
+            "roughness": 0.75,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.0414934860396,
+              2.996376318473208,
+              -268.3254169954763
+            ],
+            "x": 539,
+            "y": 221
+          },
+          {
+            "bounds": {
+              "bottom": 196.6500764850464,
+              "left": 584.6500764850464,
+              "right": 633.3499235149536,
+              "top": 245.3499235149536
+            },
+            "centerInBounds": true,
+            "depth": 4.999999999999886,
+            "label": "Roughness 0.95",
+            "name": "roughness-095",
+            "ndc": [
+              0.5223170519039747,
+              -0.4284444020226431,
+              0.019998366663944892
+            ],
+            "radiusPx": 24.34992351495361,
+            "rgba": {
+              "encoding": "binary16-decoded",
+              "linear": true,
+              "rgba": [
+                0.171630859375,
+                0.348388671875,
+                0.68017578125,
+                1
+              ]
+            },
+            "roughness": 0.95,
+            "sphereIntersectsTarget": true,
+            "worldPosition": [
+              1970.623779561413,
+              2.986485912688469,
+              -268.56571911011525
+            ],
+            "x": 609,
+            "y": 221
+          }
+        ],
+        "type": 1016,
+        "width": 801
+      }
+    }
+  },
+  "status": "complete"
+}

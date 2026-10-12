@@ -1,0 +1,150 @@
+{
+  "cloudComposited": [
+    {
+      "name": "neutral-gray",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "neutral-white",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-015",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-035",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-055",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-075",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-095",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    }
+  ],
+  "postGradeToneMapped": [
+    {
+      "name": "neutral-gray",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "neutral-white",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-015",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-035",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-055",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-075",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-095",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    }
+  ],
+  "preGradeHDR": [
+    {
+      "name": "neutral-gray",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "neutral-white",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-015",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-035",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-055",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-075",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-095",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    }
+  ],
+  "sceneBeforeClouds": [
+    {
+      "name": "neutral-gray",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "neutral-white",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-015",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-035",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-055",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-075",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    },
+    {
+      "name": "roughness-095",
+      "maxAbsoluteRGB": 0.0,
+      "relativeRGB": 0.0
+    }
+  ]
+}

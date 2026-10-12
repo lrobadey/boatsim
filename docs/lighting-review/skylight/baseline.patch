@@ -1,0 +1,3107 @@
+diff --git a/.claude/launch.json b/.claude/launch.json
+index 0456298..4eae5d4 100644
+--- a/.claude/launch.json
++++ b/.claude/launch.json
+@@ -1,6 +1,40 @@
+ {
+   "version": "0.0.1",
+   "configurations": [
+-    { "name": "trieres", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173 }
++    {
++      "name": "trieres",
++      "runtimeExecutable": "npm",
++      "runtimeArgs": [
++        "run",
++        "dev"
++      ],
++      "port": 5173
++    },
++    {
++      "name": "trieres-alt",
++      "runtimeExecutable": "npm",
++      "runtimeArgs": [
++        "run",
++        "dev",
++        "--",
++        "--port",
++        "5174",
++        "--strictPort"
++      ],
++      "port": 5174
++    },
++    {
++      "name": "trieres-crew",
++      "runtimeExecutable": "npm",
++      "runtimeArgs": [
++        "run",
++        "dev",
++        "--",
++        "--port",
++        "5182",
++        "--strictPort"
++      ],
++      "port": 5182
++    }
+   ]
+ }
+diff --git a/README.md b/README.md
+index cc5c594..c67ccd7 100644
+--- a/README.md
++++ b/README.md
+@@ -22,6 +22,8 @@ hold the display's refresh rate.
+ | **F** | raise / brail the sail |
+ | **G** | select full / half sail area |
+ | **J / L** | hold to trim the yard manually · **K** return to crew trim |
++| **R** | near a berth: throw the lines and haul in · hauling: let go · docked: cast off |
++| **Z** | drop / weigh the anchor (it can stay down while you warp in to a quay) |
+ | **E** | take / leave the helm; on deck **WASD** walk, **Shift** run |
+ | **C** | chase camera (wheel zooms) · **Q** Ikaros, the eagle |
+ | **RMB** | spyglass · **M** sea chart |
+diff --git a/handoff.md b/handoff.md
+index 643b866..5562776 100644
+--- a/handoff.md
++++ b/handoff.md
+@@ -39,7 +39,27 @@ or the ship selector on the title screen (it reloads the page; the live swap is
+ - **Visual:** `src/ship/merchantModel.ts` (flush working deck for now; the open hold is phase 3).
+ - **Anchor (both ships):** animated drop to the seabed, haul in (pulls her up to it), breakout, lift,
+   stow; refused deeper than the 14 m rode. HUD anchor badge next to the speed readout.
+-- **Off on the merchant for now:** docking, deck building.
++- **Off on the merchant for now:** deck building.
++
++## Docking system (done 2026-10-09, uncommitted)
++
++Plan §5.1–5.2, built for both ships. `src/ship/mooring.ts` now has two independent state machines:
++`linePhase` (none → out → hauling → docked → casting) and `anchorPhase`; the old `state` enum is
++gone, so the anchor can stay down while she warps in. Per-ship data is `ShipDesign.docking` (cleats,
++plank, fender gap, capture window, crew × tackle, line strength, hold period); each ship docks off the
++quay face by her own beam (`Berth.face`, `Mooring.berthPose`).
++- Hauling: cleat servo + feed-forward of the filtered environmental load (`ShipPhysics.pendingForce`),
++  capped at crew × 350 N × tackle; stall after 4 s at the cap without closing ("Wind too strong to
++  haul in · lines holding"), lines then hold up to their strength; resumes when the load eases.
++- Docked: critically damped PD hold at the CG (position + yaw, soft deadband 0.15 m / 3°, period
++  1.75 s, uses her mass since the sim has no added mass), clamped at line strength; a filtered
++  overload for 2 s eases the lines (back to hauling). Sail brailed, oars shipped, W/S and F refused.
++- Cast off (user choice: shove only, no back-water): plank up (2 s), let go, shove. R while hauling
++  lets go at once. Oars stay live while hauling and at anchor (user choice).
++- Weighing while on the lines drags the anchor home instead of hanging forever.
++- The dock panel plan view and the berth marker ghost now use the ship's own outline.
++- The old "moored in waves within 0.6 m" failure is fixed (worst drift 0.30 m).
++- Not done: voyage save on docking, anchor holding/dragging/seabed, auto-throw, tuning after W1.
+ 
+ Known issues and next steps:
+ - Sail aero still uses the trireme's boosted calibration: about 7.6 kn beam reach and 8.3 kn
+diff --git a/index.html b/index.html
+index 03e7ffe..02705d9 100644
+--- a/index.html
++++ b/index.html
+@@ -11,6 +11,7 @@
+     <link rel="stylesheet" href="/src/ui/screens.css" />
+     <link rel="stylesheet" href="/src/ui/instruments.css" />
+     <link rel="stylesheet" href="/src/ui/panels.css" />
++    <link rel="stylesheet" href="/src/ui/gauges.css" />
+   </head>
+   <body>
+     <canvas id="gl"></canvas>
+diff --git a/package.json b/package.json
+index 84f3f87..090d62f 100644
+--- a/package.json
++++ b/package.json
+@@ -8,6 +8,7 @@
+     "build": "vite build",
+     "preview": "vite preview",
+     "typecheck": "tsc --noEmit",
++    "test:lighting": "node scripts/test-lighting.mjs",
+     "test:rowing": "node scripts/test-rowing.mjs",
+     "test:sailing": "node scripts/test-sailing.mjs",
+     "test:sailing-tuning": "node scripts/test-sailing-tuning.mjs",
+diff --git a/scripts/test-mooring.mjs b/scripts/test-mooring.mjs
+index 4beeace..492c6eb 100644
+--- a/scripts/test-mooring.mjs
++++ b/scripts/test-mooring.mjs
+@@ -7,9 +7,8 @@ const { Wind } = await import('../src/world/wind.ts');
+ const { WaveField } = await import('../src/world/waves.ts');
+ const { buildHarbour } = await import('../src/world/harbour.ts');
+ const { WalkGeometry } = await import('../src/world/walkable.ts');
+-const { halfBeam, sheer, zOf } = await import('../src/ship/hull.ts');
+-const { outriggerOf } = await import('../src/ship/mooring.ts');
+-const { MERCHANT } = await import('../src/ship/design.ts');
++const { sheer, zOf } = await import('../src/ship/hull.ts');
++const { TRIREME, MERCHANT } = await import('../src/ship/design.ts');
+ 
+ const dt = 1 / 120, DEG = Math.PI / 180;
+ let failures = 0;
+@@ -31,7 +30,7 @@ const TOP = 1.8;
+ const pierBox = { kind: 'box', cx: 30, cz: 0, hx: 30, hz: 3, rot: 0, y0: -8, y1: TOP, surface: 'stone', walkTop: true };
+ function syntheticLayout() {
+   const bollards = [21, 36, 51].map((x) => new THREE.Vector3(x, TOP, 2.3));
+-  const berth = { id: 0, name: 'Mole, south side', cx: 36, cz: 6, ax: 1, az: 0, nx: 0, nz: 1, length: 48, top: TOP, bollards };
++  const berth = { id: 0, name: 'Mole, south side', cx: 36, cz: 6, ax: 1, az: 0, nx: 0, nz: 1, length: 48, top: TOP, face: 3, bollards };
+   return {
+     root: new THREE.Vector2(0, 0), dir: new THREE.Vector2(1, 0), length: 60, width: 6, top: TOP, berthStart: 12,
+     berths: [berth], solids: [pierBox], shipColliders: [{ ...pierBox, walkTop: false }], steps: new THREE.Vector3(58, -0.9, 0),
+@@ -39,8 +38,8 @@ function syntheticLayout() {
+ }
+ const H0 = Math.PI / 2; // heading with the bow toward +x (seaward)
+ 
+-function makeShip(waves = flat(), wind = { vx: 0, vz: 0 }, layout = syntheticLayout()) {
+-  const sh = new ShipPhysics(waves, wind, terrain, new Crew());
++function makeShip(waves = flat(), wind = { vx: 0, vz: 0 }, layout = syntheticLayout(), design = TRIREME) {
++  const sh = new ShipPhysics(waves, wind, terrain, new Crew(), design);
+   sh.mooring.setHarbour(layout);
+   return sh;
+ }
+@@ -64,7 +63,7 @@ function outriggerPenetration(sh) {
+   for (let i = 0; i <= 6; i++) {
+     const s = 0.2 + i * 0.1;
+     for (const sg of [-1, 1]) {
+-      sh.toWorld(p.set(sg * (halfBeam(s) + outriggerOf(s)), sheer(s), zOf(s)), p);
++      sh.toWorld(p.set(sg * TRIREME.deck.outerHalfWidth(s), sheer(s), zOf(s)), p);
+       if (p.x > 0 && p.x < 60 && p.y <= TOP) pen = Math.max(pen, 3 - Math.abs(p.z));
+     }
+   }
+@@ -98,7 +97,7 @@ test('approach reasons come out in plain words, most important first', () => {
+   assert.equal(far.mooring.approach, null);
+ });
+ 
+-test('makeFast hauls the ship in gently (< 0.7 m/s) and reaches moored within 20 s with pose error < 0.4 m', () => {
++test('makeFast throws the lines, hauls her in gently (< 0.7 m/s) and docks within 20 s with pose error < 0.4 m', () => {
+   const sh = makeShip();
+   settle(sh, 36, 9, H0 + 8 * DEG);
+   sh.vel.set(0, 0, 0.4);
+@@ -106,31 +105,37 @@ test('makeFast hauls the ship in gently (< 0.7 m/s) and reaches moored within 20
+   const m = sh.mooring;
+   assert.ok(m.approach.canMakeFast);
+   assert.equal(m.makeFast(), true);
+-  assert.equal(m.state, 'warping');
++  assert.equal(m.linePhase, 'out');
+   assert.equal(m.lines.length, 4);
+-  let t = 0, peak = 0;
+-  while (m.state !== 'moored' && t < 20.5) { sh.step(dt); t += dt; peak = Math.max(peak, Math.hypot(sh.vel.x, sh.vel.z)); }
++  assert.equal(m.lines[0].deploy, 0);
++  for (let i = 0; i < 0.5 / dt; i++) sh.step(dt);
++  assert.ok(m.lines[0].deploy > 0.4 && m.lines[0].deploy < 0.6, `throw progress ${m.lines[0].deploy}`);
++  for (let i = 0; i < 0.6 / dt; i++) sh.step(dt);
++  assert.equal(m.linePhase, 'hauling');
++  let t = 1.1, peak = 0;
++  while (m.linePhase !== 'docked' && t < 20.5) { sh.step(dt); t += dt; peak = Math.max(peak, Math.hypot(sh.vel.x, sh.vel.z)); }
+   assert.ok(peak < 0.7, `peak speed while hauling ${peak.toFixed(2)} m/s`);
+-  assert.equal(m.state, 'moored', `state after ${t.toFixed(2)} s, pose error ${Math.hypot(sh.pos.x - 36, sh.pos.z - 6).toFixed(3)} m`);
++  assert.equal(m.linePhase, 'docked', `phase after ${t.toFixed(2)} s, pose error ${Math.hypot(sh.pos.x - 36, sh.pos.z - 6).toFixed(3)} m`);
+   assert.ok(t <= 20, `moored after ${t.toFixed(2)} s`);
+   const err = Math.hypot(sh.pos.x - 36, sh.pos.z - 6);
+   assert.ok(err < 0.4, `pose error ${err}`);
+   const ev = m.drain();
+-  const moored = ev.find((e) => e.type === 'moored');
+-  assert.ok(moored, 'moored event');
+-  assert.ok(['Perfect', 'Good', 'Rough'].includes(moored.rating));
+-  assert.ok(ev.some((e) => e.type === 'made-fast'));
+-  report.warp = { seconds: t, poseError: err, rating: moored.rating, contactSpeed: moored.contactSpeed };
++  const docked = ev.find((e) => e.type === 'docked');
++  assert.ok(docked, 'docked event');
++  assert.ok(['Perfect', 'Good', 'Rough'].includes(docked.rating));
++  assert.ok(ev.some((e) => e.type === 'lines-out'));
++  assert.ok(!ev.some((e) => e.type === 'haul-stalled'), 'no stall in calm water');
++  report.warp = { seconds: t, poseError: err, rating: docked.rating, contactSpeed: docked.contactSpeed };
+ });
+ 
+-test('gangplank deploys on a 2 s animation while moored and its shore end sits on the quay top', () => {
++test('gangplank deploys on a 2 s animation while docked and its shore end sits on the quay top', () => {
+   const sh = makeShip();
+   settle(sh, 36, 9, H0 + 8 * DEG);
+   sh.vel.set(0, 0, 0.4);
+   sh.step(dt);
+   sh.mooring.makeFast();
+   let t = 0;
+-  while (sh.mooring.state !== 'moored' && t < 21) { sh.step(dt); t += dt; }
++  while (sh.mooring.linePhase !== 'docked' && t < 21) { sh.step(dt); t += dt; }
+   assert.ok(sh.mooring.plank.deployed < 0.5);
+   for (let i = 0; i < 2.2 / dt; i++) sh.step(dt);
+   const p = sh.mooring.plank;
+@@ -140,21 +145,22 @@ test('gangplank deploys on a 2 s animation while moored and its shore end sits o
+   assert.equal(p.station, 0.62);
+ });
+ 
+-test('moored ship in waves stays within 0.6 m of her berth', () => {
++test('docked ship in waves stays within 0.6 m of her berth', () => {
+   const sh = makeShip(single(0.5, 0.5, 0.3, 1));
+   settle(sh, 36, 9, H0 + 8 * DEG);
+   sh.vel.set(0, 0, 0.4);
+   sh.step(dt);
+   sh.mooring.makeFast();
+   let t = 0;
+-  while (sh.mooring.state !== 'moored' && t < 13) { sh.step(dt); t += dt; }
+-  assert.equal(sh.mooring.state, 'moored');
++  while (sh.mooring.linePhase !== 'docked' && t < 20) { sh.step(dt); t += dt; }
++  assert.equal(sh.mooring.linePhase, 'docked');
+   let worst = 0;
+   for (let i = 0; i < 90 / dt; i++) {
+     sh.step(dt);
+     worst = Math.max(worst, Math.hypot(sh.pos.x - 36, sh.pos.z - 6));
+   }
+-  assert.equal(sh.mooring.state, 'moored');
++  assert.equal(sh.mooring.linePhase, 'docked');
++  assert.ok(!sh.mooring.drain().some((e) => e.type === 'lines-eased'), 'the waves did not overload the lines');
+   assert.ok(worst < 0.6, `worst drift ${worst}`);
+   report.waves = { worstDrift: worst };
+ });
+@@ -187,7 +193,7 @@ test('anchored ship in 15 kn of wind stays within rode + 3 m', () => {
+   settle(sh, 0, 0, 0);
+   assert.equal(sh.mooring.dropAnchor(), true);
+   const anchor = sh.mooring.anchorAt.clone();
+-  assert.equal(sh.mooring.state, 'anchored');
++  assert.equal(sh.mooring.anchorPhase, 'dropping');
+   const bow = new THREE.Vector3();
+   let worst = 0;
+   for (let i = 0; i < 240 / dt; i++) {
+@@ -201,7 +207,7 @@ test('anchored ship in 15 kn of wind stays within rode + 3 m', () => {
+   let tw = 0;
+   while (sh.mooring.anchorPhase !== 'stowed' && tw < 60) { sh.step(dt); tw += dt; }
+   assert.equal(sh.mooring.anchorPhase, 'stowed', `still ${sh.mooring.anchorPhase} after ${tw.toFixed(1)} s`);
+-  assert.equal(sh.mooring.state, 'free');
++  assert.equal(sh.mooring.anchorAt, null);
+   const ev = sh.mooring.drain().map((e) => e.type);
+   assert.ok(ev.includes('anchor-down') && ev.includes('anchor-weighing') && ev.includes('anchor-up'), `events ${ev}`);
+   report.anchor = { maxBowDistance: worst, rode: sh.mooring.rode, weighSeconds: tw };
+@@ -223,7 +229,7 @@ test('anchor falls to the seabed, holds, and comes back up', () => {
+   let t = 0;
+   while (m.anchorPhase !== 'stowed' && t < 40) { sh.step(dt); t += dt; }
+   assert.equal(m.anchorPhase, 'stowed', `still ${m.anchorPhase} after ${t.toFixed(1)} s`);
+-  assert.equal(m.state, 'free');
++  assert.equal(m.anchorOut, false);
+   report.anchorCycle = { weighSeconds: t };
+ });
+ 
+@@ -257,30 +263,165 @@ test('merchant ship anchors in 15 kn of wind', () => {
+   }
+   assert.ok(worst <= sh.mooring.rode + 3, `bow drift ${worst}`);
+   assert.ok(worst > sh.mooring.rode - 1, `never reached the rode: ${worst}`);
+-  sh.mooring.drain();
++  // no berth in range: nothing to make fast to
+   assert.equal(sh.mooring.makeFast(), false);
+-  assert.ok(sh.mooring.drain().some((e) => e.type === 'denied'));
+   report.merchantAnchor = { maxBowDistance: worst, rode: sh.mooring.rode };
+ });
+ 
+-test('castOff releases the lines, shoves her off the quay and stows the plank', () => {
++test('castOff raises the plank, then lets go and shoves her off the quay', () => {
+   const sh = makeShip();
+   settle(sh, 36, 9, H0 + 8 * DEG);
+   sh.vel.set(0, 0, 0.4);
+   sh.step(dt);
+   sh.mooring.makeFast();
+   let t = 0;
+-  while (sh.mooring.state !== 'moored' && t < 13) { sh.step(dt); t += dt; }
++  while (sh.mooring.linePhase !== 'docked' && t < 20) { sh.step(dt); t += dt; }
+   for (let i = 0; i < 2.5 / dt; i++) sh.step(dt);
+-  const z0 = sh.pos.z;
++  sh.mooring.drain();
+   sh.mooring.castOff();
+-  assert.equal(sh.mooring.state, 'free');
++  assert.equal(sh.mooring.linePhase, 'casting');
++  assert.equal(sh.mooring.lines.length, 4, 'lines stay on while the plank comes up');
++  let tc = 0;
++  while (sh.mooring.linePhase === 'casting' && tc < 4) { sh.step(dt); tc += dt; }
++  assert.equal(sh.mooring.linePhase, 'none');
++  assert.ok(tc > 1.5 && tc < 2.5, `cast off after ${tc.toFixed(2)} s`);
++  assert.ok(sh.mooring.plank.deployed < 0.02, `plank ${sh.mooring.plank.deployed}`);
+   assert.equal(sh.mooring.lines.length, 0);
++  const z0 = sh.pos.z;
+   for (let i = 0; i < 1 / dt; i++) sh.step(dt);
+   assert.ok(sh.pos.z - z0 > 0.1, `shoved ${sh.pos.z - z0} m`);
+-  for (let i = 0; i < 2.2 / dt; i++) sh.step(dt);
+-  assert.ok(sh.mooring.plank.deployed < 0.01, `plank ${sh.mooring.plank.deployed}`);
+-  assert.ok(sh.mooring.drain().some((e) => e.type === 'cast-off'));
++  const ev = sh.mooring.drain().map((e) => e.type);
++  assert.ok(ev.includes('casting-off') && ev.includes('cast-off'), `events ${ev}`);
++});
++
++/** dock a ship from a standing start off the synthetic berth; returns the time taken or Infinity */
++function dockFrom(sh, x, z, headingDeg, vz = 0, limit = 30) {
++  settle(sh, x, z, H0 + headingDeg * DEG);
++  sh.vel.set(0, 0, vz);
++  sh.step(dt);
++  if (!sh.mooring.makeFast()) return NaN;
++  let t = 0;
++  while (sh.mooring.linePhase !== 'docked' && t < limit) { sh.step(dt); t += dt; }
++  return sh.mooring.linePhase === 'docked' ? t : Infinity;
++}
++
++test('merchant: docks off her own beam, inside the wider capture window, without touching the quay', () => {
++  const sh = makeShip(flat(), { vx: 0, vz: 0 }, syntheticLayout(), MERCHANT);
++  const m = sh.mooring;
++  const poseZ = 3 + m.faceOffset;
++  assert.ok(Math.abs(m.faceOffset - 2.36) < 0.05, `face offset ${m.faceOffset}`);
++  // 6 m off her docked line (a line's throw from her side to the quay face) and 20 degrees off
++  settle(sh, 36, poseZ + 6, H0 + 20 * DEG);
++  sh.vel.set(0, 0, -0.3);
++  sh.step(dt);
++  assert.ok(m.approach.canMakeFast, `reason: ${m.approach.reason}`);
++  assert.ok(Math.abs(m.approach.poseZ - poseZ) < 1e-9);
++  // the trireme would refuse the same approach: too far out and too far off line
++  const t = dockFrom(sh, 36, poseZ + 6, 20, -0.3);
++  assert.ok(Number.isFinite(t) && t < 30, `docked after ${t} s`);
++  const err = Math.hypot(sh.pos.x - 36, sh.pos.z - poseZ);
++  assert.ok(err < 0.4, `pose error ${err}`);
++  let minZ = Infinity;
++  const p = new THREE.Vector3();
++  for (const s of MERCHANT.quayStations) for (const sg of [-1, 1]) {
++    sh.toWorld(p.set(sg * MERCHANT.deck.outerHalfWidth(s), MERCHANT.hull.sheer(s), MERCHANT.hull.zOf(s)), p);
++    minZ = Math.min(minZ, p.z);
++  }
++  assert.ok(minZ > 3 - 0.05, `hull side at z ${minZ.toFixed(3)} (quay face at 3)`);
++  for (let i = 0; i < 2.5 / dt; i++) sh.step(dt);
++  assert.ok(m.plank.deployed > 0.99);
++  assert.equal(m.plank.station, MERCHANT.docking.plankS);
++  report.merchantDock = { seconds: t, poseError: err, hullToFace: minZ - 3 };
++});
++
++test('merchant: an offshore gale stalls the haul honestly, the lines hold her, and she comes in when it eases', () => {
++  // 24 m/s on the beam, blowing her off the quay: about 5.6 kN of windage against 4.2 kN of crew
++  const wind = { vx: 0, vz: 24 };
++  const sh = makeShip(flat(), wind, syntheticLayout(), MERCHANT);
++  const m = sh.mooring;
++  const poseZ = 3 + m.faceOffset;
++  settle(sh, 36, poseZ + 4, H0);
++  sh.vel.set(0, 0, 0);
++  sh.step(dt);
++  assert.equal(m.makeFast(), true);
++  let t = 0, stalledAt = -1, zAtStall = 0, worstZ = -Infinity;
++  while (t < 30) {
++    sh.step(dt); t += dt;
++    if (stalledAt < 0 && m.stalled) { stalledAt = t; zAtStall = sh.pos.z; }
++    if (stalledAt >= 0) worstZ = Math.max(worstZ, sh.pos.z);
++  }
++  assert.ok(stalledAt > 0 && stalledAt < 15, `stalled at ${stalledAt.toFixed(1)} s`);
++  assert.equal(m.linePhase, 'hauling');
++  const ev = m.drain();
++  const stall = ev.find((e) => e.type === 'haul-stalled');
++  assert.equal(stall?.reason, 'Wind too strong to haul in · lines holding');
++  assert.ok(worstZ - zAtStall < 0.5, `drifted ${(worstZ - zAtStall).toFixed(2)} m off while the lines held`);
++  // the wind eases: the crew takes up the lines again and brings her in
++  wind.vz = 6;
++  let tr = 0;
++  while (m.linePhase !== 'docked' && tr < 40) { sh.step(dt); tr += dt; }
++  assert.equal(m.linePhase, 'docked', `phase ${m.linePhase} after ${tr.toFixed(1)} s, stalled ${m.stalled}`);
++  assert.ok(m.drain().some((e) => e.type === 'haul-resumed'));
++  report.stall = { stalledAt, driftWhileHeld: worstZ - zAtStall, dockedAfterEasing: tr };
++});
++
++test('anchor and lines coexist: anchor off, warp in, weigh while docked', () => {
++  const sh = makeShip();
++  const m = sh.mooring;
++  settle(sh, 36, 9, H0);
++  assert.equal(m.dropAnchor(), true);
++  for (let i = 0; i < 6 / dt; i++) sh.step(dt);
++  assert.equal(m.anchorPhase, 'holding');
++  sh.step(dt);
++  assert.ok(m.approach.canMakeFast, `reason: ${m.approach.reason}`);
++  assert.equal(m.makeFast(), true);
++  let t = 0;
++  while (m.linePhase !== 'docked' && t < 25) { sh.step(dt); t += dt; }
++  assert.equal(m.linePhase, 'docked');
++  assert.equal(m.anchorPhase, 'holding', 'the anchor stays down while she warps in');
++  m.drain();
++  assert.equal(m.dropAnchor(), false, 'no second anchor');
++  // weighing while docked: the crew drags the anchor home and stows it; she stays in her berth
++  m.weighAnchor();
++  let tw = 0;
++  while (m.anchorPhase !== 'stowed' && tw < 40) { sh.step(dt); tw += dt; }
++  assert.equal(m.anchorPhase, 'stowed', `still ${m.anchorPhase} after ${tw.toFixed(1)} s`);
++  assert.equal(m.linePhase, 'docked');
++  const err = Math.hypot(sh.pos.x - 36, sh.pos.z - 6);
++  assert.ok(err < 0.4, `pose error after weighing ${err}`);
++  report.coexist = { dockSeconds: t, weighSeconds: tw };
++});
++
++test('docked: refuses a second set of lines and anchoring; a sustained overload eases the lines', () => {
++  const wind = { vx: 0, vz: 0 };
++  // weak lines (20 kN in all), so a 30 m/s offshore wind (about 25 kN of windage) overloads them
++  const weak = { ...TRIREME, docking: { ...TRIREME.docking, lineStrength: 20e3 } };
++  const sh = makeShip(flat(), wind, syntheticLayout(), weak);
++  const m = sh.mooring;
++  assert.ok(Number.isFinite(dockFrom(sh, 36, 9, 8, 0.4)));
++  m.drain();
++  assert.equal(m.makeFast(), false);
++  assert.equal(m.dropAnchor(), false);
++  assert.match(m.drain().find((e) => e.type === 'denied')?.reason ?? '', /^Docked/);
++  wind.vz = 30;
++  let t = 0;
++  while (m.linePhase === 'docked' && t < 10) { sh.step(dt); t += dt; }
++  assert.equal(m.linePhase, 'hauling');
++  assert.ok(t > 2 && t < 5, `eased after ${t.toFixed(2)} s`);
++  const ev = m.drain().map((e) => e.type);
++  assert.ok(ev.includes('lines-eased'), `events ${ev}`);
++});
++
++test('letting go while hauling releases at once, without a shove', () => {
++  const sh = makeShip();
++  settle(sh, 36, 9, H0 + 8 * DEG);
++  sh.step(dt);
++  sh.mooring.makeFast();
++  for (let i = 0; i < 2 / dt; i++) sh.step(dt);
++  assert.equal(sh.mooring.linePhase, 'hauling');
++  sh.mooring.castOff();
++  assert.equal(sh.mooring.linePhase, 'none');
++  assert.equal(sh.mooring.lines.length, 0);
+ });
+ 
+ test('harbour solids: walkable mole, quay steps down to -1.0 m, bollards and collider', () => {
+diff --git a/src/audio/audio.ts b/src/audio/audio.ts
+index 21d3d1d..374d435 100644
+--- a/src/audio/audio.ts
++++ b/src/audio/audio.ts
+@@ -1,4 +1,5 @@
+-import type { RowingSystem, RowEventCursor } from '../ship/rowing';
++import type { RowEventCursor } from '../ship/rowing';
++import type { OarPropulsion } from '../ship/oarPropulsion';
+ import type { Game } from '../game';
+ import type { Crew } from '../ship/crew';
+ import { clamp } from '../core/util';
+@@ -303,7 +304,7 @@ export class AudioEngine {
+   /** the keleustes' drum on each catch (trireme only) */
+   drumEnabled = true;
+   private contactBins = new Map<number, { bin: number; side: number; enter: boolean; energy: number }>();
+-  rowingEvents(rowing: RowingSystem, renderTime: number) {
++  rowingEvents(rowing: OarPropulsion, renderTime: number) {
+     if (!this.rowingCursor || this.rowingCursor.epoch !== rowing.events.generation) {
+       this.rowingCursor = { next: rowing.events.oldestId, epoch: rowing.events.generation };
+       this.lastBeatTime = -Infinity;
+diff --git a/src/core/pipeline.ts b/src/core/pipeline.ts
+index 5c9bcb0..f598bc2 100644
+--- a/src/core/pipeline.ts
++++ b/src/core/pipeline.ts
+@@ -42,7 +42,9 @@ class GradeEffect extends Effect {
+         c *= mix(shadowTint, hiTint, smoothstep(0.05, 1.2, l));
+         // moonlit night: blue shift & desaturate (scotopic)
+         float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+-        c = mix(c, lum * vec3(0.62, 0.78, 1.12), nightTint * 0.55);
++        // Cool the dim adaptation range while retaining warm fire/lantern highlights.
++        float scotopic = nightTint * 0.35 * (1.0 - smoothstep(0.04, 0.45, lum));
++        c = mix(c, lum * vec3(0.62, 0.78, 1.12), scotopic);
+         // spyglass: circular mask
+         if (spyglass > 0.0) {
+           vec2 p = (uv - 0.5) * vec2(resolution.x / resolution.y, 1.0);
+diff --git a/src/game.ts b/src/game.ts
+index fd40bfb..676e335 100644
+--- a/src/game.ts
++++ b/src/game.ts
+@@ -21,6 +21,8 @@ import type { WorldGenResult } from './world/worldgenTypes';
+ import { ShipPhysics } from './ship/physics';
+ import { Trireme } from './ship/trireme';
+ import { MerchantModel } from './ship/merchantModel';
++import { CrewRowing } from './ship/crew/crewRowing';
++import { CrewAnimator } from './crew/crewAnimator';
+ import type { ShipVisual } from './ship/shipVisual';
+ import { TRIREME, type ShipDesign } from './ship/design';
+ import { Crew, ORDERS, ORDER_STOP } from './ship/crew';
+@@ -75,6 +77,8 @@ export class Game {
+   readonly crew = new Crew();
+   readonly ship: ShipPhysics;
+   readonly model: ShipVisual;
++  /** the merchant's animated rowers; null for every other ship (oars.system !== 'crew') */
++  private crewAnimator: CrewAnimator | null = null;
+   readonly player: PlayerController;
+   readonly hud: Hud;
+   readonly chart: Chart;
+@@ -86,7 +90,7 @@ export class Game {
+   private shipPose: ShipPose;
+   readonly harbourRig: HarbourRig;
+   readonly berthMarker: BerthMarker;
+-  readonly dock = new DockPanel();
++  readonly dock: DockPanel;
+   readonly crosshair = new Crosshair();
+   readonly builder: DeckBuilder;
+   private invShip = new THREE.Matrix4();
+@@ -209,6 +213,9 @@ export class Game {
+       ? new MerchantModel(assets.planks, this.ship.rowing.slots, this.models, design)
+       : new Trireme(assets.planks, this.ship.rowing.slots, this.models);
+     this.scene.add(this.model.group);
++    this.crewAnimator = design.oars.system === 'crew' && this.ship.rowing instanceof CrewRowing
++      ? new CrewAnimator(this.models, this.model.group, this.ship.rowing, design)
++      : null;
+     this.harbourLayout = buildHarbour(gen, this.terrain);
+     this.ship.mooring.setHarbour(this.harbourLayout);
+     this.walk = new WalkGeometry(this.terrain);
+@@ -220,7 +227,7 @@ export class Game {
+     this.harbourRig.setPlankModel(this.models.get('gangplank'), 3);
+     this.harbourRig.setAnchorModel(this.models.get('anchor'));
+     this.scene.add(this.harbourRig.group);
+-    this.berthMarker = new BerthMarker(this.harbourLayout);
++    this.berthMarker = new BerthMarker(this.harbourLayout, design);
+     this.scene.add(this.berthMarker.group);
+     this.ship.place(gen.sites.start.x, gen.sites.start.z, gen.sites.start.heading);
+     // settle on the water before the player arrives
+@@ -236,6 +243,13 @@ export class Game {
+     this.chart = new Chart(gen, this.terrain);
+     this.minimap = new Minimap(this.chart, gen);
+     this.hud.mount(this.minimap.root);
++    const hull = design.hull;
++    this.dock = new DockPanel({
++      halfLength: (hull.length + hull.bowOverhang + hull.sternOverhang) / 2,
++      halfBeam: this.ship.mooring.faceOffset - design.docking.gap,
++      faceOffset: this.ship.mooring.faceOffset,
++      capture: design.docking.capture,
++    });
+     this.hud.mount(this.dock.root);
+     this.hud.mount(this.crosshair.root);
+     this.builder = new DeckBuilder(this.models, this.model.group, this.ship.payload, this.shipSolids, this.player.interactions, this.crew, design.buildingEnabled);
+@@ -281,7 +295,8 @@ export class Game {
+     const deckY = (s: number) => d.deck.deckY(s);
+     const zOf = (s: number) => d.hull.zOf(s);
+     this.shipSolids.add({ kind: 'cyl', cx: 0, cz: zOf(d.rig.mastStation), r: 0.18, y0: deckY(d.rig.mastStation), y1: deckY(d.rig.mastStation) + d.rig.mastHeight, surface: 'wood', walkTop: false });
+-    for (const [, x, s] of d.crewSpots) this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r: 0.25, y0: deckY(s), y1: deckY(s) + 1.75, surface: 'wood', walkTop: false });
++    // crew ships: the animated rowers replace the static stand-ins, so no fixed cylinders here
++    if (d.oars.system !== 'crew') for (const [, x, s] of d.crewSpots) this.shipSolids.add({ kind: 'cyl', cx: x, cz: zOf(s), r: 0.25, y0: deckY(s), y1: deckY(s) + 1.75, surface: 'wood', walkTop: false });
+   }
+ 
+   resize() {
+@@ -392,26 +407,27 @@ export class Game {
+     const moor = this.ship.mooring;
+     if (commanding) {
+       if (inp.hit('KeyW') || inp.hit('KeyS')) {
+-        if (moor.state === 'moored' || moor.state === 'warping') this.hud.showToast('Cast off first (R)');
+-        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
++        // docked the oars are shipped; on the lines or at anchor the crew can still row to help
++        if (moor.linePhase === 'docked' || moor.linePhase === 'casting') this.hud.showToast('Docked · cast off first (R)');
+         else this.crew.setOrder(this.crew.orderIndex + (inp.hit('KeyW') ? 1 : -1));
+       }
+       if (inp.hit('KeyR')) {
+-        if (!this.design.dockingEnabled) this.hud.showToast("Docking isn't available on the merchant ship yet");
+-        else if (moor.state === 'moored' || moor.state === 'warping') moor.castOff();
+-        else if (moor.state === 'anchored') this.hud.showToast('Raise anchor first (Z)');
++        if (!this.design.docking.enabled) this.hud.showToast(`Docking isn't available on the ${this.design.name.toLowerCase()}`);
++        else if (moor.linePhase === 'casting') this.hud.showToast('Casting off');
++        else if (moor.onLines) moor.castOff();
+         else if (!moor.approach) this.hud.showToast('No berth in range');
+         else moor.makeFast();
+       }
+       if (inp.hit('KeyZ')) {
+         const ph = moor.anchorPhase;
+         if (!this.design.anchoringEnabled) this.hud.showToast("This ship can't anchor");
+-        else if (moor.state === 'anchored' && (ph === 'holding' || ph === 'dropping')) moor.weighAnchor();
++        else if (ph === 'holding' || ph === 'dropping') moor.weighAnchor();
+         else if (ph === 'weighing') this.hud.showToast('Weighing anchor');
+         else if (ph === 'lifting') this.hud.showToast('Anchor coming up');
+-        else if (moor.state === 'free') moor.dropAnchor();
++        else moor.dropAnchor();
+       }
+-      if (inp.hit('KeyF')) {
++      if (inp.hit('KeyF') && (moor.linePhase === 'docked' || moor.linePhase === 'casting')) this.hud.showToast('Docked · cast off first (R)');
++      else if (inp.hit('KeyF')) {
+         if (this.ship.sailing.deploymentTarget > 0) {
+           this.sailSelection = this.ship.sailing.deploymentTarget;
+           this.ship.sailing.deploymentTarget = 0;
+@@ -453,13 +469,20 @@ export class Game {
+   private updateMooring(dt: number) {
+     const moor = this.ship.mooring;
+     for (const e of moor.drain()) {
+-      if (e.type === 'made-fast') {
++      if (e.type === 'lines-out') {
++        // the crew stops rowing and brails the sail; the captain can order a stroke to help her in
+         this.audio.ropeThrow();
+         this.crew.setOrder(ORDER_STOP);
+         this.crew.holdWater = false;
+         this.ship.sailTarget = 0;
+         this.hud.showToast('Lines out');
+-      } else if (e.type === 'moored') this.dock.showRating(e.rating, e.contactSpeed);
++      } else if (e.type === 'docked') {
++        this.dock.showRating(e.rating, e.contactSpeed);
++        this.hud.showToast('Docked · R to cast off');
++      } else if (e.type === 'haul-stalled') this.hud.showToast(e.reason);
++      else if (e.type === 'haul-resumed') this.hud.showToast('Hauling in');
++      else if (e.type === 'lines-eased') this.hud.showToast('Lines eased · too much strain');
++      else if (e.type === 'casting-off') this.hud.showToast('Casting off');
+       else if (e.type === 'cast-off') {
+         this.audio.ropeThrow();
+         this.hud.showToast('Cast off');
+@@ -479,22 +502,31 @@ export class Game {
+       } else if (e.type === 'plank') this.audio.plank(e.down);
+       else if (e.type === 'denied') {
+         this.audio.buildDeny();
+-        this.hud.showToast(e.reason);
++        // during an approach the dock gauges answer (the one out of band pulses); no sentence
++        if (!this.dock.refuse()) this.hud.showToast(e.reason);
+       }
+     }
+     // the crew won't let the ship wander off with the captain ashore or overboard
+-    if (this.player.walker.frame === 'world' && moor.state === 'free') {
++    if (this.player.walker.frame === 'world' && !moor.onLines && !moor.anchorOut) {
+       if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
+       if (this.design.anchoringEnabled && Math.hypot(this.ship.vel.x, this.ship.vel.z) < 1.2 && moor.dropAnchor(true)) this.hud.showNote('Anchor dropped while you are off the ship', 5);
+     }
+     // ship oars on the quay side for the last metres, both sides once she's tied up
++    // docked: oars shipped, sail brailed, no orders (the ladder is locked at the keys)
++    const docked = moor.linePhase === 'docked' || moor.linePhase === 'casting';
++    if (docked) {
++      if (this.crew.orderIndex !== ORDER_STOP) this.crew.setOrder(ORDER_STOP);
++      if (this.ship.sailing.deploymentTarget > 0) this.ship.sailing.deploymentTarget = 0;
++    }
+     const a = moor.approach;
+-    const tied = moor.state === 'warping' || moor.state === 'moored';
++    const tied = moor.onLines;
+     const side = tied ? moor.plank?.side ?? 1 : a?.side ?? 1;
+     const quaySide = tied || (!!a && a.dist < 30 && Math.abs(a.lateral) < 6 && this.crew.orderIndex === ORDER_STOP);
+     const si = side < 0 ? 0 : 1;
+     this.model.oarStowTarget[si] = quaySide ? 1 : 0;
+-    this.model.oarStowTarget[1 - si] = moor.state === 'moored' ? 1 : 0;
++    this.model.oarStowTarget[1 - si] = docked ? 1 : 0;
++    this.ship.rowing.setShipped(side < 0 ? -1 : 1, quaySide);
++    this.ship.rowing.setShipped(side < 0 ? 1 : -1, docked);
+     this.harbourRig.update(moor, this.model.group);
+     const t = this.ship.time;
+     this.berthMarker.exposure = this.sky.exposure;
+@@ -613,8 +645,8 @@ export class Game {
+     hints.steering = this.steeringInput;
+     hints.yawRate = -this.ship.angVel.y;
+     const ap = this.ship.mooring.approach;
+-    const st = this.ship.mooring.state;
+-    hints.docking = ap && (st === 'free' || st === 'warping') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
++    const lp = this.ship.mooring.linePhase;
++    hints.docking = ap && (lp === 'none' || lp === 'out' || lp === 'hauling') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
+     // felt contact: shake only for real contact (grounding here, quay bumps in updateMooring); the
+     // swell already moves the ship, and bowSlam is a column sum that runs high in an ordinary sea
+     if (!this.paused && !this.cinematic && this.ship.grounding > 0.02) this.player.addTrauma(Math.min(0.6, this.ship.grounding) * dt * 3);
+@@ -630,6 +662,8 @@ export class Game {
+     // world systems
+     this.sky.updateLighting(dt, this.camera, this.lightingJump);
+     this.model.update(this.ship, this.crew, this.sky.night, this.ship.time, alpha);
++    this.crewAnimator?.update(dt, alpha, this.ship);
++    // TODO(crew solids): call the dynamic walker solids update (src/crew/crewSolids.ts, not yet written) here each frame.
+     const lightingDiscontinuity = this.updateCloudInputs(dt);
+     if (cameraCut || this.lightingJump || lightingDiscontinuity) this.clouds.resetHistory();
+     const timed = present && fixedDt === undefined;
+diff --git a/src/gfx/cloudModel.ts b/src/gfx/cloudModel.ts
+index beb91ee..81ee1a6 100644
+--- a/src/gfx/cloudModel.ts
++++ b/src/gfx/cloudModel.ts
+@@ -96,10 +96,11 @@ float vcDensityLod(vec3 p, float hf, bool cheap, float shapeLod) {
+ 
+   // Erode only the wispy silhouette. Solid interiors and the cheap light/shadow path do not pay
+   // for the detail texture. uCloudErosion can be set to zero to inspect the primary form.
+-  if (!cheap && uCloudErosion > 0.0 && body < 0.46) {
++  float detailFade = 1.0 - smoothstep(0.5, 2.5, shapeLod);
++  if (!cheap && uCloudErosion > 0.0 && body < 0.46 && detailFade > 0.0) {
+     float edge = 1.0 - smoothstep(0.14, 0.46, body);
+     float detail = texture(uCloudDetail, q / 1500.0).r;
+-    body = max(0.0, body - uCloudErosion * edge * detail);
++    body = max(0.0, body - uCloudErosion * edge * detail * detailFade);
+   }
+   float localDensity = mix(0.18, 0.42, weather.a);
+   float coverageFade = smoothstep(0.0, 0.08, clamp(uCloudCoverage, 0.0, 1.0));
+diff --git a/src/gfx/clouds.ts b/src/gfx/clouds.ts
+index 6ad1a4b..5e55c35 100644
+--- a/src/gfx/clouds.ts
++++ b/src/gfx/clouds.ts
+@@ -34,6 +34,10 @@ vec3 vcHazeSky(vec3 rd) {
+ // Representative distance is the opacity-weighted centre of the visible cloud (metres).
+ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float representativeDistance) {
+   representativeDistance = 0.0;
++  // A grazing ray can reach clouds hundreds of kilometres away. Filter morphology
++  // over its pixel cone as well as the integration interval; LOD0 aliases into bands.
++  // Derivatives also account for reduced-resolution and environment-cube captures.
++  float rayCone = max(length(dFdx(rd)), length(dFdy(rd)));
+   vec3 ro = uCloudOrigin;
+   vec3 roE = vec3(0.0, ro.y + C_EARTH, 0.0);
+   vec2 interval = vcCloudInterval(roE, rd);
+@@ -69,8 +73,9 @@ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float re
+       float shift = (jitter - 0.5) * 0.2;
+       vec3 pa = ro + rd * (cellStart + (0.25 + shift) * cellLen);
+       vec3 pb = ro + rd * (cellStart + (0.75 + shift) * cellLen);
+-      if (vcDensity(pa, vcHeightFrac(pa), true) <= 0.0 &&
+-          vcDensity(pb, vcHeightFrac(pb), true) <= 0.0) continue;
++      float probeLod = clamp(log2(max(max(cellLen * 0.25, (cellStart + cellLen) * rayCone), 56.25) / 56.25), 0.0, 4.0);
++      if (vcDensityLod(pa, vcHeightFrac(pa), true, probeLod) <= 0.0 &&
++          vcDensityLod(pb, vcHeightFrac(pb), true, probeLod) <= 0.0) continue;
+     }
+     // Three samples per cell through 60 cells. Above that, distribute a fixed 180
+     // sample budget over the actual cell count, including short clipped rays.
+@@ -83,7 +88,8 @@ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float re
+       float t = cellStart + (float(j) + 0.5 + (jitter - 0.5) * 0.5) * fineStep;
+       vec3 p = ro + rd * t;
+       float hf = vcHeightFrac(p);
+-      float d = vcDensity(p, hf, false);
++      float shapeLod = clamp(log2(max(max(fineStep * 0.5, t * rayCone), 56.25) / 56.25), 0.0, 4.0);
++      float d = vcDensityLod(p, hf, false, shapeLod);
+       if (d <= 0.002) continue;
+       cellHit = true;
+       if (firstHit < 0.0) firstHit = t;
+diff --git a/src/gfx/models.ts b/src/gfx/models.ts
+index e07579f..dc5b957 100644
+--- a/src/gfx/models.ts
++++ b/src/gfx/models.ts
+@@ -1,5 +1,6 @@
+ import * as THREE from 'three';
+ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
++import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
+ import { patchMaterial } from './shared';
+ import type { VisualAssets } from './assets';
+ 
+@@ -16,6 +17,7 @@ export const MODEL_FILES = [
+   'house_b.glb',
+   'house_c.glb',
+   'figures.glb',
++  'crew.glb',
+ ];
+ 
+ export interface ModelKit {
+@@ -29,6 +31,8 @@ export interface ModelKit {
+   parts(names: string | string[]): { geometry: THREE.BufferGeometry; material: THREE.MeshStandardMaterial }[];
+   /** the shared material behind a slot; the game drives `fire` (lamps, house windows) by night */
+   material(slot: string): THREE.MeshStandardMaterial;
++  /** the AnimationClips of a loaded glb, by file name (e.g. 'crew.glb'); empty if it has none or is not loaded */
++  clips(file: string): THREE.AnimationClip[];
+ }
+ 
+ const ROOT = '/assets/models/';
+@@ -110,6 +114,11 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
+   const gltfs = await Promise.all(MODEL_FILES.map((f) => loader.loadAsync(ROOT + f)));
+ 
+   const objects = new Map<string, THREE.Object3D>();
++  const clipsByFile = new Map<string, THREE.AnimationClip[]>();
++  const skinnedCache = new Map<THREE.Object3D, boolean>();
++  gltfs.forEach((gltf, i) => {
++    clipsByFile.set(MODEL_FILES[i], gltf.animations);
++  });
+   for (const gltf of gltfs) {
+     gltf.scene.traverse((o) => {
+       if (o instanceof THREE.Mesh) {
+@@ -132,6 +141,19 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
+     });
+   }
+ 
++  /** cached per source: does this subtree contain a SkinnedMesh (which needs SkeletonUtils to clone)? */
++  const hasSkinned = (src: THREE.Object3D): boolean => {
++    let v = skinnedCache.get(src);
++    if (v === undefined) {
++      v = false;
++      src.traverse((c) => {
++        if (c instanceof THREE.SkinnedMesh) v = true;
++      });
++      skinnedCache.set(src, v);
++    }
++    return v;
++  };
++
+   return {
+     objects,
+     get(name: string): THREE.Object3D {
+@@ -140,7 +162,11 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
+         console.warn(`[models] missing model object "${name}"`);
+         return new THREE.Group();
+       }
+-      return src.clone(true);
++      // a plain clone shares one skeleton across instances, so skinned subtrees need their own
++      return hasSkinned(src) ? skeletonClone(src) : src.clone(true);
++    },
++    clips(file: string): THREE.AnimationClip[] {
++      return clipsByFile.get(file) ?? [];
+     },
+     geometry(name: string): THREE.BufferGeometry[] {
+       const src = objects.get(name);
+diff --git a/src/main.ts b/src/main.ts
+index eabbde0..de80b7f 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -4,6 +4,7 @@ import type { WorldGenResult } from './world/worldgenTypes';
+ import { DEFAULT_WIND_SPEED, Wind } from './world/wind';
+ import { Game } from './game';
+ import { DESIGNS, chosenShipKind } from './ship/design';
++import { RowingSystem } from './ship/rowing';
+ import { EMBLEM_SVG, MEANDER_SVG } from './ui/brand';
+ import { loadVisualAssets } from './gfx/assets';
+ import { loadModels } from './gfx/models';
+@@ -99,6 +100,17 @@ async function boot() {
+   fill.style.width = '92%';
+   await new Promise((r) => setTimeout(r, 30));
+   const game = new Game(canvas, quality, gen, tex, assets, models, design);
++  // ?wind=<m/s at 10 m> sets the prevailing wind; the sea starts fully developed for it.
++  // 3 is light airs, 6 a gentle breeze, 12 the default meltemi, 16+ a near gale.
++  const windParam = params.get('wind');
++  const windSpeed = windParam === null || windParam.trim() === '' ? NaN : Number(windParam);
++  if (Number.isFinite(windSpeed)) {
++    game.wind.baseSpeed = Math.max(0, Math.min(20, windSpeed));
++    game.wind.update(0);
++    game.waves.retarget(game.wind);
++    game.waves.update(Infinity);
++    game.fft.retarget(game.wind.meanSpeed, game.wind.from + Math.PI, game.waves.fetch, true);
++  }
+   if (dev && params.get('inspect') === 'harbour') {
+     const h = gen.sites.harbour;
+     const towardShore = gen.sites.pier.angle + Math.PI;
+@@ -135,7 +147,7 @@ async function boot() {
+       reviewState.textContent = JSON.stringify({ scenario: rowingReview, time: game.ship.time,
+         speedKn: game.ship.speed * 1.943844, heading: game.ship.heading, heel: game.ship.heel,
+         stamina: game.crew.stamina, rate: game.crew.rate, phase: game.crew.phase,
+-        sides: game.ship.rowing.sides.map(s => ({ mode: s.mode, direction: s.direction, effort: s.effort })),
++        sides: (game.ship.rowing instanceof RowingSystem ? game.ship.rowing.sides : []).map(s => ({ mode: s.mode, direction: s.direction, effort: s.effort })),
+         rowing: game.ship.rowing.telemetry, gpuMs: game.pipeline.gpuMs,
+         oarMeshes: game.model.group.children.filter(o => (o as THREE.InstancedMesh).isInstancedMesh && o.layers.isEnabled(1)).map(o => (o as THREE.InstancedMesh).count) });
+       if (game.running) requestAnimationFrame(observeRowing);
+diff --git a/src/ship/design.ts b/src/ship/design.ts
+index e21ac28..a2c2eca 100644
+--- a/src/ship/design.ts
++++ b/src/ship/design.ts
+@@ -2,6 +2,7 @@ import { HULL_LENGTH, RAM_LENGTH, deckY as triremeDeckY, halfBeam as triremeHalf
+ import { TRIREME_HULL, type HullShape } from './hullShape';
+ import { MERCHANT_HULL } from './merchantHull';
+ import { oarSlots, type OarSlot } from './oarLayout';
++import { MERCHANT_CREW, crewSlots, type CrewRowingParams } from './crew/params';
+ 
+ /**
+  * A playable ship: pure data plus hull functions. Every ship-dependent system takes a design in its
+@@ -61,6 +62,30 @@ export interface SailAero {
+   trimSlewPenalty: number;
+ }
+ 
++/** Docking alongside a quay (Mooring): lines, hauling in, the docked hold and the gangplank. */
++export interface DockingDesign {
++  enabled: boolean;
++  /** cleat stations: bow line, forward spring, aft spring, stern line */
++  cleats: [number, number, number, number];
++  /** gangplank opening station, and how far the plank reaches out from the rail toward the quay (m) */
++  plankS: number;
++  plankReach: number;
++  /** clearance between the hull's widest point and the quay face when docked (fenders implied, m) */
++  gap: number;
++  /**
++   * capture window for throwing the lines. lateral is measured from the docked pose, + = out from the
++   * quay; along is the offset along the quay; head is the largest heading error (rad); sog in m/s
++   */
++  capture: { along: number; latMin: number; latMax: number; head: number; sog: number };
++  /** hands on the lines (about 350 N each) times the tackle's mechanical advantage cap the haul */
++  crew: number;
++  tackle: number;
++  /** most the belayed lines hold together (N); beyond it the crew eases them */
++  lineStrength: number;
++  /** natural period of the docked hold (s) */
++  holdPeriod: number;
++}
++
+ export interface ShipDesign {
+   kind: ShipKind;
+   /** plain name for UI text */
+@@ -116,6 +141,8 @@ export interface ShipDesign {
+   /** stations of the side points that meet a quay face (at outerHalfWidth(s), sheer(s)) */
+   quayStations: number[];
+   oars: {
++    /** 'banks': RowingSystem (scripted strokes); 'crew': CrewRowing (agent crew, docs/merchant-crew-spec.md) */
++    system: 'banks' | 'crew';
+     slots(): OarSlot[];
+     /** number of oar banks (visual instancing groups); slot.bank < bankCount */
+     bankCount: number;
+@@ -134,11 +161,12 @@ export interface ShipDesign {
+     rateMax: number;
+     /** keleustes' drum on the catch */
+     drum: boolean;
++    /** the agent crew's parameters (system 'crew' only) */
++    crew?: CrewRowingParams;
+   };
+   rig: SailRig;
+   aero: SailAero;
+-  /** docking: capture, warping in, gangplank (Mooring) */
+-  dockingEnabled: boolean;
++  docking: DockingDesign;
+   /** dropping and weighing the anchor (Mooring) */
+   anchoringEnabled: boolean;
+   /** ground tackle: station of the bow fairlead the rode runs from, rode stiffness relative to the trireme's */
+@@ -207,6 +235,7 @@ export const TRIREME: ShipDesign = {
+   ],
+   quayStations: triremeQuayStations,
+   oars: {
++    system: 'banks',
+     slots: oarSlots,
+     bankCount: 3,
+     meanPower: [90, 20, 70, 120, 190, 320],
+@@ -236,7 +265,20 @@ export const TRIREME: ShipDesign = {
+     yardZ: TRIREME_HULL.zOf(0.42),
+   }),
+   aero: TRIREME_AERO,
+-  dockingEnabled: true,
++  docking: {
++    enabled: true,
++    cleats: [0.12, 0.4, 0.6, 0.86],
++    plankS: 0.62,
++    plankReach: 1.6,
++    // the outrigger is widest at 2.65 m: 0.35 m off a quay face 3 m from the berth centre
++    gap: 0.35,
++    capture: { along: 8, latMin: -0.8, latMax: 4, head: (15 * Math.PI) / 180, sog: 1.3 },
++    // deck crew and marines on the lines, with tackle: about 21 kN
++    crew: 20,
++    tackle: 3,
++    lineStrength: 150e3,
++    holdPeriod: 1.75,
++  },
+   anchoringEnabled: true,
+   anchor: { s: 0.12, stiffnessScale: 1 },
+   buildingEnabled: true,
+@@ -274,32 +316,6 @@ const MERCHANT_DECK: ShipDeck = {
+  */
+ const MERCHANT_MAST_S = 0.44;
+ 
+-/** four sweeps worked standing: one each side on the foredeck (s 0.2) and on the afterdeck (s 0.78) */
+-function merchantSweeps(): OarSlot[] {
+-  const slots: OarSlot[] = [];
+-  const length = 5.6, inboard = 1.5, bladeLength = 0.9;
+-  for (const s of [0.2, 0.78]) {
+-    for (const side of [-1, 1] as const) {
+-      slots.push({
+-        id: slots.length,
+-        length,
+-        inboard,
+-        bladeLength,
+-        bladeWidth: 0.2,
+-        bladeThickness: 0.03,
+-        bladeRadius: length - inboard - bladeLength / 2,
+-        bank: 0,
+-        side,
+-        x: side * (MH.halfBeam(s) + 0.02),
+-        y: MH.sheer(s) + 0.12,
+-        z: MH.zOf(s),
+-        jitter: 0,
+-      });
+-    }
+-  }
+-  return slots;
+-}
+-
+ const merchantQuayStations: number[] = [];
+ for (let i = 0; i <= 8; i++) merchantQuayStations.push(0.1 + i * 0.1);
+ 
+@@ -338,15 +354,18 @@ export const MERCHANT: ShipDesign = {
+   ],
+   quayStations: merchantQuayStations,
+   oars: {
+-    slots: merchantSweeps,
++    // six standing sweeps worked by an agent crew (docs/merchant-crew-spec.md); the fields below
++    // `slots` belong to the trireme's scripted RowingSystem and are not used by the crew
++    system: 'crew',
++    slots: () => crewSlots(MH, MERCHANT_CREW),
++    crew: MERCHANT_CREW,
+     bankCount: 1,
+-    // four standing sweep hands: Full gives about 1.9 kn after a few minutes (Kyrenia II: typically 1.8 kn)
+-    meanPower: [80, 20, 60, 105, 150, 150],
++    meanPower: [80, 20, 45, 80, 115, 115],
+     maxOrder: 4,
+     slotEnergy: 900,
+-    sweepFwd: 0.72,
+-    sweepBack: -0.58,
+-    rateScale: 0.7,
++    sweepFwd: MERCHANT_CREW.catchMax,
++    sweepBack: MERCHANT_CREW.finishMin,
++    rateScale: 1,
+     rateMin: 12,
+     rateMax: 30,
+     drum: false,
+@@ -369,19 +388,38 @@ export const MERCHANT: ShipDesign = {
+   }),
+   // milestone 1 uses the trireme's calibration; the merchant gets its own in phase 5
+   aero: Object.freeze({ ...TRIREME_AERO }),
+-  dockingEnabled: false,
++  docking: {
++    enabled: true,
++    cleats: [0.1, 0.38, 0.62, 0.88],
++    plankS: 0.55,
++    // her deck lies about a metre below the quay top: a longer reach keeps the plank walkable
++    plankReach: 2.2,
++    gap: 0.25,
++    // a line's throw (about 7 m) from her side to the quay face; the along range scales with her length
++    capture: { along: 4, latMin: -0.3, latMax: 7, head: (25 * Math.PI) / 180, sog: 1.0 },
++    // four hands with tackle: about 4.2 kN, three times her beam windage at 12 m/s
++    crew: 4,
++    tackle: 3,
++    lineStrength: 60e3,
++    holdPeriod: 1.75,
++  },
+   anchoringEnabled: true,
+   // a third of the trireme's mass, so a third of the rode stiffness and damping (same natural period)
+   anchor: { s: 0.08, stiffnessScale: 0.33 },
+   buildingEnabled: false,
+   camera: { helmS: 0.86, chaseDist: 24, chasePivotUp: 2.5, dockingDist: 30, titleDist: 30, titleLift: 7 },
+-  // the four sweep hands, standing inboard of their sweeps and facing aft; the after pair stands
+-  // forward of the helm and out by the rails so they don't block the helmsman's view
++  // static stand-ins for the six rowers at their stances (src/ship/crew/stance.ts, spec §2.2 measured deviation):
++  // on each oar's own side, 0.36 to 0.91 m off the centreline, 0.6 m forward of the pin, facing aft. [x, s] with
++  // s the station whose z is the stance's z (literal: stance.ts imports rowing, which imports this module).
++  // The two reliefs at their waiting spots.
+   crewSpots: [
+-    ['fig_sailor_idle', 0.85, 0.2, Math.PI],
+-    ['fig_sailor_idle', -0.85, 0.2, Math.PI],
+-    ['fig_sailor_idle', 1.2, 0.7, Math.PI],
+-    ['fig_sailor_idle', -1.2, 0.7, Math.PI],
++    ['fig_sailor_idle', -0.355, 0.1265, Math.PI],
++    ['fig_sailor_idle', 0.651, 0.2065, Math.PI],
++    ['fig_sailor_idle', -0.846, 0.2865, Math.PI],
++    ['fig_sailor_idle', 0.905, 0.5765, Math.PI],
++    ['fig_sailor_idle', -0.708, 0.6565, Math.PI],
++    ['fig_sailor_idle', 0.407, 0.7365, Math.PI],
++    ...MERCHANT_CREW.reliefSpots.map(([x, s]): [string, number, number, number] => ['fig_sailor_idle', x, s, x > 0 ? -Math.PI / 2 : Math.PI / 2]),
+   ],
+ };
+ 
+diff --git a/src/ship/merchantModel.ts b/src/ship/merchantModel.ts
+index 0d517f7..7e4f18c 100644
+--- a/src/ship/merchantModel.ts
++++ b/src/ship/merchantModel.ts
+@@ -10,6 +10,7 @@ import type { Crew } from './crew';
+ import type { ModelKit } from '../gfx/models';
+ import type { ShipPhysics } from './physics';
+ import type { ShipVisual } from './shipVisual';
++import { WindTells } from './windTells';
+ import type { ShipDesign } from './design';
+ 
+ const smooth = (a: number, b: number, x: number) => {
+@@ -46,6 +47,7 @@ export class MerchantModel implements ShipVisual {
+   private oarFx: THREE.InstancedBufferAttribute[] = [];
+   private lastTime = 0;
+   readonly mastTop = new THREE.Vector3();
++  private windTells: WindTells;
+   /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
+   readonly oarStow = [0, 0];
+   readonly oarStowTarget = [0, 0];
+@@ -234,6 +236,7 @@ export class MerchantModel implements ShipVisual {
+     this.sailMesh.castShadow = true;
+     this.sailMesh.frustumCulled = false;
+     this.yard.add(this.sailMesh);
++    this.windTells = new WindTells(g, this.mastTop, this.sailMesh, rig.width, rig.height);
+ 
+     // ---------- rigging ----------
+     const top = new THREE.Vector3(0, mastBase + mastH - 0.2, mastZ);
+@@ -318,7 +321,8 @@ export class MerchantModel implements ShipVisual {
+ 
+     // ---------- crew ----------
+     // (model -z is facing, so yaw -pi/2 faces +x (starboard) and +pi/2 faces -x (port))
+-    for (const [name, x, s, yaw] of design.crewSpots) {
++    // crew ships: the animated rowers (CrewAnimator, owned by game.ts) replace these static stand-ins
++    for (const [name, x, s, yaw] of design.oars.system === 'crew' ? [] : design.crewSpots) {
+       const fig = models.get(name);
+       fig.position.set(x, deck.deckY(s), hull.zOf(s));
+       fig.rotation.y = yaw;
+@@ -490,7 +494,8 @@ export class MerchantModel implements ShipVisual {
+     const L = this.design.hull.length;
+     for (const slot of this.slots) {
+       physics.rowing.renderPose(slot.id, alpha, this.oarPose);
+-      const st = this.oarStow[slot.side < 0 ? 0 : 1];
++      // a crew system ships its oars physically (the rowers hold them); only scripted banks stow here
++      const st = this.design.oars.system === 'crew' ? 0 : this.oarStow[slot.side < 0 ? 0 : 1];
+       if (st > 0) {
+         // boated: from the rest pose each oar swings aft and levels off, lying fore-and-aft along
+         // the outrigger, clear of a quay alongside
+@@ -530,6 +535,7 @@ export class MerchantModel implements ShipVisual {
+     su.uBillow.value = lerp(sail.previous.pressure, sail.current.pressure, alpha);
+     su.uFlutter.value = lerp(sail.previous.flutter, sail.current.flutter, alpha);
+     this.yard.rotation.y = lerp(sail.previous.yardAngle, sail.current.yardAngle, alpha);
++    this.windTells.update(physics, time, deployment, su.uBillow.value, su.uFlutter.value);
+ 
+     // steering oars twist with the rudder angle
+     for (const s of this.steer) {
+diff --git a/src/ship/mooring.ts b/src/ship/mooring.ts
+index 7d3b59b..6d4a0b8 100644
+--- a/src/ship/mooring.ts
++++ b/src/ship/mooring.ts
+@@ -1,30 +1,44 @@
+ import * as THREE from 'three';
+ import type { Berth, HarbourLayout } from '../world/harbour';
+ import type { ShipPhysics } from './physics';
+-import { halfBeam, deckY, sheer, zOf } from './hull';
++import type { DockingDesign, ShipDesign } from './design';
+ 
+ /**
+- * Lines, gangplank and anchor. CONTRACT (lead-owned public API): WS-B implements the bodies.
+- * All forces go through ShipPhysics.addForceAtPublic during ShipPhysics.step.
++ * Lines, gangplank and anchor: two independent state machines, so she can lie to her anchor and
++ * warp in to a quay at the same time. All forces go through ShipPhysics.addForceAtPublic /
++ * addTorquePublic during ShipPhysics.step.
++ *
++ * Lines: none -> out (the crew throws, about 1 s) -> hauling -> docked -> casting -> none.
++ * Hauling is force-based: each cleat is servoed toward its berthed position, with feed-forward of the
++ * measured wind and wave load, and the whole haul is capped by what the crew can pull. When they
++ * can't win, the lines hold her where she is (stalled) until the load eases.
++ * Docked is a PD force hold at the CG on horizontal position and yaw, with a small soft deadband;
++ * heave, roll and pitch stay physical. A sustained overload makes the crew ease the lines (back to
++ * hauling). Cast off raises the plank, lets go and shoves her clear.
++ *
++ * Anchor: stowed -> dropping -> holding -> weighing -> lifting -> stowed.
+  */
+-export type MooringState = 'free' | 'warping' | 'moored' | 'anchored';
++export type LinePhase = 'none' | 'out' | 'hauling' | 'docked' | 'casting';
+ export type AnchorPhase = 'stowed' | 'dropping' | 'holding' | 'weighing' | 'lifting';
+ 
+ export interface ApproachInfo {
+   berth: Berth;
+-  /** horizontal distance ship CoG → berth centre (m) */
++  /** horizontal distance ship CoG -> berth centre (m) */
+   dist: number;
+-  /** signed offset of the ship centre from the berth centre along the pier axis (m) */
++  /** where this ship's CoG lies when docked at this berth (world xz) */
++  poseX: number;
++  poseZ: number;
++  /** signed offset of the ship centre from the docked pose along the pier axis (m) */
+   along: number;
+-  /** gap error: ship centre distance from the berth line, + = too far out, − = pressing the quay (m) */
++  /** distance off the docked pose: + = too far out, - = pressing the quay (m) */
+   lateral: number;
+-  /** smallest angle to either allowed heading (rad, ≥ 0) */
++  /** smallest angle to either allowed heading (rad, >= 0) */
+   headingErr: number;
+   /** velocity toward the pier face (m/s, + = closing) */
+   closing: number;
+   /** speed over ground (m/s) */
+   sog: number;
+-  /** which side of the ship faces the pier: −1 port, +1 starboard */
++  /** which side of the ship faces the pier: -1 port, +1 starboard */
+   side: -1 | 1;
+   /** true when bow points seaward along the pier (+a) */
+   bowOut: boolean;
+@@ -40,10 +54,10 @@ export interface MooringLine {
+   local: THREE.Vector3;
+   /** bollard, world */
+   anchor: THREE.Vector3;
+-  /** current world position of the cleat (updated each step) */
+-  cleatWorld: THREE.Vector3;
+   /** 0..1 for visuals (sag when slack) */
+   tension: number;
++  /** 0..1 progress of the throw: the line's end flies from the cleat to the bollard */
++  deploy: number;
+ }
+ 
+ export interface Gangplank {
+@@ -61,8 +75,12 @@ export interface Gangplank {
+ }
+ 
+ export type MooringEvent =
+-  | { type: 'made-fast'; berth: Berth }
+-  | { type: 'moored'; rating: 'Perfect' | 'Good' | 'Rough'; contactSpeed: number }
++  | { type: 'lines-out'; berth: Berth }
++  | { type: 'docked'; rating: 'Perfect' | 'Good' | 'Rough'; contactSpeed: number }
++  | { type: 'haul-stalled'; reason: string }
++  | { type: 'haul-resumed' }
++  | { type: 'lines-eased' }
++  | { type: 'casting-off' }
+   | { type: 'cast-off' }
+   | { type: 'bump'; speed: number }
+   | { type: 'anchor-down' }
+@@ -72,35 +90,39 @@ export type MooringEvent =
+   | { type: 'denied'; reason: string };
+ 
+ const DEG = Math.PI / 180;
+-const smooth = (a: number, b: number, x: number) => {
+-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+-  return t * t * (3 - 2 * t);
+-};
++const KNOTS = 1.943844;
+ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+ const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
++/** soft deadband: about zero inside +-d, e -/+ d well outside it, smooth in between */
++const softDead = (e: number, d: number) => e - d * Math.tanh(e / d);
+ 
+-/** outrigger outboard extension (same profile as trireme.ts) */
+-export const outriggerOf = (s: number) => 0.7 * smooth(0.13, 0.2, s) * (1 - smooth(0.8, 0.87, s));
+-/** walkable deck edge at a station: the rail the cleats and the gangplank sit on */
+-const railOf = (s: number) => halfBeam(s) + outriggerOf(s) - 0.45;
+-
+-const CAPTURE = { along: 8, latMin: -0.8, latMax: 4, head: 15 * DEG, sog: 1.3, anchorSog: 1.5 };
+ const NEAR = 220;
+-/** cleat stations: bow, forward spring, aft spring, stern */
+-const CLEATS = [0.12, 0.4, 0.6, 0.86];
+-const LINE = { k: 40e3, c: 25e3, slack: 0.1, clamp: 30e3, ramp: 1.5, timeout: 25, haulSpeed: 0.5, haulTau: 1.2 };
++const THROW_TIME = 1;
++/** pull one hand puts on a line (N) */
++const HAND_FORCE = 350;
++/**
++ * speed: the crew's top hauling speed; rate: line speed per metre still to go, so she eases in;
++ * tau: servo time constant; ramp: lines come taut over this long; envTau: filter on the measured load;
++ * stallAfter: seconds at the crew's limit without closing before the haul is called stalled;
++ * resume: the load must fall below this share of the crew's pull, for resumeAfter seconds
++ */
++const HAUL = { speed: 0.5, rate: 0.4, slack: 0.1, tau: 1.2, ramp: 1.5, envTau: 1.5, stallAfter: 4, closing: 0.03, resume: 0.8, resumeAfter: 2 };
++/** docked once within err / head / sog for settle seconds (or nearly there after `late` s of hauling) */
++const DOCK = { err: 0.45, head: 4 * DEG, sog: 0.4, settle: 1, late: 40, lateErr: 1, deadband: 0.15, deadHead: 3 * DEG, overTau: 1, easeAfter: 2 };
++const STALL_REASON = 'Wind too strong to haul in · lines holding';
++const PHASE_LABEL = { out: 'Lines out', hauling: 'Hauling in', docked: 'Docked', casting: 'Casting off' } as const;
+ /** fall/haul/lift in m/s; breakout = horizontal rode length at which the anchor breaks out of the seabed */
+-const ANCHOR = { k: 18e3, c: 12e3, clamp: 60e3, s: 0.12, rode: 14, fall: 2.5, haul: 1.2, lift: 1.5, breakout: 1.5 };
+-const PLANK = { station: 0.62, width: 0.7, rate: 0.5, reach: 1.6 };
++const ANCHOR = { k: 18e3, c: 12e3, clamp: 60e3, rode: 14, fall: 2.5, haul: 1.2, lift: 1.5, breakout: 1.5, sog: 1.5 };
++const PLANK = { width: 0.7, rate: 0.5 };
+ const SHOVE = { speed: 0.35, time: 1 };
+ const BUMP = { min: 0.25, gap: 0.4 };
+ const RATING = { smart: 0.35, well: 0.8 };
+ 
+-const BOW_LOCAL = new THREE.Vector3(0, deckY(ANCHOR.s), zOf(ANCHOR.s));
+ const _v = new THREE.Vector3();
+ const _f = new THREE.Vector3();
+ const _s = new THREE.Vector3();
+ const _b = new THREE.Vector3();
++const _w = new THREE.Vector3();
+ 
+ /** heading (compass, rad) of the ship's bow */
+ function headingOf(ship: ShipPhysics) {
+@@ -109,22 +131,39 @@ function headingOf(ship: ShipPhysics) {
+ }
+ 
+ export class Mooring {
++  readonly docking: DockingDesign;
++  readonly anchoring: boolean;
++  /** the ship's widest outer half-width: sets how far off the quay face her centre lies when docked */
++  private readonly outerHalfWidth: number;
+   private readonly bowLocal: THREE.Vector3;
+-  constructor(readonly docking = true, readonly anchoring = true, bowLocal: THREE.Vector3 = BOW_LOCAL, readonly anchorScale = 1) {
+-    this.bowLocal = bowLocal.clone();
++  private readonly anchorScale: number;
++  private readonly crewForce: number;
++
++  constructor(private readonly design: ShipDesign) {
++    this.docking = design.docking;
++    this.anchoring = design.anchoringEnabled;
++    let w = 0;
++    for (let i = 0; i <= 200; i++) w = Math.max(w, design.deck.outerHalfWidth(i / 200));
++    this.outerHalfWidth = w;
++    this.bowLocal = new THREE.Vector3(0, design.deck.deckY(design.anchor.s), design.hull.zOf(design.anchor.s));
++    this.anchorScale = design.anchor.stiffnessScale;
++    this.crewForce = design.docking.crew * HAND_FORCE * design.docking.tackle;
+   }
+-  state: MooringState = 'free';
++
++  linePhase: LinePhase = 'none';
+   berth: Berth | null = null;
+   approach: ApproachInfo | null = null;
+   lines: MooringLine[] = [];
+   plank: Gangplank | null = null;
+-  /** world xz of the anchor on the seabed, when anchored */
+-  anchorAt: THREE.Vector3 | null = null;
+-  rode = ANCHOR.rode;
+-  /** 0..1 progress while warping in */
++  /** true while the crew can't haul her in and the lines are holding her */
++  stalled = false;
++  /** 0..1 progress while hauling in */
+   warpProgress = 0;
+   events: MooringEvent[] = [];
+   layout: HarbourLayout | null = null;
++  /** world xz of the anchor on the seabed, while it is down (dropping, holding, weighing) */
++  anchorAt: THREE.Vector3 | null = null;
++  rode = ANCHOR.rode;
+   /** where the anchor is in its cycle; 'stowed' = on deck */
+   anchorPhase: AnchorPhase = 'stowed';
+   /** world position of the anchor's ring while it is off the deck */
+@@ -139,11 +178,12 @@ export class Mooring {
+   private liftDist0 = 0;
+   private ship: ShipPhysics | null = null;
+   private clock = 0;
+-  private warpTime = 0;
++  /** time in the current line phase */
++  private phaseTime = 0;
+   private warpErr0 = 1;
+-  /** berthed pose: CoG xz and heading */
++  /** docked pose: CoG xz and heading */
+   private pose = { x: 0, z: 0, h: 0 };
+-  /** horizontal targets of the cleats in the berthed pose, parallel to lines */
++  /** horizontal targets of the cleats in the docked pose */
+   private targets: { x: number; z: number }[] = [];
+   private captureSog = 0;
+   /** largest quay contact speed since the approach began */
+@@ -153,37 +193,67 @@ export class Mooring {
+   private shoveDir = { x: 0, z: 0 };
+   private side: -1 | 1 = 1;
+   private settle = 0;
+-  private lastDt = 0;
++  /** filtered horizontal environmental load (wind, waves, hull), world */
++  private env = { x: 0, z: 0 };
++  private stallT = 0;
++  private resumeT = 0;
++  /** filtered pose-error closing rate while hauling (m/s, + = closing) */
++  private closingRate = 0;
++  private lastErr = 0;
++  /** filtered docked-hold demand as a share of the line strength */
++  private overload = 0;
++  private overT = 0;
+ 
+   setHarbour(layout: HarbourLayout) {
+     this.layout = layout;
+   }
+ 
+-  /** called once per sim step from ShipPhysics.step, before integration */
++  /** true while lines are attached (out, hauling, docked or casting off) */
++  get onLines() {
++    return this.linePhase !== 'none';
++  }
++  /** true while the anchor is off the deck */
++  get anchorOut() {
++    return this.anchorPhase !== 'stowed';
++  }
++
++  /** distance from her centre line to the quay face when docked (m) */
++  get faceOffset() {
++    return this.outerHalfWidth + this.docking.gap;
++  }
++
++  /** where this ship's CoG lies when docked at berth b: her widest point `gap` off the quay face */
++  berthPose(b: Berth, out: { x: number; z: number }) {
++    const shift = this.faceOffset - b.face;
++    out.x = b.cx + b.nx * shift;
++    out.z = b.cz + b.nz * shift;
++    return out;
++  }
++
++  /** called once per sim step from ShipPhysics.step, after the environmental forces and before integration */
+   step(dt: number, ship: ShipPhysics) {
+     this.ship = ship;
+     this.clock += dt;
+-    this.lastDt = dt;
+-    if (!this.docking) {
+-      this.approach = null;
+-      if (this.state === 'anchored') this.holdAnchor(ship);
+-    } else {
++    if (this.docking.enabled) {
+       this.updateApproach(ship);
+-      if (!this.approach && this.state === 'free') this.peak = 0;
+-      if (!this.plank) this.plank = { station: PLANK.station, side: 1, deployed: 0, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
+-
+-      switch (this.state) {
+-        case 'warping':
+-          this.warpTime += dt;
+-          this.pullLines(ship);
+-          this.checkMoored(ship);
++      if (!this.approach && this.linePhase === 'none') this.peak = 0;
++      if (!this.plank) this.plank = { station: this.docking.plankS, side: 1, deployed: 0, deckLocal: new THREE.Vector3(), shoreWorld: new THREE.Vector3(), width: PLANK.width };
++      this.phaseTime += dt;
++      switch (this.linePhase) {
++        case 'out':
++          for (const ln of this.lines) ln.deploy = clamp01(this.phaseTime / THROW_TIME);
++          if (this.phaseTime >= THROW_TIME) this.setPhase('hauling');
++          break;
++        case 'hauling':
++          this.haul(dt, ship);
++          this.checkDocked(dt, ship);
+           break;
+-        case 'moored':
+-          this.warpTime += dt;
+-          this.pullLines(ship);
++        case 'docked':
++          this.hold(dt, ship);
+           break;
+-        case 'anchored':
+-          this.holdAnchor(ship);
++        case 'casting':
++          this.hold(dt, ship);
++          if (this.plank.deployed < 0.02) this.release(true);
+           break;
+         default:
+           break;
+@@ -195,13 +265,19 @@ export class Mooring {
+         ship.addForceAtPublic(_f.set(this.shoveDir.x * k, 0, this.shoveDir.z * k), ship.pos);
+       }
+       this.updatePlank(dt, ship);
+-    }
++    } else this.approach = null;
++    if (this.anchorAt) this.holdAnchor(ship);
+     if (this.anchoring) this.updateAnchor(dt, ship);
+   }
+ 
++  /** throw the lines (R inside the capture window) */
+   makeFast(): boolean {
+-    if (!this.docking) {
+-      this.events.push({ type: 'denied', reason: "Docking isn't available on the merchant ship yet" });
++    if (!this.docking.enabled) {
++      this.events.push({ type: 'denied', reason: `Docking isn't available on the ${this.design.name.toLowerCase()}` });
++      return false;
++    }
++    if (this.onLines) {
++      this.events.push({ type: 'denied', reason: PHASE_LABEL[this.linePhase as Exclude<LinePhase, 'none'>] });
+       return false;
+     }
+     const a = this.approach,
+@@ -223,47 +299,36 @@ export class Mooring {
+     const side = a.side;
+     // bow and stern lines go to the outer bollards, springs to the centre one
+     const bollardOf = [bowOut ? 2 : 0, 1, 1, bowOut ? 0 : 2];
++    const { deck, hull } = this.design;
+     this.lines = [];
+     this.targets = [];
+-    CLEATS.forEach((st, i) => {
+-      const lx = side * railOf(st),
+-        lz = zOf(st);
+-      // cleat position in the berthed pose: rotate the ship-local point by the berth heading
+-      this.targets.push({ x: b.cx + lx * c - lz * s, z: b.cz + lx * s + lz * c });
+-      this.lines.push({
+-        local: new THREE.Vector3(lx, sheer(st), lz),
+-        anchor: b.bollards[bollardOf[i]].clone(),
+-        cleatWorld: new THREE.Vector3(),
+-        tension: 0,
+-      });
++    this.docking.cleats.forEach((st, i) => {
++      const lx = side * deck.deckHalfWidth(st),
++        lz = hull.zOf(st);
++      // cleat position in the docked pose: rotate the ship-local point by the berth heading
++      this.targets.push({ x: a.poseX + lx * c - lz * s, z: a.poseZ + lx * s + lz * c });
++      this.lines.push({ local: new THREE.Vector3(lx, hull.sheer(st), lz), anchor: b.bollards[bollardOf[i]].clone(), tension: 0, deploy: 0 });
+     });
+     this.side = side;
+-    this.pose = { x: b.cx, z: b.cz, h };
++    this.pose = { x: a.poseX, z: a.poseZ, h };
+     this.berth = b;
+     this.captureSog = a.sog;
+-    this.warpTime = 0;
+-    this.warpErr0 = Math.max(0.05, Math.hypot(ship.pos.x - b.cx, ship.pos.z - b.cz));
++    this.warpErr0 = Math.max(0.05, Math.hypot(ship.pos.x - a.poseX, ship.pos.z - a.poseZ));
+     this.warpProgress = 0;
+-    this.settle = 0;
+-    this.state = 'warping';
+-    this.events.push({ type: 'made-fast', berth: b });
++    this.setPhase('out');
++    this.events.push({ type: 'lines-out', berth: b });
+     return true;
+   }
+ 
++  /**
++   * R on the lines. Docked: raise the plank, then let go and shove her off (casting). Lines out or
++   * hauling: let go at once.
++   */
+   castOff() {
+-    if (this.state !== 'moored' && this.state !== 'warping') return;
+-    if (this.state === 'moored' && this.berth) {
+-      // crew shove her off the quay: 0.35 m/s away from the pier face over 1 s
+-      this.shove = SHOVE.time;
+-      this.shoveDir = { x: this.berth.nx, z: this.berth.nz };
+-    }
+-    this.lines = [];
+-    this.targets = [];
+-    this.berth = null;
+-    this.state = 'free';
+-    this.warpProgress = 0;
+-    this.peak = 0;
+-    this.events.push({ type: 'cast-off' }, { type: 'plank', down: false });
++    if (this.linePhase === 'docked') {
++      this.setPhase('casting');
++      this.events.push({ type: 'casting-off' }, { type: 'plank', down: false });
++    } else if (this.linePhase === 'out' || this.linePhase === 'hauling') this.release(false);
+   }
+ 
+   /** quiet: no denied event (used by the per-frame auto-anchor while the captain is ashore) */
+@@ -276,17 +341,15 @@ export class Mooring {
+     const ship = this.ship;
+     if (!ship) return false;
+     if (this.anchorPhase === 'lifting') return deny('The anchor is still coming up');
+-    if (this.state !== 'free') return deny('Already moored');
+-    if (Math.hypot(ship.vel.x, ship.vel.z) >= CAPTURE.anchorSog) return deny('Too fast to anchor · slow below 3 kn');
++    if (this.anchorPhase !== 'stowed') return deny('The anchor is already down');
++    if (this.linePhase === 'docked' || this.linePhase === 'casting') return deny('Docked · no need to anchor');
++    if (Math.hypot(ship.vel.x, ship.vel.z) >= ANCHOR.sog) return deny('Too fast to anchor · slow below 3 kn');
+     ship.toWorld(this.bowLocal, _b);
+     if (this.seabed) {
+       const depth = -this.seabed(_b.x, _b.z);
+       if (depth > this.rode) return deny(`Too deep to anchor · ${Math.round(depth)} m here, ${this.rode} m of rode`);
+     }
+     this.anchorAt = new THREE.Vector3(_b.x, 0, _b.z);
+-    this.berth = null;
+-    this.peak = 0;
+-    this.state = 'anchored';
+     this.anchorPhase = 'dropping';
+     this.anchorPos.copy(_b);
+     this.dropTop = _b.y;
+@@ -295,9 +358,9 @@ export class Mooring {
+     return true;
+   }
+ 
+-  /** starts hauling the rode in; the ship is freed and the anchor comes up when it breaks out */
++  /** starts hauling the rode in; the anchor comes up when it breaks out */
+   weighAnchor() {
+-    if (this.state !== 'anchored' || (this.anchorPhase !== 'holding' && this.anchorPhase !== 'dropping')) return;
++    if (this.anchorPhase !== 'holding' && this.anchorPhase !== 'dropping') return;
+     this.anchorPhase = 'weighing';
+     this.weighRode0 = this.rode;
+     this.anchorProgress = 0;
+@@ -323,6 +386,36 @@ export class Mooring {
+     }
+   }
+ 
++  private setPhase(p: LinePhase) {
++    this.linePhase = p;
++    this.phaseTime = 0;
++    if (p === 'hauling') {
++      this.stalled = false;
++      this.stallT = this.resumeT = 0;
++      this.settle = 0;
++      this.closingRate = 0;
++      this.lastErr = this.ship ? Math.hypot(this.ship.pos.x - this.pose.x, this.ship.pos.z - this.pose.z) : 0;
++      for (const ln of this.lines) ln.deploy = 1;
++    }
++    if (p === 'docked') this.overload = this.overT = 0;
++  }
++
++  /** let go all lines; shove pushes her off the quay face */
++  private release(shove: boolean) {
++    if (shove && this.berth) {
++      this.shove = SHOVE.time;
++      this.shoveDir = { x: this.berth.nx, z: this.berth.nz };
++    }
++    this.lines = [];
++    this.targets = [];
++    this.berth = null;
++    this.stalled = false;
++    this.warpProgress = 0;
++    this.peak = 0;
++    this.setPhase('none');
++    this.events.push({ type: 'cast-off' });
++  }
++
+   private updateApproach(ship: ShipPhysics) {
+     let best: Berth | null = null;
+     let bd = Infinity;
+@@ -338,8 +431,10 @@ export class Mooring {
+       return;
+     }
+     const b = best;
+-    const dx = ship.pos.x - b.cx,
+-      dz = ship.pos.z - b.cz;
++    const cap = this.docking.capture;
++    const pose = this.berthPose(b, _w);
++    const dx = ship.pos.x - pose.x,
++      dz = ship.pos.z - pose.z;
+     const along = dx * b.ax + dz * b.az;
+     const lateral = dx * b.nx + dz * b.nz;
+     _f.set(0, 0, -1).applyQuaternion(ship.quat); // bow direction
+@@ -355,28 +450,30 @@ export class Mooring {
+     const side: -1 | 1 = _s.x * b.nx + _s.z * b.nz < 0 ? 1 : -1;
+     const bowOut = _f.x * b.ax + _f.z * b.az > 0;
+ 
+-    const free = this.state === 'free';
+-    const sogOk = sog <= CAPTURE.sog;
+-    const latOk = lateral >= CAPTURE.latMin && lateral <= CAPTURE.latMax;
+-    const headOk = headingErr <= CAPTURE.head;
+-    const alongOk = Math.abs(along) <= CAPTURE.along;
++    const free = this.linePhase === 'none';
++    const sogOk = sog <= cap.sog;
++    const latOk = lateral >= cap.latMin && lateral <= cap.latMax;
++    const headOk = headingErr <= cap.head;
++    const alongOk = Math.abs(along) <= cap.along;
+     const canMakeFast = free && sogOk && latOk && headOk && alongOk;
+     let reason: string | null = null;
+-    if (!free) reason = this.state === 'warping' ? 'Pulling in' : this.state === 'moored' ? 'Moored' : 'Anchored';
++    if (!free) reason = PHASE_LABEL[this.linePhase as Exclude<LinePhase, 'none'>];
+     // most distant concern first: get there, slow down, close the gap, straighten up
+-    else if (!alongOk) reason = `${Math.round(Math.abs(along) - CAPTURE.along)} m to berth`;
+-    else if (!sogOk) reason = 'Too fast · slow below 2.5 kn';
+-    else if (lateral > CAPTURE.latMax) reason = `${(lateral - CAPTURE.latMax).toFixed(1)} m too far from quay`;
++    else if (!alongOk) reason = `${Math.round(Math.abs(along) - cap.along)} m to berth`;
++    else if (!sogOk) reason = `Too fast · slow below ${(cap.sog * KNOTS).toFixed(1)} kn`;
++    else if (lateral > cap.latMax) reason = `${(lateral - cap.latMax).toFixed(1)} m too far from quay`;
+     else if (!latOk) reason = 'Too close to quay';
+     else if (!headOk) reason = `${Math.round(headingErr / DEG)}° off line`;
+ 
+-    const qSpeed = clamp01(1 - Math.max(0, sog - 0.3) / 1.5);
+-    const qLat = clamp01(1 - Math.max(0, Math.abs(lateral - 0.5) - 0.5) / 3);
+-    const qHead = clamp01(1 - headingErr / (20 * DEG));
++    const qSpeed = clamp01(1 - Math.max(0, sog - 0.3) / (cap.sog + 0.2));
++    const qLat = clamp01(1 - Math.max(0, Math.abs(lateral - 0.5) - 0.5) / (cap.latMax - 1));
++    const qHead = clamp01(1 - headingErr / (cap.head + 5 * DEG));
+ 
+     this.approach = {
+       berth: b,
+       dist: bd,
++      poseX: pose.x,
++      poseZ: pose.z,
+       along,
+       lateral,
+       headingErr,
+@@ -390,59 +487,154 @@ export class Mooring {
+     };
+   }
+ 
+-  /** horizontal spring-damper per line, cleat toward its berthed position; tension only, never push */
+-  private pullLines(ship: ShipPhysics) {
+-    const ramp = Math.min(1, this.warpTime / LINE.ramp);
+-    const k = LINE.k * ramp,
+-      c = LINE.c * ramp;
++  /**
++   * Hauling in: each cleat is servoed toward its docked position (line speed easing to zero there),
++   * plus a share of the measured environmental load the lines must carry; tension only. The total is
++   * capped by the crew's pull. Stalled, the crew belays: the lines hold her (up to their strength) and
++   * they wait for the load to ease.
++   */
++  private haul(dt: number, ship: ShipPhysics) {
++    const m = ship.mass + ship.payloadMass;
++    const ramp = Math.min(1, this.phaseTime / HAUL.ramp);
++    // environmental load: everything acting on her this step before the lines and the quay
++    const pf = ship.pendingForce;
++    const ka = 1 - Math.exp(-dt / HAUL.envTau);
++    this.env.x += (pf.x - this.env.x) * ka;
++    this.env.z += (pf.z - this.env.z) * ka;
++    const envMag = Math.hypot(this.env.x, this.env.z);
++    const ex = envMag > 1e-6 ? this.env.x / envMag : 0,
++      ez = envMag > 1e-6 ? this.env.z / envMag : 0;
++    const gain = m / (this.lines.length * HAUL.tau);
++    const cap = this.stalled ? this.docking.lineStrength : this.crewForce;
++    // feed-forward split: lines pulling against the load carry it in proportion to how directly they oppose it
++    let w2 = 0;
++    for (let i = 0; i < this.lines.length; i++) {
++      const u = this.lineDir(i, ship);
++      const w = u ? Math.max(0, -(ex * u.x + ez * u.z)) : 0;
++      w2 += w * w;
++    }
++    const F = this.lineForce;
++    let total = 0;
+     for (let i = 0; i < this.lines.length; i++) {
+-      const ln = this.lines[i],
+-        tg = this.targets[i];
+-      ship.toWorld(ln.local, ln.cleatWorld);
+-      const ex = tg.x - ln.cleatWorld.x,
+-        ez = tg.z - ln.cleatWorld.z;
+-      const dist = Math.hypot(ex, ez);
+-      if (dist <= LINE.slack) {
+-        ln.tension = 0;
++      const ln = this.lines[i];
++      ln.tension = 0;
++      const u = this.lineDir(i, ship);
++      if (!u) {
++        F[i] = 0;
+         continue;
+       }
+-      const ux = ex / dist,
+-        uz = ez / dist;
+-      ship.pointVel(ln.cleatWorld, _v);
+-      const vn = _v.x * ux + _v.z * uz;
+-      let F: number;
+-      if (this.state === 'warping') {
+-        // the crew hauls hand over hand: line speed eases from 0.5 m/s to zero at the target, and
+-        // the line goes slack whenever the ship is already coming in faster than they can take up
+-        const want = Math.min(LINE.haulSpeed, 0.4 * (dist - LINE.slack));
+-        const gain = (ship.mass + ship.payloadMass) / (this.lines.length * LINE.haulTau);
+-        F = Math.min(LINE.clamp, Math.max(0, gain * (want - vn) * ramp));
+-      } else F = Math.min(LINE.clamp, Math.max(0, k * (dist - LINE.slack) - c * vn));
+-      ship.addForceAtPublic(_f.set(F * ux, 0, F * uz), ln.cleatWorld);
+-      ln.tension = F / LINE.clamp;
++      ship.pointVel(_b, _v);
++      const vn = _v.x * u.x + _v.z * u.z;
++      // stalled: hold position (no line taken in); hauling: ease in toward the target
++      const want = this.stalled ? 0 : Math.min(HAUL.speed, HAUL.rate * (u.dist - HAUL.slack));
++      const w = Math.max(0, -(ex * u.x + ez * u.z));
++      const ff = w2 > 1e-6 ? (envMag * w) / w2 : 0;
++      F[i] = Math.max(0, (gain * (want - vn) + ff) * ramp);
++      total += F[i];
+     }
++    const capped = total > cap;
++    const scale = capped ? cap / total : 1;
++    for (let i = 0; i < this.lines.length; i++) {
++      const u = this.lineDir(i, ship);
++      if (!u || F[i] <= 0) continue;
++      const f = F[i] * scale;
++      ship.addForceAtPublic(_f.set(f * u.x, 0, f * u.z), _b);
++      this.lines[i].tension = Math.min(1, f / (this.docking.lineStrength / this.lines.length) + 0.3);
++    }
++    // stall: at the crew's limit and not closing for a while
++    const err = Math.hypot(ship.pos.x - this.pose.x, ship.pos.z - this.pose.z);
++    this.closingRate += ((this.lastErr - err) / dt - this.closingRate) * (1 - Math.exp(-dt / 1));
++    this.lastErr = err;
++    if (!this.stalled) {
++      this.stallT = capped && this.closingRate < HAUL.closing ? this.stallT + dt : 0;
++      if (this.stallT >= HAUL.stallAfter) {
++        this.stalled = true;
++        this.resumeT = 0;
++        this.events.push({ type: 'haul-stalled', reason: STALL_REASON });
++      }
++    } else {
++      this.resumeT = envMag < HAUL.resume * this.crewForce ? this.resumeT + dt : 0;
++      if (this.resumeT >= HAUL.resumeAfter) {
++        this.stalled = false;
++        this.stallT = 0;
++        this.events.push({ type: 'haul-resumed' });
++      }
++    }
++  }
++
++  private readonly lineForce = [0, 0, 0, 0];
++  private readonly lineU = { x: 0, z: 0, dist: 0 };
++  /** world cleat of line i into _b, and the horizontal unit direction toward its target (null when slack) */
++  private lineDir(i: number, ship: ShipPhysics) {
++    ship.toWorld(this.lines[i].local, _b);
++    const tg = this.targets[i];
++    const ex = tg.x - _b.x,
++      ez = tg.z - _b.z;
++    const dist = Math.hypot(ex, ez);
++    if (dist <= HAUL.slack) return null;
++    this.lineU.x = ex / dist;
++    this.lineU.z = ez / dist;
++    this.lineU.dist = dist;
++    return this.lineU;
+   }
+ 
+-  private checkMoored(ship: ShipPhysics) {
++  private checkDocked(dt: number, ship: ShipPhysics) {
+     const err = Math.hypot(ship.pos.x - this.pose.x, ship.pos.z - this.pose.z);
+     const herr = Math.abs(wrap(headingOf(ship) - this.pose.h));
+     const sog = Math.hypot(ship.vel.x, ship.vel.z);
+     this.warpProgress = clamp01(1 - err / this.warpErr0);
+     // alongside and steady for a second; wave orbital motion never lets the speed reach zero
+-    this.settle = err < 0.45 && herr < 4 * DEG && sog < 0.4 ? this.settle + this.lastDt : 0;
+-    if (this.settle >= 1 || this.warpTime >= LINE.timeout) {
++    this.settle = err < DOCK.err && herr < DOCK.head && sog < DOCK.sog ? this.settle + dt : 0;
++    const late = this.phaseTime >= DOCK.late && err < DOCK.lateErr && !this.stalled;
++    if (this.settle >= DOCK.settle || late) {
+       const contact = Math.max(this.peak, this.captureSog);
+       const rating: 'Perfect' | 'Good' | 'Rough' = contact < RATING.smart ? 'Perfect' : contact < RATING.well ? 'Good' : 'Rough';
+-      this.state = 'moored';
+       this.warpProgress = 1;
+-      this.events.push({ type: 'moored', rating, contactSpeed: contact }, { type: 'plank', down: true });
++      this.setPhase('docked');
++      this.events.push({ type: 'docked', rating, contactSpeed: contact }, { type: 'plank', down: true });
++    }
++  }
++
++  /**
++   * Docked hold: critically damped PD force at the CG on horizontal position and yaw, with a soft
++   * deadband, clamped at the lines' strength. The sim has no added mass, so k and c use her mass.
++   */
++  private hold(dt: number, ship: ShipPhysics) {
++    const d = this.docking;
++    const m = ship.mass + ship.payloadMass;
++    const w = (2 * Math.PI) / d.holdPeriod;
++    const ex = ship.pos.x - this.pose.x,
++      ez = ship.pos.z - this.pose.z;
++    const e = Math.hypot(ex, ez);
++    const sc = e > 1e-9 ? softDead(e, DOCK.deadband) / e : 0;
++    let fx = -m * w * w * ex * sc - 2 * m * w * ship.vel.x;
++    let fz = -m * w * w * ez * sc - 2 * m * w * ship.vel.z;
++    const fm = Math.hypot(fx, fz);
++    if (fm > d.lineStrength) {
++      fx *= d.lineStrength / fm;
++      fz *= d.lineStrength / fm;
++    }
++    ship.addForceAtPublic(_f.set(fx, 0, fz), ship.pos);
++    // yaw: heading grows with negative rotation about +y, so a heading error wants a positive torque
++    const Iy = ship.inertia.y;
++    const eh = softDead(wrap(headingOf(ship) - this.pose.h), DOCK.deadHead);
++    const tMax = d.lineStrength * this.design.hull.length * 0.25;
++    const ty = Math.max(-tMax, Math.min(tMax, Iy * w * w * eh - 2 * Iy * w * ship.angVel.y));
++    ship.addTorquePublic(_f.set(0, ty, 0));
++    // the crew eases the lines when the hold is overloaded for a while (filtered: wave peaks don't count)
++    this.overload += (fm / d.lineStrength - this.overload) * (1 - Math.exp(-dt / DOCK.overTau));
++    for (const ln of this.lines) ln.tension = 0.35 + 0.65 * Math.min(1, this.overload);
++    if (this.linePhase !== 'docked') return;
++    this.overT = this.overload > 1 ? this.overT + dt : 0;
++    if (this.overT >= DOCK.easeAfter) {
++      this.setPhase('hauling');
++      this.events.push({ type: 'lines-eased' }, { type: 'plank', down: false });
+     }
+   }
+ 
+-  /** anchor rode: beyond its length a horizontal spring-damper at the bow cleat */
++  /** anchor rode: beyond its length a horizontal spring-damper at the bow fairlead */
+   private holdAnchor(ship: ShipPhysics) {
+-    const a = this.anchorAt;
+-    if (!a) return;
++    const a = this.anchorAt!;
+     ship.toWorld(this.bowLocal, _b);
+     const ex = _b.x - a.x,
+       ez = _b.z - a.z;
+@@ -453,14 +645,16 @@ export class Mooring {
+       uz = ez / d;
+     ship.pointVel(_b, _v);
+     const vn = _v.x * ux + _v.z * uz;
+-    const F = Math.min(ANCHOR.clamp * this.anchorScale, Math.max(0, ANCHOR.k * this.anchorScale * stretch + ANCHOR.c * this.anchorScale * vn));
++    const s = this.anchorScale;
++    const F = Math.min(ANCHOR.clamp * s, Math.max(0, ANCHOR.k * s * stretch + ANCHOR.c * s * vn));
+     ship.addForceAtPublic(_f.set(-F * ux, 0, -F * uz), _b);
+   }
+ 
+   /** the anchor's own motion: falls to the seabed, holds, comes up with the rode; stowed = on deck */
+   private updateAnchor(dt: number, ship: ShipPhysics) {
+     ship.toWorld(this.bowLocal, _b);
+-    const floor = (x: number, z: number) => (this.seabed ? this.seabed(x, z) : _b.y - 6);
++    const fallback = _b.y - 6;
++    const floor = (x: number, z: number) => (this.seabed ? this.seabed(x, z) : fallback);
+     switch (this.anchorPhase) {
+       case 'dropping': {
+         const a = this.anchorAt!;
+@@ -486,10 +680,16 @@ export class Mooring {
+         // the shortening rode pulls the ship up to her anchor (holdAnchor)
+         this.rode = Math.max(ANCHOR.breakout, this.rode - ANCHOR.haul * dt);
+         this.anchorProgress = clamp01(1 - (this.rode - ANCHOR.breakout) / Math.max(0.01, this.weighRode0 - ANCHOR.breakout));
+-        const d = Math.hypot(_b.x - a.x, _b.z - a.z);
++        let d = Math.hypot(_b.x - a.x, _b.z - a.z);
++        // held on her lines she can't come up to the anchor, so the crew drags the anchor home instead
++        if (this.onLines && d > this.rode + 0.5) {
++          const k = (this.rode + 0.5) / d;
++          a.set(_b.x + (a.x - _b.x) * k, 0, _b.z + (a.z - _b.z) * k);
++          this.anchorPos.set(a.x, floor(a.x, a.z), a.z);
++          d = this.rode + 0.5;
++        }
+         if (this.rode <= ANCHOR.breakout && d <= ANCHOR.breakout + 0.5) {
+-          // breakout: the ship is free, the anchor comes up
+-          this.state = 'free';
++          // breakout: the anchor comes up
+           this.anchorAt = null;
+           this.anchorPhase = 'lifting';
+           this.liftDist0 = Math.max(0.01, this.anchorPos.distanceTo(_b));
+@@ -516,14 +716,14 @@ export class Mooring {
+     }
+   }
+ 
+-  /** gangplank: deploys while moored, stows otherwise; shoreWorld is re-projected every step */
++  /** gangplank: deploys while docked, stows otherwise; shoreWorld is re-projected every step */
+   private updatePlank(dt: number, ship: ShipPhysics) {
+     const p = this.plank!;
+-    const target = this.state === 'moored' ? 1 : 0;
++    const target = this.linePhase === 'docked' ? 1 : 0;
+     p.deployed += Math.max(-PLANK.rate * dt, Math.min(PLANK.rate * dt, target - p.deployed));
+     p.side = this.side;
+-    const st = PLANK.station;
+-    p.deckLocal.set(this.side * railOf(st), deckY(st), zOf(st));
++    const st = p.station;
++    p.deckLocal.set(this.side * this.design.deck.deckHalfWidth(st), this.design.deck.deckY(st), this.design.hull.zOf(st));
+     ship.toWorld(p.deckLocal, p.shoreWorld);
+     let ox: number, oz: number, oy: number;
+     if (this.berth) {
+@@ -536,6 +736,7 @@ export class Mooring {
+       oz = _s.z * this.side;
+       oy = p.shoreWorld.y;
+     }
+-    p.shoreWorld.set(p.shoreWorld.x + ox * PLANK.reach, oy, p.shoreWorld.z + oz * PLANK.reach);
++    const reach = this.docking.plankReach;
++    p.shoreWorld.set(p.shoreWorld.x + ox * reach, oy, p.shoreWorld.z + oz * reach);
+   }
+ }
+diff --git a/src/ship/physics.ts b/src/ship/physics.ts
+index 2713b64..5d54a22 100644
+--- a/src/ship/physics.ts
++++ b/src/ship/physics.ts
+@@ -4,6 +4,8 @@ import { TRIREME, type ShipDesign } from './design';
+ import { dragCoefficient } from './resistance';
+ import { Crew } from './crew';
+ import { RowingSystem } from './rowing';
++import type { OarPropulsion } from './oarPropulsion';
++import { CrewRowing } from './crew/crewRowing';
+ import { hullLateralForce } from './hullLateral';
+ import { SailingSystem } from './sailing';
+ import { Mooring } from './mooring';
+@@ -55,7 +57,7 @@ export class ShipPhysics {
+   // accumulators
+   private force = new THREE.Vector3();
+   private torque = new THREE.Vector3();
+-  readonly rowing: RowingSystem;
++  readonly rowing: OarPropulsion;
+   readonly sailing: SailingSystem;
+   readonly mooring: Mooring;
+   /** deck cargo / built pieces: weight acting at ship-local points (spec §8) */
+@@ -80,14 +82,13 @@ export class ShipPhysics {
+   displacement = 0;
+   time = 0;
+ 
+-  constructor(private waves: WaveField, private wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
++  constructor(private waves: WaveField, readonly wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
+     this.cg = new THREE.Vector3(0, design.mass.cgY, design.mass.cgZ);
+-    this.mooring = new Mooring(design.dockingEnabled, design.anchoringEnabled,
+-      new THREE.Vector3(0, design.deck.deckY(design.anchor.s), design.hull.zOf(design.anchor.s)), design.anchor.stiffnessScale);
++    this.mooring = new Mooring(design);
+     this.mooring.seabed = (x, z) => terrain.heightAt(x, z);
+     const hull = design.hull;
+     this.columns = hull.buildColumns(design.columns.stations, design.columns.strips);
+-    this.rowing = new RowingSystem(crew, design.oars);
++    this.rowing = createPropulsion(crew, design, this.payload);
+     this.sailing = new SailingSystem(design.rig, design.aero);
+     crew.maxOrder = design.oars.maxOrder;
+     // mass from displacement at the design waterline: the ship floats where it was designed to
+@@ -149,6 +150,14 @@ export class ShipPhysics {
+   addForceAtPublic(f: THREE.Vector3, world: THREE.Vector3) {
+     this.addForceAt(f, world);
+   }
++  /** a pure torque (world frame), for the docked hold */
++  addTorquePublic(t: THREE.Vector3) {
++    this.torque.add(t);
++  }
++  /** everything acting on her so far this step (world frame); read by the mooring as the environmental load */
++  get pendingForce(): Readonly<THREE.Vector3> {
++    return this.force;
++  }
+   get payloadMass() {
+     let m = 0;
+     for (const p of this.payload) m += p.mass;
+@@ -419,3 +428,8 @@ export class ShipPhysics {
+     quat.slerpQuaternions(this.prevQuat, this.quat, alpha);
+   }
+ }
++
++/** the ship's oar system: the trireme's scripted banks, or the merchant's agent crew (docs/merchant-crew-spec.md) */
++function createPropulsion(crew: Crew, design: ShipDesign, payload: { mass: number; local: THREE.Vector3 }[]): OarPropulsion {
++  return design.oars.system === 'crew' ? new CrewRowing(crew, design, payload) : new RowingSystem(crew, design.oars);
++}
+diff --git a/src/ship/rowing.ts b/src/ship/rowing.ts
+index 85921d6..256848f 100644
+--- a/src/ship/rowing.ts
++++ b/src/ship/rowing.ts
+@@ -2,6 +2,7 @@ import * as THREE from 'three';
+ import { Crew } from './crew';
+ import { type OarSlot } from './oarLayout';
+ import { TRIREME, type ShipDesign } from './design';
++import type { OarPropulsion, RowTelemetry } from './oarPropulsion';
+ import { createFlowSample, type WaveField } from '../world/waves';
+ import { clamp, smoothstep } from '../core/util';
+ 
+@@ -148,14 +149,14 @@ export function bladeDrag(area: number, slip: THREE.Vector3, normal: THREE.Vecto
+     k * (ROWING_CONSTANTS.normalDrag * vn * Math.abs(vn) * normal.z + ROWING_CONSTANTS.profileDrag * tn * tz));
+ }
+ 
+-export class RowingSystem {
++export class RowingSystem implements OarPropulsion {
+   readonly slots: readonly OarSlot[];
+   readonly previous: BladeFrame; readonly current: BladeFrame;
+   readonly events = new RowEventRing(); readonly energy: Float64Array;
+   readonly handleCaps: Float64Array; readonly powerCaps: Float64Array;
+   readonly replenishedEnergy: Float64Array; readonly spentEnergy: Float64Array;
+   readonly sides: SideController[];
+-  readonly telemetry = { portThrust: 0, starboardThrust: 0, oarThrust: 0, yawMoment: 0, wetArea: 0, wetBlades: 0,
++  readonly telemetry: RowTelemetry = { portThrust: 0, starboardThrust: 0, oarThrust: 0, yawMoment: 0, wetArea: 0, wetBlades: 0,
+     positivePower: 0, dissipatedPower: 0, crewLoad: 0, forceCapFraction: 0, powerCapFraction: 0,
+     missedDriveFraction: 0, fallbackQueries: 0, guardedQueries: 0 };
+   /** Test/reference switch: query each strip center even when curvature allows one center plane. */
+@@ -207,6 +208,8 @@ export class RowingSystem {
+     j.dSweep = p[o + 3] + (c[o + 3] - p[o + 3]) * alpha; j.dDip = p[o + 4] + (c[o + 4] - p[o + 4]) * alpha;
+     j.dFeather = p[o + 5] + (c[o + 5] - p[o + 5]) * alpha;
+   }
++  /** the trireme's oars are stowed visually (Trireme.oarStow); nothing to do here */
++  setShipped(_side: RowSide, _on: boolean) {}
+   renderPose(index: number, alpha: number, out: OarKinematics) { this.readJoint(index, clamp(alpha, 0, 1)); evaluateOar(this.slots[index], this.joint, out); }
+   private beginTransition(side: number, mode: 'exit' | 'transfer' | 'enter') {
+     const s = this.sides[side]; s.mode = mode; s.elapsed = 0; s.duration = mode === 'exit' ? 0.28 : mode === 'transfer' ? 0.38 : 0.22;
+diff --git a/src/ship/sailing.ts b/src/ship/sailing.ts
+index 865e66b..cec82f1 100644
+--- a/src/ship/sailing.ts
++++ b/src/ship/sailing.ts
+@@ -7,8 +7,8 @@ const AIR_DENSITY = 1.225;
+ const PI = Math.PI;
+ const INCIDENCE_START = (2 * PI) / 180;
+ const INCIDENCE_FULL = (9 * PI) / 180;
+-const SEPARATION_START = (18 * PI) / 180;
+-const SEPARATION_FULL = (32 * PI) / 180;
++export const SEPARATION_START = (18 * PI) / 180;
++export const SEPARATION_FULL = (32 * PI) / 180;
+ /** Gameplay calibration/preferences, not historically measured coefficients. */
+ export const SAIL_AERO = Object.freeze({
+   pressureDrag: 1.7,
+diff --git a/src/ship/trireme.ts b/src/ship/trireme.ts
+index 63a6e75..758fdc1 100644
+--- a/src/ship/trireme.ts
++++ b/src/ship/trireme.ts
+@@ -12,6 +12,7 @@ import { Crew } from './crew';
+ import type { ModelKit } from '../gfx/models';
+ import type { ShipPhysics } from './physics';
+ import type { ShipVisual } from './shipVisual';
++import { WindTells } from './windTells';
+ import { SAIL_RIG } from './sailGeometry';
+ 
+ const smooth = (a: number, b: number, x: number) => {
+@@ -55,6 +56,7 @@ export class Trireme implements ShipVisual {
+   private oarFx: THREE.InstancedBufferAttribute[] = [];
+   private lastTime = 0;
+   readonly mastTop = new THREE.Vector3();
++  private windTells: WindTells;
+   /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
+   readonly oarStow = [0, 0];
+   readonly oarStowTarget = [0, 0];
+@@ -257,6 +259,7 @@ export class Trireme implements ShipVisual {
+     this.sailMesh.castShadow = true;
+     this.sailMesh.frustumCulled = false;
+     this.yard.add(this.sailMesh);
++    this.windTells = new WindTells(g, this.mastTop, this.sailMesh, SAIL_RIG.width, SAIL_RIG.height);
+ 
+     // rigging
+     const ropeMat = mat({ color: 0x6b5a40, roughness: 0.95 }, 'rope');
+@@ -692,6 +695,7 @@ export class Trireme implements ShipVisual {
+     su.uBillow.value = lerp(sail.previous.pressure, sail.current.pressure, alpha);
+     su.uFlutter.value = lerp(sail.previous.flutter, sail.current.flutter, alpha);
+     this.yard.rotation.y = lerp(sail.previous.yardAngle, sail.current.yardAngle, alpha);
++    this.windTells.update(physics, time, deployment, su.uBillow.value, su.uFlutter.value);
+ 
+     // steering oars twist with the rudder angle
+     for (const s of this.steer) {
+diff --git a/src/ui/dock.ts b/src/ui/dock.ts
+index 720523f..ecd2814 100644
+--- a/src/ui/dock.ts
++++ b/src/ui/dock.ts
+@@ -1,5 +1,7 @@
+ import type { ApproachInfo, Mooring } from '../ship/mooring';
++import type { DockingDesign } from '../ship/design';
+ import { KNOTS } from '../core/util';
++import { MiniGauge } from './gauges';
+ 
+ const el = (tag: string, cls = '', html = '') => {
+   const e = document.createElement(tag);
+@@ -8,96 +10,53 @@ const el = (tag: string, cls = '', html = '') => {
+   return e;
+ };
+ 
+-// plan view: isotropic so the ship's angle reads true; pier is the stone bar across the top.
+-// Distance along the quay is compressed past 12 m so the hull stays in frame on the run-in.
+-const S = 2.2; // px per metre
+-const PW = 140; // plan width (px)
+-const PH = 76;
+-const X0 = PW / 2; // plan x of the berth centre
+-const Y0 = 30; // plan y of the berth centre line (ship lateral 0, snug alongside)
+-const squash = (a: number) => Math.sign(a) * (Math.abs(a) < 12 ? Math.abs(a) : 12 + 9 * Math.log1p((Math.abs(a) - 12) / 9));
+-const xOf = (along: number) => X0 + along * S;
+-const yOf = (lat: number) => Y0 + lat * S;
+-const HULL = 'M18.5 0 L14 -2.65 L-17 -2.65 L-18.5 -1.8 L-18.5 1.8 L-17 2.65 L14 2.65 Z';
++/** what the panel needs to know about the ship */
++export interface DockShape {
++  halfLength: number;
++  halfBeam: number;
++  faceOffset: number;
++  capture: DockingDesign['capture'];
++}
+ const DEG = 180 / Math.PI;
+-
+-const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+ const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+-// rounds first so a value that displays as zero never carries a sign
+-const signed = (v: number, d: number) => {
+-  const t = Math.abs(v).toFixed(d);
+-  return Number(t) === 0 ? t : `${v > 0 ? '+' : '−'}${t}`;
+-};
+ 
+-// gauge scale and target band (lo/hi = scale ends, blo/bhi = band)
+-const GAUGES = [
+-  { k: 'spd', label: 'Speed', lo: 0, hi: 6, blo: 0, bhi: 2.5 },
+-  { k: 'lat', label: 'Distance off', lo: -3, hi: 12, blo: -0.8, bhi: 4 },
+-  { k: 'ang', label: 'Angle', lo: -60, hi: 60, blo: -15, bhi: 15 },
+-];
++// a rope loop and an anchor, for the key hints
++const ROPE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 12 C3 5 13 5 13 9 C13 13 6 13 6 9 C6 6 10 6 11 8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
++const ANCHOR = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.4V14 M5 7h6 M3 10.5c0 2.3 2.2 3.5 5 3.5s5-1.2 5-3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>';
+ 
+ /**
+- * Docking card, bottom centre above the helm bar: shown at the helm when a berth is within 120 m
+- * or the ship is tied up / at anchor. Plan view, title with the distance to the berth, three live
+- * gauges, and a footer with the reason and the next key. Also the rating title card and the red
+- * bump vignette.
++ * Docking instruments, top centre under the tape: shown at the helm when a berth is within 120 m or the ship
++ * is on lines / at anchor. Three small round gauges (speed, distance off, angle), each against its capture
++ * band; a hand outside its band turns red. No sentences: the distance to the berth is the only number,
++ * the next key carries a small icon, and a refused R pulses the gauge that is out of its band.
++ * Also the rating title card and the red bump vignette.
+  */
+ export class DockPanel {
+   readonly root = el('div', 'dock-root');
+-  private panel = el('div', 'dock glass');
+-  private titleName!: HTMLElement;
+-  private titleDist!: HTMLElement;
+-  private plan!: SVGPathElement;
+-  private reason!: HTMLElement;
+-  private cta!: HTMLElement;
+-  private prog!: HTMLElement;
+-  private progFill!: HTMLElement;
+-  private gauges = new Map<string, { root: HTMLElement; needle: HTMLElement; val: HTMLElement }>();
++  private panel = el('div', 'dock');
++  private dist = el('div', 'dock-dist');
++  private gaugeRow = el('div', 'dock-gauges');
++  private prog = el('div', 'dock-prog', '<i></i>');
++  private cta = el('div', 'dock-cta');
++  private gauges: { spd: MiniGauge; lat: MiniGauge; ang: MiniGauge };
++  private bad = { spd: false, lat: false, ang: false };
++  private approaching = false;
+   private rating = el('div', 'dock-rating');
+   private bump = el('div', 'dock-bump');
+   private ratingT = 0;
+   // last value written per field, so per-frame updates touch the DOM only on change
+   private cache = new Map<string, string>();
+ 
+-  constructor() {
++  constructor(shape: DockShape) {
++    const c = shape.capture;
++    this.gauges = {
++      spd: new MiniGauge('speed', 0, 6, 0, c.sog * KNOTS),
++      lat: new MiniGauge('off', -3, 12, c.latMin, c.latMax),
++      ang: new MiniGauge('ang', -60, 60, -c.head * DEG, c.head * DEG),
++    };
++    this.gaugeRow.append(this.gauges.spd.root, this.gauges.lat.root, this.gauges.ang.root);
++    this.panel.append(this.dist, this.gaugeRow, this.prog, this.cta);
+     this.root.append(this.panel, this.rating, this.bump);
+-    const gauges = GAUGES.map((g) => {
+-      const l = ((g.blo - g.lo) / (g.hi - g.lo)) * 100;
+-      const w = ((g.bhi - g.blo) / (g.hi - g.lo)) * 100;
+-      return `<div class="g" data-k="${g.k}"><span class="g-l">${g.label}</span><span class="g-t"><i class="g-band" style="left:${l.toFixed(1)}%;width:${w.toFixed(1)}%"></i><i class="g-n"></i></span><span class="g-v"></span></div>`;
+-    }).join('');
+-    const bollards = [-15, 0, 15].map((a) => `<circle class="bol" cx="${xOf(a)}" cy="${yOf(-3.7)}" r="2.2"/>`).join('');
+-    this.panel.innerHTML = `
+-      <svg class="dock-plan" viewBox="0 0 ${PW} ${PH}" aria-hidden="true">
+-        <rect class="pier" x="0" y="${yOf(-9)}" width="${PW}" height="${6 * S}"/>
+-        ${bollards}
+-        <rect class="slot" x="${xOf(-18.5)}" y="${yOf(-2.65)}" width="${37 * S}" height="${5.3 * S}"/>
+-        <path class="hull" d="${HULL}" transform="translate(${X0} ${Y0}) scale(${S})"/>
+-      </svg>
+-      <div class="dock-side">
+-        <div class="dock-title"><span class="dock-name"></span><span class="dock-dist"></span></div>
+-        <div class="dock-gauges">${gauges}</div>
+-      </div>
+-      <div class="dock-foot">
+-        <div class="dock-reason"></div>
+-        <div class="dock-prog"><i></i></div>
+-        <div class="dock-cta"></div>
+-      </div>`;
+-    this.titleName = this.panel.querySelector('.dock-name') as HTMLElement;
+-    this.titleDist = this.panel.querySelector('.dock-dist') as HTMLElement;
+-    this.plan = this.panel.querySelector('.hull') as SVGPathElement;
+-    this.reason = this.panel.querySelector('.dock-reason') as HTMLElement;
+-    this.cta = this.panel.querySelector('.dock-cta') as HTMLElement;
+-    this.prog = this.panel.querySelector('.dock-prog') as HTMLElement;
+-    this.progFill = this.prog.firstElementChild as HTMLElement;
+-    for (const g of GAUGES) {
+-      const root = this.panel.querySelector(`.g[data-k="${g.k}"]`) as HTMLElement;
+-      this.gauges.set(g.k, {
+-        root,
+-        needle: root.querySelector('.g-n') as HTMLElement,
+-        val: root.querySelector('.g-v') as HTMLElement,
+-      });
+-    }
+     this.rating.append(el('div', 'r-name'), el('div', 'r-sub'));
+   }
+ 
+@@ -115,87 +74,78 @@ export class DockPanel {
+       if (this.ratingT <= 0) this.rating.classList.remove('on');
+     }
+     const a = mooring.approach;
+-    const st = mooring.state;
+-    const show = atHelm && ((a !== null && a.dist <= 120) || st !== 'free');
++    const lp = mooring.linePhase;
++    const anchorOut = mooring.anchorOut;
++    const show = atHelm && ((a !== null && a.dist <= 120) || lp !== 'none' || anchorOut);
+     if (!this.same('show', String(show))) this.panel.classList.toggle('on', show);
++    this.approaching = show && !!a && lp === 'none';
+     if (!show) return;
+ 
+-    const title = a ? a.berth.name : st === 'anchored' ? 'Anchored' : 'Moored';
+-    if (!this.same('title', title)) this.titleName.textContent = title;
+-    const dist = a ? `${Math.round(a.dist)} m` : '';
+-    if (!this.same('dist', dist)) this.titleDist.textContent = dist;
+-    if (!this.same('noapp', String(!a))) this.panel.classList.toggle('noapp', !a);
+-    const ok = !!a && a.canMakeFast;
+-    if (!this.same('ok', String(ok))) this.panel.classList.toggle('ok', ok);
+-    if (a) this.approachView(a, shipHeading);
++    const dist = a && lp === 'none' ? `${Math.round(a.dist)} m` : '';
++    if (!this.same('dist', dist)) this.dist.textContent = dist;
++    if (!this.same('gauges', String(this.approaching))) this.gaugeRow.classList.toggle('on', this.approaching);
++    if (a && this.approaching) this.approachView(a, shipHeading, mooring.docking.capture);
+ 
+-    let reason = '';
+     let cta = '';
+     let pulse = false;
+     let prog = -1;
+-    if (st === 'free') {
+-      if (a) reason = a.reason ?? '';
+-      if (a && a.canMakeFast) {
+-        cta = '<kbd>R</kbd> Moor';
+-        pulse = true;
+-      }
+-    } else if (st === 'warping') {
+-      cta = 'Pulling in';
++    if (lp === 'hauling') {
++      cta = `<kbd>R</kbd>${ROPE}`;
+       prog = mooring.warpProgress;
+-    } else if (st === 'moored') {
+-      cta = 'Moored · <kbd>R</kbd> Cast off';
+-    } else {
+-      cta = mooring.anchorPhase === 'weighing' ? 'Weighing anchor' : mooring.anchorPhase === 'dropping' ? 'Letting go the anchor' : 'Anchored · <kbd>Z</kbd> Raise anchor';
++    } else if (lp === 'docked') cta = `<kbd>R</kbd>${ROPE}`;
++    else if (lp === 'out' || lp === 'casting') cta = ROPE;
++    else if (a && a.canMakeFast) {
++      cta = `<kbd>R</kbd>${ROPE}`;
++      pulse = true;
+     }
+-    if (!this.same('reason', reason)) this.reason.textContent = reason;
++    if (!cta && anchorOut) cta = mooring.anchorPhase === 'holding' ? `<kbd>Z</kbd>${ANCHOR}` : ANCHOR;
+     if (!this.same('cta', cta)) this.cta.innerHTML = cta;
+     if (!this.same('pulse', String(pulse))) this.cta.classList.toggle('pulse', pulse);
++    // lines straining against a stall show as the bar holding still
+     const progOn = prog >= 0;
+     if (!this.same('prog', String(progOn))) this.prog.classList.toggle('on', progOn);
+     if (progOn) {
+       const w = `${(prog * 100).toFixed(1)}%`;
+-      if (!this.same('progw', w)) this.progFill.style.width = w;
++      if (!this.same('progw', w)) (this.prog.firstElementChild as HTMLElement).style.width = w;
++      if (!this.same('stall', String(mooring.stalled))) this.prog.classList.toggle('stalled', mooring.stalled);
+     }
+   }
+ 
+-  private approachView(a: ApproachInfo, hd: number) {
++  private approachView(a: ApproachInfo, hd: number, cap: DockingDesign['capture']) {
+     const b = a.berth;
+     // bow direction in the berth frame: x = along the pier (+a, seaward), y = lateral (+n)
+     const sn = Math.sin(hd);
+     const cs = Math.cos(hd);
+     const fa = sn * b.ax - cs * b.az;
+     const fn = sn * b.nx - cs * b.nz;
+-    const phi = Math.atan2(fn, fa); // screen angle of the bow in the plan
++    const phi = Math.atan2(fn, fa);
+     const err = a.bowOut ? phi : wrap(phi - Math.PI); // signed error to the nearest allowed heading
+-
+-    const x = xOf(squash(a.along));
+-    const y = yOf(clamp(a.lateral, -3, 19));
+-    const t = `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(phi * DEG).toFixed(1)}) scale(${S})`;
+-    if (!this.same('hull', t)) this.plan.setAttribute('transform', t);
+-
+-    const kn = a.sog * KNOTS;
+-    this.gauge('spd', kn, `${kn.toFixed(1)} kn`, kn > 2.5);
+-    this.gauge('lat', a.lateral, `${signed(a.lateral, 1)} m`, a.lateral < -0.8 || a.lateral > 4);
+-    const deg = err * DEG;
+-    this.gauge('ang', deg, `${signed(deg, 0)}°`, Math.abs(deg) > 15);
++    this.bad.spd = a.sog > cap.sog;
++    this.bad.lat = a.lateral < cap.latMin || a.lateral > cap.latMax;
++    this.bad.ang = Math.abs(err) > cap.head;
++    this.gauges.spd.set(a.sog * KNOTS, this.bad.spd);
++    this.gauges.lat.set(a.lateral, this.bad.lat);
++    this.gauges.ang.set(err * DEG, this.bad.ang);
+   }
+ 
+-  private gauge(k: string, v: number, text: string, bad: boolean) {
+-    const g = this.gauges.get(k)!;
+-    const def = GAUGES.find((d) => d.k === k)!;
+-    const pct = clamp((v - def.lo) / (def.hi - def.lo), 0, 1) * 100;
+-    const left = `${pct.toFixed(1)}%`;
+-    if (!this.same(k + 'n', left)) g.needle.style.left = left;
+-    if (!this.same(k + 'v', text)) g.val.textContent = text;
+-    const b = String(bad);
+-    if (!this.same(k + 'b', b)) g.root.classList.toggle('bad', bad);
++  /** a refused R during an approach: pulse the gauges out of band instead of explaining; true if handled */
++  refuse(): boolean {
++    if (!this.approaching) return false;
++    let any = false;
++    for (const k of ['spd', 'lat', 'ang'] as const) {
++      if (this.bad[k]) {
++        this.gauges[k].pulse();
++        any = true;
++      }
++    }
++    return any;
+   }
+ 
+   /** centred title card: the rating word and the contact speed (m/s, shown in knots); fades after 4 s */
+   showRating(rating: string, contactSpeed: number): void {
+     const [name, sub] = [this.rating.children[0], this.rating.children[1]] as HTMLElement[];
+     name.textContent = rating;
+-    sub.textContent = `Contact ${(contactSpeed * KNOTS).toFixed(1)} kn`;
++    sub.textContent = `${(contactSpeed * KNOTS).toFixed(1)} kn`;
+     this.rating.classList.toggle('rough', /^Rough/.test(rating));
+     this.rating.classList.add('on');
+     this.ratingT = 4;
+@@ -204,7 +154,7 @@ export class DockPanel {
+   /** red edge vignette, scaled by the quay contact speed (m/s); under 1 m/s it does nothing */
+   flashBump(speed: number): void {
+     if (speed <= 1) return;
+-    const k = 0.2 + 0.7 * clamp((speed - 1) / 3, 0, 1);
++    const k = 0.2 + 0.7 * Math.min(1, Math.max(0, (speed - 1) / 3));
+     this.bump.animate([{ opacity: k }, { opacity: 0 }], { duration: 500, easing: 'ease-out' });
+   }
+ }
+diff --git a/src/ui/hud.ts b/src/ui/hud.ts
+index aaa3c8b..9e2677b 100644
+--- a/src/ui/hud.ts
++++ b/src/ui/hud.ts
+@@ -1,6 +1,6 @@
+-import { ORDERS } from '../ship/crew';
+-import { KNOTS } from '../core/util';
++import { KNOTS, clamp } from '../core/util';
+ import { Astrolabe } from './astrolabe';
++import { SailDial, Telegraph, mountMaterials, addBezel } from './gauges';
+ import type { Game } from '../game';
+ import * as THREE from 'three';
+ 
+@@ -20,9 +20,9 @@ const TAPE_H = 34;
+ const PX_PER_DEG = 3;
+ 
+ /**
+- * Sailing HUD: ship state bottom left (speed, stroke-order ladder, stamina, sail), heading tape top
+- * centre, helm bottom centre, astrolabe bottom right; prompts, toasts and arrival moments centre.
+- * In minimal density, readouts that have stopped changing step back until they change again.
++ * Sailing HUD: the sail dial bottom left and the oar telegraph bottom right (gauges.ts), speed and helm
++ * bottom centre, heading tape top centre, sky dial top left; prompts, toasts and arrival moments centre.
++ * Instruments show while they matter; in minimal density, steady readouts step back until they change.
+  */
+ export class Hud {
+   root = el('div', 'hud');
+@@ -38,57 +38,44 @@ export class Hud {
+     <path d="M4.6 13.4c0 4.1 3.3 7.3 7.4 7.3s7.4-3.2 7.4-7.3"/>
+     <path d="M4.6 13.4l-1.4 1.5M4.6 13.4l2 .5M19.4 13.4l1.4 1.5M19.4 13.4l-2 .5"/>
+   </svg>`);
+-  private ladder = el('div', 'ladder');
+-  private orderRow = el('div', 'order-row');
+-  private order = el('span', 'order');
+-  private orderKeys = el('span', 'order-keys', `${key('W')}${key('S')}`);
+-  private stamina = el('div', 'stamina', '<i></i>');
+-  private sail = el('div', 'sail-state');
++  private telegraph = new Telegraph();
++  private sailDial: SailDial | null = null;
++  private lastSpeed = NaN;
++  private accel = 0;
+   private tape = el('div', 'tape');
+   private tapeCanvas = document.createElement('canvas');
+   private hdg = el('div', 'hdg');
+-  private helm = el('div', 'helm', `<div class="track"><div class="needle"></div></div><div class="ends"><span class="label">${key('A')} Port</span><span class="label">Stbd ${key('D')}</span></div>`);
++  private helm = el('div', 'helm', `<div class="turn"><i></i></div><div class="track"><div class="oar"></div><div class="needle"></div></div>`);
+   private prompt = el('div', 'prompt');
+   private debug = el('div', 'debug');
+-  private helpHint = el('div', 'help-hint', `${key('?')} Controls`);
++  private helpHint = el('div', 'help-hint', key('?'));
+   private card = el('div', 'controls-card glass');
+   private toast = el('div', 'toast');
+   private note = el('div', 'note');
+   private astroSlot = el('div', 'astro-slot');
+   private astro = new Astrolabe();
+-  private rungs: HTMLElement[] = [];
+   private noteT = 0;
+   private toastT = 0;
+   private debugOn = false;
+-  private lastOrder = -1;
+-  private orderAge = 99;
+-  private sailText = '';
+-  private sailAge = 99;
+-  private leewayAge = 0;
+   private locName = '';
+   private locT = 0;
+   private hintT = 12;
+   private lookAge = 0;
+   private lastHdg = NaN;
++  private yawRate = 0;
+   private cache = new Map<string, string>();
+   private fwd = new THREE.Vector3();
+ 
+   constructor() {
+     const ui = document.getElementById('ui')!;
+-    for (let i = 0; i < ORDERS.length; i++) {
+-      const r = el('i');
+-      if (i === ORDERS.length - 1) r.classList.add('ram');
+-      this.ladder.appendChild(r);
+-      this.rungs.push(r);
+-    }
+-    this.orderRow.append(this.order, this.orderKeys);
+     this.speedRow.append(this.speed, this.anchor);
+     this.anchor.setAttribute('role', 'img');
+-    this.ship.append(this.speedRow, this.ladder, this.orderRow, this.stamina, this.sail);
++    this.ship.append(this.speedRow);
+     this.tapeCanvas.width = TAPE_W * 2;
+     this.tapeCanvas.height = TAPE_H * 2;
+     this.tape.append(this.tapeCanvas, this.hdg);
+     this.astroSlot.append(this.astro.root);
++    addBezel(this.astro.root.querySelector('.astro-dial') as HTMLElement, 128);
+     this.card.innerHTML = `
+       <div class="card-title">Controls</div>
+       <div><h4 class="label">At the helm</h4>
+@@ -116,8 +103,9 @@ export class Hud {
+         <div>${key('H')} Interface: full, minimal, off</div>
+         <div>${key('N')} Mute</div>
+         <div>${key('Esc')} Pause and settings</div></div>`;
+-    for (const n of [this.ship, this.tape, this.helm, this.sail, this.ladder, this.orderRow, this.stamina]) n.dataset.p = '';
+-    this.root.append(this.location, this.ship, this.tape, this.astroSlot, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast, this.note);
++    for (const n of [this.ship, this.tape, this.helm]) n.dataset.p = '';
++    this.root.append(this.location, this.telegraph.root, this.ship, this.tape, this.astroSlot, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast, this.note);
++    mountMaterials(this.root);
+     ui.appendChild(this.root);
+     try {
+       const d = localStorage.getItem('trieres.hud') as HudDensity | null;
+@@ -128,10 +116,9 @@ export class Hud {
+     this.applyDensity();
+   }
+ 
+-  /** add a widget that shows/hides with the HUD */
+-  /** hide order rungs this crew can't be given (e.g. no ramming speed on a merchant ship) */
++  /** orders this crew can't be given (e.g. no ramming speed on a merchant ship) leave the telegraph */
+   setMaxOrder(maxOrder: number) {
+-    this.rungs.forEach((r, i) => { r.style.display = i > maxOrder ? 'none' : ''; });
++    this.telegraph.setMaxOrder(maxOrder);
+   }
+ 
+   mount(node: HTMLElement) {
+@@ -176,7 +163,7 @@ export class Hud {
+   showToast(text: string) {
+     this.toast.textContent = text;
+     this.toast.classList.add('on');
+-    this.toastT = 1.8;
++    this.toastT = 3;
+   }
+ 
+   private set(k: string, v: string, apply: (v: string) => void) {
+@@ -196,8 +183,12 @@ export class Hud {
+     const ashore = (p.mode === 'foot' || p.mode === 'build') && p.walker.frame === 'world';
+     const kn = Math.abs(ship.speed * KNOTS);
+ 
+-    // ship block
+-    this.set('spd', kn.toFixed(1), (v) => (this.speed.innerHTML = `${v}<small>kn</small>`));
++    // speed with a trend caret: the quickest way to tell whether a change helped
++    const a = Number.isNaN(this.lastSpeed) ? 0 : (ship.speed - this.lastSpeed) / Math.max(dt, 1e-3);
++    this.lastSpeed = ship.speed;
++    this.accel += (a - this.accel) * (1 - Math.exp(-dt / 1));
++    const caret = this.accel > 0.02 ? 'up' : this.accel < -0.02 ? 'down' : '';
++    this.set('spd', `${kn.toFixed(1)}|${caret}`, () => (this.speed.innerHTML = `${kn.toFixed(1)}<small>kn</small><i class="caret ${caret}"></i>`));
+     const moor = g.ship.mooring;
+     const phase = g.design.anchoringEnabled ? moor.anchorPhase : 'none';
+     this.set('anc', phase, (v) => {
+@@ -208,63 +199,42 @@ export class Hud {
+     });
+     const prog = phase === 'holding' ? 1 : phase === 'dropping' || phase === 'weighing' || phase === 'lifting' ? moor.anchorProgress : 0;
+     this.set('ancp', prog.toFixed(3), (v) => this.anchor.style.setProperty('--p', v));
+-    const o = g.crew.order;
+-    this.set('ord', g.crew.holdWater ? 'Hold water' : o.name, (v) => (this.order.textContent = v));
+-    if (g.crew.orderIndex !== this.lastOrder) {
+-      if (this.lastOrder !== -1) this.showToast(o.name);
+-      this.lastOrder = g.crew.orderIndex;
+-      this.orderAge = 0;
+-      this.rungs.forEach((r, i) => r.classList.toggle('on', i === g.crew.orderIndex));
+-    }
+-    this.orderAge = g.crew.holdWater ? 0 : this.orderAge + dt;
+-    this.orderKeys.classList.toggle('on', commanding);
+-    const stam = g.crew.stamina;
+-    this.set('stam', (stam * 100).toFixed(1), (v) => ((this.stamina.firstChild as HTMLElement).style.width = `${v}%`));
+-    this.stamina.classList.toggle('low', stam < 0.25);
+-    const sailState = ship.sailing.current;
+-    const sailStatus = ship.sailing.telemetry.status;
+-    const areaIntent = ship.sailing.deploymentTarget > 0 ? ship.sailing.deploymentTarget : g.sailDeploymentSelection;
+-    const halfSail = areaIntent > 0.01 && areaIntent < 0.75;
+-    let sail = '';
+-    if (sailStatus !== 'furled') {
+-      const condition = sailStatus === 'setting'
+-        ? (ship.sailing.deploymentTarget > sailState.deployment ? 'setting' : 'brailing')
+-        : sailStatus;
+-      const base = halfSail ? `Half sail · ${condition}` : `Sail ${condition}`;
+-      const trim = ship.sailing.trimMode === 'manual' ? ' · manual trim' : (!halfSail && condition !== 'aback' ? ' · crew trim' : '');
+-      sail = `${base}${trim}`;
+-    }
+-    const leewayOk = this.density === 'full' && ship.speed > 0.5 && Math.abs(ship.leeway) > (3 * Math.PI / 180);
+-    this.leewayAge = leewayOk ? this.leewayAge + dt : 0;
+-    const leeway = leewayOk && this.leewayAge >= 0.5
+-      ? `<span class="leeway">leeway ${Math.round(Math.abs(ship.leeway) * 180 / Math.PI)}°</span>`
+-      : '';
+-    const sailLine = sail ? `${sail}${leeway ? ` <span class="leeway-sep">·</span> ${leeway}` : ''}` : leeway;
+-    if (sail !== this.sailText) this.sailAge = 0;
+-    this.sailText = sail;
+-    this.sailAge += dt;
+-    this.set('sail', sailLine, (v) => (this.sail.innerHTML = v));
+     this.steady(this.ship, ashore);
+-    this.steady(this.ladder, this.orderAge > 4);
+-    this.steady(this.orderRow, this.orderAge > 4 && !commanding);
+-    this.steady(this.stamina, stam > 0.995);
+-    this.steady(this.sail, this.sailAge > 4);
++
++    // instruments: shown while commanding; the sail dial only with sail set
++    if (!this.sailDial) {
++      this.sailDial = new SailDial(g.design.kind === 'merchant' ? 'merchant' : 'trireme', g.design.rig.area);
++      this.root.insertBefore(this.sailDial.root, this.telegraph.root);
++    }
++    this.sailDial.update(g, dt, commanding);
++    this.telegraph.update(g, dt, commanding);
+ 
+     // helm
+     this.helm.classList.toggle('on', commanding);
+     this.set('helm', (50 + ship.helm * 50).toFixed(1), (v) => ((this.helm.querySelector('.needle') as HTMLElement).style.left = `${v}%`));
++    // where the steering oars actually are: they swing toward the helm at a limited rate
++    const oar = -ship.rudderAngle / g.design.rudder.maxAngle;
++    this.set('oar', (50 + clamp(oar, -1, 1) * 50).toFixed(1), (v) => ((this.helm.querySelector('.oar') as HTMLElement).style.left = `${v}%`));
++    // rate of turn, starboard positive; smoothed over ~0.6 s so wave yaw doesn't hide the trend
++    const yawDeg = (-ship.angVel.y * 180) / Math.PI;
++    this.yawRate += (yawDeg - this.yawRate) * (1 - Math.exp(-dt / 0.6));
++    const rot = Math.abs(this.yawRate);
++    // square-root scale: the first fraction of a degree per second is visible, 8°/s fills the bar
++    const bar = Math.sign(this.yawRate) * Math.min(1, Math.sqrt(rot / 8));
++    this.set('rotbar', bar.toFixed(3), (v) => ((this.helm.querySelector('.turn i') as HTMLElement).style.transform = `scaleX(${v})`));
+ 
+-    // heading tape: where the camera looks (the ship's bow at the helm)
++    // heading tape: the bow while commanding (a caret marks where you look), the view otherwise
+     g.camera.getWorldDirection(this.fwd);
+-    const hd = ((Math.atan2(this.fwd.x, -this.fwd.z) * 180) / Math.PI + 360) % 360;
++    const camHd = ((Math.atan2(this.fwd.x, -this.fwd.z) * 180) / Math.PI + 360) % 360;
++    const hd = commanding ? (((ship.heading * 180) / Math.PI) % 360 + 360) % 360 : camHd;
++    const look = commanding ? ((camHd - hd + 540) % 360) - 180 : 0;
+     const turning = Number.isNaN(this.lastHdg) ? 0 : Math.abs(((hd - this.lastHdg + 540) % 360) - 180) / Math.max(dt, 1e-3);
+     this.lastHdg = hd;
+     this.lookAge = turning > 6 ? 0 : this.lookAge + dt;
+-    const apparentFrom = ship.sailing.telemetry.apparentFrom;
+-    const relativeWind = ship.heading + apparentFrom - (hd * Math.PI / 180);
++    const relativeWind = g.wind.from - (hd * Math.PI / 180);
+     const windOffset = Math.atan2(Math.sin(relativeWind), Math.cos(relativeWind));
+-    const windOn = ship.sailing.telemetry.apparentSpeed >= 0.3;
+-    this.drawTape(hd, windOffset * 180 / Math.PI, windOn);
++    const windOn = g.wind.speed >= 0.3;
++    this.drawTape(hd, windOffset * 180 / Math.PI, windOn, Math.abs(look) > 10 ? look : NaN);
+     this.set('hdg', Math.round(hd % 360).toString().padStart(3, '0'), (v) => (this.hdg.textContent = `${v}°`));
+     this.steady(this.tape, !commanding && this.lookAge > 5 && !windOn);
+ 
+@@ -273,10 +243,10 @@ export class Hud {
+     // contextual prompt
+     let prompt = '';
+     if (p.prompt) prompt = p.prompt;
+-    else if (p.mode === 'helm' && kn < 0.3 && g.crew.orderIndex === 1 && ship.sailTarget < 0.5 && g.ship.mooring.state === 'free') prompt = `${key('W')} Row`;
++    else if (p.mode === 'helm' && kn < 0.3 && g.crew.orderIndex === 1 && ship.sailTarget < 0.5 && !g.ship.mooring.onLines) prompt = `${key('W')} Row`;
+     else if (p.mode === 'eagle') prompt = `${key('Q')} Back to ship · ${key('W')} Dive`;
+     if (p.zoom > 0.5) prompt = '';
+-    if (ship.grounding > 0.05) prompt = `<span class="warn">Aground</span> · ${key('S')} Back water`;
++    if (ship.grounding > 0.05) prompt = '<span class="warn">Aground</span>';
+     if (g.crew.exhausted) prompt = '<span class="warn">Rowers exhausted</span>';
+     this.set('prompt', prompt, (v) => (this.prompt.innerHTML = v));
+ 
+@@ -313,8 +283,8 @@ export class Hud {
+   }
+ 
+   /** ticks every 5°, taller every 15°, compass points every 45°; terracotta lubber mark */
+-  private drawTape(hd: number, windOffset: number, windOn: boolean) {
+-    const k = `${Math.round(hd * 10) / 10}:${windOn ? Math.round(windOffset * 10) / 10 : 'off'}`;
++  private drawTape(hd: number, windOffset: number, windOn: boolean, look: number) {
++    const k = `${Math.round(hd * 10) / 10}:${windOn ? Math.round(windOffset * 10) / 10 : 'off'}:${Number.isNaN(look) ? '' : Math.round(look)}`;
+     if (this.cache.get('tape') === String(k)) return;
+     this.cache.set('tape', String(k));
+     const c = this.tapeCanvas.getContext('2d')!;
+@@ -376,6 +346,18 @@ export class Hud {
+         }
+       }
+     }
++    // where the camera looks, when it isn't along the bow: a hollow caret
++    if (!Number.isNaN(look) && Math.abs(look) <= span) {
++      const x = mid + look * PX_PER_DEG;
++      c.strokeStyle = 'rgba(243,238,228,0.8)';
++      c.lineWidth = 1.2;
++      c.beginPath();
++      c.moveTo(x - 4, TAPE_H);
++      c.lineTo(x, TAPE_H - 6);
++      c.lineTo(x + 4, TAPE_H);
++      c.closePath();
++      c.stroke();
++    }
+     c.shadowBlur = 0;
+     c.fillStyle = '#d0693e';
+     c.beginPath();
+diff --git a/src/ui/instruments.css b/src/ui/instruments.css
+index 18f5cd9..58b511a 100644
+--- a/src/ui/instruments.css
++++ b/src/ui/instruments.css
+@@ -4,15 +4,17 @@
+ 
+ /* ---------- sky dial ---------- */
+ .astrolabe { width: 128px; display: flex; flex-direction: column; align-items: center; }
+-.astro-dial { position: relative; width: 128px; height: 128px; border-radius: 50%; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: var(--lift); }
++.astro-dial { position: relative; width: 128px; height: 128px; border-radius: 50%; background: #0c0b0a; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); }
++/* time and wind live elsewhere now: the dial alone tells the hour by its sky */
++.astro-time, .astro-sub, .astro-dial .wind { display: none; }
+ .astro-dial svg { position: absolute; inset: 0; width: 128px; height: 128px; overflow: visible; display: block; }
+ .astro-time { margin-top: 10px; font: 300 22px/1 var(--f-ui); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--t1); white-space: nowrap; }
+ .astro-time small { font: 500 11px/1 var(--f-ui); color: var(--t2); margin-left: 4px; letter-spacing: 0.02em; }
+ .astro-sub { margin-top: 6px; font: 500 12px/1.2 var(--f-ui); color: var(--t2); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity 0.24s ease, transform 0.24s var(--ease-out); }
+ 
+ /* ---------- minimap, top right ---------- */
+-.minimap { position: absolute; top: var(--safe); right: var(--safe); width: 132px; height: 132px; border-radius: 50%; overflow: hidden; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: var(--lift); transition: opacity 0.3s ease; }
+-.minimap canvas { display: block; width: 132px; height: 132px; }
++.minimap { position: absolute; top: calc(var(--safe) + 4px); right: calc(var(--safe) + 4px); width: 132px; height: 132px; border-radius: 50%; background: rgba(8, 14, 20, 0.82); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); transition: opacity 0.3s ease; }
++.minimap canvas { display: block; width: 132px; height: 132px; border-radius: 50%; }
+ .hud.spy .minimap { opacity: 0.12; }
+ 
+ /* ---------- map screen (M) ---------- */
+diff --git a/src/ui/minimap.ts b/src/ui/minimap.ts
+index f666b91..221d1f0 100644
+--- a/src/ui/minimap.ts
++++ b/src/ui/minimap.ts
+@@ -1,4 +1,5 @@
+ import { drawAnchorGlyph, type Chart } from './chart';
++import { addBezel } from './gauges';
+ import type { WorldGenResult } from '../world/worldgenTypes';
+ 
+ const PX = 132; // CSS size of the round minimap
+@@ -33,6 +34,7 @@ export class Minimap {
+     this.canvas.width = this.canvas.height = Math.round(PX * this.dpr);
+     this.canvas.style.width = this.canvas.style.height = `${PX}px`;
+     this.root.appendChild(this.canvas);
++    addBezel(this.root, PX);
+     this.ctx = this.canvas.getContext('2d')!;
+   }
+ 
+diff --git a/src/ui/panels.css b/src/ui/panels.css
+index 5c5dbee..5f780ad 100644
+--- a/src/ui/panels.css
++++ b/src/ui/panels.css
+@@ -7,43 +7,20 @@
+ 
+ /* ---------- docking ---------- */
+ .dock-root { position: absolute; inset: 0; pointer-events: none; }
+-.dock { position: absolute; left: 50%; bottom: calc(var(--safe) + 56px); transform: translateX(-50%) translateY(4px);
+-  width: min(420px, calc(100vw - 32px)); padding: 16px 18px 14px; display: grid; grid-template-columns: 136px 1fr; gap: 12px 18px; align-items: center;
++.dock { position: absolute; left: 50%; top: calc(var(--safe) + 62px); transform: translateX(-50%) translateY(-4px); display: flex; flex-direction: column; align-items: center; gap: 4px;
+   opacity: 0; transition: opacity 0.24s ease, transform 0.24s var(--ease-out); }
+ .dock.on { opacity: 1; transform: translateX(-50%); transition-duration: 0.18s; }
+ .hud.spy .dock, .hud.spy .dock.on { opacity: 0.12; }
+-
+-.dock-plan { grid-column: 1; grid-row: 1; display: block; width: 100%; height: auto; border-radius: 6px; overflow: hidden; background: rgba(60, 110, 140, 0.22); }
+-.dock-plan .pier { fill: rgba(243, 238, 228, 0.24); }
+-.dock-plan .bol { fill: var(--t2); }
+-.dock-plan .slot { fill: none; stroke: rgba(210, 166, 94, 0.7); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+-.dock-plan .hull { fill: rgba(243, 238, 228, 0.16); stroke: var(--t1); stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke; transition: stroke 0.3s, fill 0.3s; }
+-.dock.ok .dock-plan .hull { stroke: var(--fair); fill: rgba(143, 203, 155, 0.28); }
+-
+-.dock-side { grid-column: 2; grid-row: 1; min-width: 0; }
+-.dock-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; white-space: nowrap; }
+-.dock-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 500 19px/1.2 var(--f-name); color: var(--t1); }
+-.dock-dist { flex: none; font: 500 13px/1 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+-.dock-gauges { display: grid; gap: 9px; }
+-.dock .g { display: grid; grid-template-columns: 80px 1fr 52px; align-items: center; gap: 8px; font-size: 13px; }
+-.dock .g-l { color: var(--t2); white-space: nowrap; }
+-.dock .g-t { position: relative; height: 10px; }
+-.dock .g-t::before { content: ''; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: var(--t3); }
+-.dock .g-band { position: absolute; top: 2px; height: 6px; border-radius: 3px; background: rgba(143, 203, 155, 0.35); }
+-.dock .g-n { position: absolute; top: 0; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: var(--t1); transition: left 0.1s linear; }
+-.dock .g-v { text-align: right; white-space: nowrap; color: var(--t1); font-variant-numeric: tabular-nums; }
+-.dock .g.bad .g-n { background: var(--caution); }
+-.dock .g.bad .g-v { color: var(--caution); }
+-
+-.dock-foot { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 12px; min-height: 22px; padding-top: 11px; border-top: 1px solid var(--hair);
+-  font-size: 13px; white-space: nowrap; }
+-.dock-reason { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--t2); }
+-.dock-reason:empty { display: none; }
+-.dock-prog { flex: 1; height: 2px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); display: none; }
++.dock-dist { font: 500 15px var(--f-ui); color: var(--t1); font-variant-numeric: tabular-nums; min-height: 1em; }
++.dock-gauges { display: none; gap: 16px; }
++.dock-gauges.on { display: flex; }
++.dock-prog { width: 180px; height: 3px; border-radius: 2px; background: rgba(10, 8, 6, 0.75); box-shadow: inset 0 1px 2px #000; display: none; margin-top: 6px; }
+ .dock-prog.on { display: block; }
+-.dock-prog i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--bronze); box-shadow: 0 0 6px var(--bronze-glow); transition: width 0.15s linear; }
+-.dock-cta { margin-left: auto; font-weight: 500; color: var(--t1); }
++.dock-prog i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(180deg, #e9d8b4, #a88a5a); transition: width 0.15s linear; }
++.dock-prog.stalled i { background: linear-gradient(180deg, #f0b08a, #b0552f); }
++.dock-cta { display: flex; align-items: center; gap: 6px; color: #e9dfc8; min-height: 22px; }
+ .dock-cta:empty { display: none; }
++.dock-cta svg { width: 16px; height: 16px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
+ .dock-cta.pulse { color: var(--fair-soft); animation: dock-pulse 1.6s ease-in-out infinite; }
+ .dock-cta.pulse kbd { color: var(--fair-soft); border-color: rgba(183, 230, 192, 0.5); }
+ @keyframes dock-pulse { 0%, 100% { opacity: 0.62; } 50% { opacity: 1; } }
+diff --git a/src/ui/style.css b/src/ui/style.css
+index 9166ef6..47fd9b5 100644
+--- a/src/ui/style.css
++++ b/src/ui/style.css
+@@ -27,7 +27,7 @@
+   --radius-s: 6px;
+   --blur: blur(14px) saturate(1.15);
+   --lift: 0 8px 28px rgba(0, 0, 0, 0.22);
+-  --text-shadow: 0 1px 12px rgba(0, 0, 0, 0.38), 0 0 2px rgba(0, 0, 0, 0.25);
++  --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 0, 0, 0.35);
+   --f-ui: 'Inter Tight', system-ui, -apple-system, sans-serif;
+   --f-name: 'Cormorant Garamond', Georgia, serif;
+   --f-mark: 'Marcellus', 'Cormorant Garamond', serif;
+@@ -63,9 +63,12 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+ .hud.none > :not(.prompt):not(.chart):not(.controls-card) { opacity: 0 !important; pointer-events: none; }
+ .hud.spy .ship, .hud.spy .tape, .hud.spy .helm, .hud.spy .help-hint { opacity: 0.12; }
+ 
+-/* ship state, bottom left */
+-.ship { position: absolute; left: var(--safe); bottom: var(--safe); }
+-.speed { font: 300 46px/0.95 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
++/* speed, bottom centre above the helm (the instruments live in gauges.css) */
++.ship { position: absolute; left: 50%; bottom: calc(var(--safe) + 40px); transform: translateX(-50%); }
++.speed { font: 300 52px/0.95 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; }
++.speed .caret { width: 12px; margin-left: 6px; font-style: normal; font-size: 13px; }
++.speed .caret.up::before { content: '▲'; color: var(--fair); }
++.speed .caret.down::before { content: '▼'; color: var(--caution); }
+ .speed small { font: 500 14px var(--f-ui); color: var(--t2); margin-left: 6px; letter-spacing: 0.04em; }
+ .speed-row { display: flex; align-items: center; gap: 14px; }
+ .anchor-badge { --p: 0; position: relative; width: 34px; height: 34px; flex: none; color: var(--t3); border-radius: 50%;
+@@ -89,55 +92,46 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px;
+ @keyframes anchor-down { 0% { transform: translateY(-3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(3px); opacity: 0.35; } }
+ @keyframes anchor-up { 0% { transform: translateY(3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(-3px); opacity: 0.35; } }
+ @media (prefers-reduced-motion: reduce) { .anchor-badge .icon { animation: none !important; } }
+-.ladder { display: flex; gap: 3px; margin-top: 11px; }
+-.ladder i { width: 22px; height: 3px; border-radius: 2px; background: var(--t4); transition: background 0.2s, box-shadow 0.2s; }
+-.ladder i.on { background: var(--terra); box-shadow: 0 0 8px var(--terra-glow); }
+-.ladder i.on.ram { background: var(--danger); box-shadow: 0 0 10px rgba(227, 106, 75, 0.85); }
+-.order-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 22px; }
+-.order { font: 600 12px var(--f-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--t1); }
+-.order-keys { opacity: 0; transition: opacity 0.24s; }
+-.order-keys.on { opacity: 1; }
+-.stamina { width: 148px; height: 2px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); margin-top: 9px; }
+-.stamina i { display: block; height: 100%; border-radius: inherit; background: var(--t2); transition: width 0.2s linear; }
+-.stamina.low i { background: var(--danger); }
+-.sail-state { font-size: 13px; color: var(--t2); margin-top: 7px; min-height: 1.2em; }
+-.sail-state .leeway, .sail-state .leeway-sep { color: var(--t3); font-size: 12px; }
+ 
+ /* heading tape, top centre */
+ .tape { position: absolute; top: calc(var(--safe) - 4px); left: 50%; transform: translateX(-50%); width: 360px; height: 46px; }
+ .tape canvas { display: block; width: 360px; height: 34px; }
+ .tape .hdg { text-align: center; font: 500 12px var(--f-ui); color: var(--t2); letter-spacing: 0.08em; margin-top: -2px; font-variant-numeric: tabular-nums; }
+ 
+-/* astrolabe, bottom right (instruments.css styles its insides) */
+-.astro-slot { position: absolute; right: var(--safe); bottom: var(--safe); }
++/* sky dial, top left (instruments.css styles its insides) */
++.astro-slot { position: absolute; left: var(--safe); top: var(--safe); transform: scale(0.62); transform-origin: top left; }
+ .hud.spy .astro-slot { opacity: 0.12; }
+ 
+ /* helm, bottom centre */
+-.helm { position: absolute; bottom: calc(var(--safe) + 10px); left: 50%; transform: translateX(-50%); width: 240px; opacity: 0; }
++.helm { position: absolute; bottom: calc(var(--safe) + 12px); left: 50%; transform: translateX(-50%); width: 280px; opacity: 0; }
+ .helm.on { opacity: 1; }
+ .helm .track { position: relative; height: 1px; background: rgba(243, 238, 228, 0.32); }
+ .helm .track::before { content: ''; position: absolute; left: 50%; top: -4px; width: 1px; height: 9px; background: rgba(243, 238, 228, 0.5); }
+ .helm .needle { position: absolute; top: -6px; width: 3px; height: 13px; margin-left: -1.5px; border-radius: 2px; background: var(--bronze); box-shadow: 0 0 8px var(--bronze-glow); }
+-.helm .ends { display: flex; justify-content: space-between; margin-top: 9px; }
++/* actual steering-oar angle: a hollow marker under the track that trails the helm needle */
++.helm .oar { position: absolute; top: 4px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-top: 0; border-bottom: 6px solid var(--t2); }
++/* rate of turn: grows from the centre toward the side she is turning */
++.helm .turn { position: relative; height: 2px; margin-bottom: 10px; background: rgba(243, 238, 228, 0.1); border-radius: 1px; }
++.helm .turn i { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; border-radius: 1px; transform-origin: left center; transform: scaleX(0); background: var(--terra); box-shadow: 0 0 6px var(--terra-glow); }
+ 
+ /* centre: prompt, toast, note */
+ .prompt { position: absolute; top: 61%; left: 50%; transform: translateX(-50%); font: 500 16px var(--f-ui); white-space: nowrap; color: var(--t1); }
+ .prompt .warn { color: var(--danger); }
+-.toast { position: absolute; bottom: calc(var(--safe) + 64px); left: 50%; transform: translate(-50%, 4px); font: 600 12px var(--f-ui); letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap; opacity: 0;
++.toast { position: absolute; bottom: calc(var(--safe) + 124px); left: 50%; transform: translate(-50%, 4px); font: 500 22px var(--f-name); letter-spacing: 0.01em; white-space: nowrap; opacity: 0;
+   transition: opacity 0.24s, transform 0.24s var(--ease-out); color: var(--t1); }
+ .toast.on { opacity: 1; transform: translate(-50%, 0); }
+ .note { position: absolute; bottom: calc(var(--safe) + 92px); left: 50%; transform: translateX(-50%); width: min(480px, 80vw); text-align: center; font-size: 15px; color: var(--t2); opacity: 0; transition: opacity 0.6s; }
+ .note.on { opacity: 1; }
+ 
+ /* arrival moment */
+-.location { position: absolute; top: 15%; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity 0.9s ease, transform 0.9s var(--ease-out); }
++.location { position: absolute; top: 27%; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity 0.9s ease, transform 0.9s var(--ease-out); }
+ .location.on { opacity: 1; transform: none; transition-duration: 0.6s; }
+ .loc-name { font: 500 44px/1 var(--f-name); letter-spacing: 0.03em; }
+ .loc-rule { width: 84px; height: 1px; margin: 14px auto 11px; background: linear-gradient(90deg, transparent, var(--bronze), transparent); }
+ .loc-sub { font: 600 11px var(--f-ui); letter-spacing: 0.24em; text-transform: uppercase; color: var(--t2); }
+ 
+ /* help: a quiet hint at first, then the card */
+-.help-hint { position: absolute; top: var(--safe); left: var(--safe); font-size: 13px; color: var(--t2); transition: opacity 1.2s; }
++.help-hint { position: absolute; top: calc(var(--safe) + 30px); left: calc(var(--safe) + 92px); font-size: 13px; color: var(--t2); transition: opacity 1.2s; }
+ .help-hint.dim { opacity: 0.32; }
+ .hud.minimal .help-hint.dim { opacity: 0; }
+ .controls-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -48%); display: grid; grid-template-columns: repeat(3, minmax(190px, auto)); gap: 4px 40px; padding: 26px 32px 28px;
+diff --git a/src/world/berthMarker.ts b/src/world/berthMarker.ts
+index 9a5bcd2..efd70c6 100644
+--- a/src/world/berthMarker.ts
++++ b/src/world/berthMarker.ts
+@@ -1,8 +1,7 @@
+ import * as THREE from 'three';
+ import type { Berth, HarbourLayout } from './harbour';
+ import type { Mooring } from '../ship/mooring';
+-import { halfWidthAt, zOf } from '../ship/hull';
+-import { outrigger } from '../ship/trireme';
++import type { ShipDesign } from '../ship/design';
+ import { LAYER_NOREFLECT } from '../core/pipeline';
+ 
+ /**
+@@ -38,14 +37,16 @@ const toward = (v: number, t: number, step: number) => v + Math.max(-step, Math.
+ const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+ 
+ /** ship-local waterline outline (x = starboard, z = aft), closed: the last point repeats the first */
+-function waterlineLoop(): THREE.Vector2[] {
++function waterlineLoop(design: ShipDesign): THREE.Vector2[] {
++  const { hull, deck } = design;
+   const N = 40;
+   const stbd: THREE.Vector2[] = [];
+   const port: THREE.Vector2[] = [];
+   for (let k = 0; k < N; k++) {
+     const s = k / (N - 1);
+-    const w = halfWidthAt(s, 0.4) + outrigger(s);
+-    const z = zOf(s);
++    // hull at 0.4 m above the waterline plus anything outboard of the sheer (the trireme's outrigger)
++    const w = hull.halfWidthAt(s, 0.4) + Math.max(0, deck.outerHalfWidth(s) - hull.halfBeam(s));
++    const z = hull.zOf(s);
+     stbd.push(new THREE.Vector2(w, z));
+     port.unshift(new THREE.Vector2(-w, z)); // stern first, so the loop runs bow → stbd → stern → port
+   }
+@@ -199,13 +200,16 @@ export class BerthMarker {
+   private quality = 0.5;
+   private dist = Infinity;
+   private shipX = 0;
++  /** the current ship's docked CoG at the shown berth */
++  private poseX = 0;
++  private poseZ = 0;
+   private shipZ = 0;
+   private yaw = 0;
+   private waterY = 0;
+ 
+-  constructor(layout: HarbourLayout) {
++  constructor(layout: HarbourLayout, design: ShipDesign) {
+     const U = this.U;
+-    const loop = waterlineLoop();
++    const loop = waterlineLoop(design);
+     const line = ribbonGeometry(loop, 0.22);
+     const halo = ribbonGeometry(loop, 0.9);
+     const fill = new THREE.ShapeGeometry(new THREE.Shape(loop.slice(0, -1))).rotateX(Math.PI / 2);
+@@ -295,19 +299,21 @@ export class BerthMarker {
+     this.time += dt;
+     this.U.uTime.value = this.time;
+     const a = mooring.approach;
+-    const live = mooring.state === 'free' && a !== null;
++    const live = !mooring.onLines && a !== null;
+ 
+     if (a && live) {
+       const b = a.berth;
+       this.cur = this.sets.get(b.id) ?? this.cur;
+       this.dist = a.dist;
+-      // ship CoG from the berth-frame offsets (approach.along / lateral are along a and n)
+-      this.shipX = b.cx + a.along * b.ax + a.lateral * b.nx;
+-      this.shipZ = b.cz + a.along * b.az + a.lateral * b.nz;
++      // ship CoG from the docked-pose offsets (approach.along / lateral are along a and n)
++      this.shipX = a.poseX + a.along * b.ax + a.lateral * b.nx;
++      this.shipZ = a.poseZ + a.along * b.az + a.lateral * b.nz;
++      this.poseX = a.poseX;
++      this.poseZ = a.poseZ;
+       // the allowed heading nearest to her current one: bowOut means bow along +a
+       const hA = Math.atan2(b.ax, -b.az);
+       const yawT = -(a.bowOut ? hA : hA + Math.PI);
+-      const waterT = waveHeightAtBerth(b.cx, b.cz) + 0.05;
++      const waterT = waveHeightAtBerth(a.poseX, a.poseZ) + 0.05;
+       const k = this.fade < 0.01 ? 1 : Math.min(1, dt * 4);
+       this.yaw += wrap(yawT - this.yaw) * k;
+       this.waterY += (waterT - this.waterY) * k;
+@@ -325,7 +331,7 @@ export class BerthMarker {
+     const shown = cur !== null && this.fade > 0.002;
+     for (const s of this.sets.values()) s.root.visible = shown && s === cur;
+     if (cur && shown) {
+-      cur.pose.position.set(cur.berth.cx, this.waterY, cur.berth.cz);
++      cur.pose.position.set(this.poseX, this.waterY, this.poseZ);
+       cur.pose.rotation.set(0, this.yaw, 0);
+       for (const r of cur.rings) {
+         const d = cameraPos.distanceTo(r.position);
+@@ -344,8 +350,8 @@ export class BerthMarker {
+       }
+       const u = (this.time * 0.09 + i / 3) % 1;
+       const p = 0.1 + 0.8 * u;
+-      const bx = cur.berth.cx;
+-      const bz = cur.berth.cz;
++      const bx = this.poseX;
++      const bz = this.poseZ;
+       const dx = bx - this.shipX;
+       const dz = bz - this.shipZ;
+       const x = this.shipX + dx * p;
+diff --git a/src/world/harbour.ts b/src/world/harbour.ts
+index f988adf..e879c1c 100644
+--- a/src/world/harbour.ts
++++ b/src/world/harbour.ts
+@@ -25,6 +25,8 @@ export interface Berth {
+   length: number;
+   /** quay top height (world y) */
+   top: number;
++  /** distance from (cx, cz) back to the quay face along -n (m); each ship docks off the face by her own beam */
++  face: number;
+   /** bollards on the quay top (world) */
+   bollards: THREE.Vector3[];
+ }
+@@ -183,6 +185,7 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
+       nz,
+       length: f.length - f.berthStart,
+       top,
++      face: QUAY.shipOffset - f.width / 2,
+       bollards,
+     });
+   }
+diff --git a/src/world/harbourRig.ts b/src/world/harbourRig.ts
+index 9b86c15..7034e0e 100644
+--- a/src/world/harbourRig.ts
++++ b/src/world/harbourRig.ts
+@@ -103,7 +103,14 @@ export class HarbourRig {
+     for (const l of moor.lines) {
+       _a.copy(l.local).applyMatrix4(ship.matrixWorld);
+       _b.copy(l.anchor).setY(l.anchor.y + 0.65);
+-      rope(_a, _b, (1 - l.tension) * 0.06 * _a.distanceTo(_b) + 0.05);
++      if (l.deploy < 1) {
++        // thrown: the line's end flies along an arc from the cleat toward the bollard, trailing a straight rope
++        const t = l.deploy;
++        const lift = 0.35 * _a.distanceTo(_b) * 4 * t * (1 - t);
++        _q.lerpVectors(_a, _b, t).setY(_q.y + lift);
++        _b.copy(_q);
++        rope(_a, _b, 0.02);
++      } else rope(_a, _b, (1 - l.tension) * 0.06 * _a.distanceTo(_b) + 0.05);
+     }
+     const phase = moor.anchorPhase;
+     if (phase !== 'stowed') {
+diff --git a/src/world/sky.ts b/src/world/sky.ts
+index dd0d389..e7beee8 100644
+--- a/src/world/sky.ts
++++ b/src/world/sky.ts
+@@ -157,7 +157,13 @@ export class SkySystem {
+           vB = (0.25 + aMag * 5.0) * tw * smoothstep(-0.02, 0.12, d.y);
+           vC = color;
+           gl_Position = projectionMatrix * viewMatrix * wp;
++          // Stars are a background, but their additive pass follows opaque geometry.
++          // Test at the actual far depth so land, sails and rigging can occlude them.
++          #ifdef USE_REVERSED_DEPTH_BUFFER
+           gl_Position.z = 0.0;
++          #else
++          gl_Position.z = gl_Position.w;
++          #endif
+           gl_PointSize = (1.2 + aMag * 2.2) * uPixel;
+         }`,
+       fragmentShader: /* glsl */ `
+@@ -171,7 +177,7 @@ export class SkySystem {
+           gl_FragColor = vec4(vC * vB * a * uNight * 0.6, 1.0);
+         }`,
+       transparent: true,
+-      depthTest: false,
++      depthTest: true,
+       depthWrite: false,
+       blending: THREE.AdditiveBlending,
+     });
+@@ -251,10 +257,14 @@ export class SkySystem {
+ 
+     // moon light (bluish, purkinje shift), brightness by phase
+     const phaseLight = 0.5 - 0.5 * Math.cos(c.moonPhase * Math.PI * 2);
+-    const moonVis = smoothstep(-0.02, 0.1, moon.y) * this.night;
+-    const moonI = 0.22 * phaseLight * moonVis;
++    // The shared directional light changes source only after sunlight has faded out.
++    // Start lunar direct light at zero there, then ease it in through nautical twilight.
++    const lunarHandoff = smoothstep(-0.04, -0.14, sunY);
++    const moonVis = smoothstep(-0.02, 0.1, moon.y) * this.night * lunarHandoff;
++    const moonI = 0.08 * phaseLight * moonVis;
+     const skyMoon = phaseLight * smoothstep(-0.05, 0.15, moon.y) * smoothstep(0.0, -0.1, sunY);
+-    (this.sky.material.uniforms.uNightSky.value as THREE.Vector3).set(0.0022, 0.0048, 0.0115).multiplyScalar(skyMoon);
++    (this.sky.material.uniforms.uNightSky.value as THREE.Vector3).set(0.0022, 0.0048, 0.0115)
++      .multiplyScalar(skyMoon * (1 - 0.35 * this.night));
+     (this.sky.material.uniforms.uMoonDir.value as THREE.Vector3).copy(moon).normalize();
+ 
+     const L = this.light;
+@@ -265,7 +275,7 @@ export class SkySystem {
+       shared.uSunDir.value.copy(sun);
+     } else {
+       L.position.copy(moon);
+-      sunColor.setRGB(0.55, 0.68, 1.0).multiplyScalar(moonI);
++      sunColor.setRGB(0.72, 0.8, 1.0).multiplyScalar(moonI);
+       shared.uSunDir.value.copy(moon);
+     }
+     L.color.copy(sunColor);
+@@ -273,8 +283,10 @@ export class SkySystem {
+     L.intensity = 1;
+     L.castShadow = li > 0.02;
+ 
+-    // ambient fill is handled by the PMREM environment; a faint night hemisphere avoids pure black
+-    this.hemi.intensity = 0.05 * this.night;
++    // Bridge the loss of solar skylight before lunar direct light settles in.
++    // This gentle twilight fill vanishes at both full day and full night.
++    const twilight = 4 * this.night * (1 - this.night);
++    this.hemi.intensity = 0.05 * this.night + 0.12 * twilight;
+     this.hemi.color.setRGB(0.35, 0.45, 0.8);
+ 
+     // stars/moon
+@@ -297,14 +309,16 @@ export class SkySystem {
+     (this.sky.material.uniforms.uMoonSun.value as THREE.Vector3).set(
+       sun.dot(moonRight), sun.dot(moonUp), -sun.dot(moon),
+     );
+-    this.sky.material.uniforms.uMoonBright.value = 1.6 * (0.25 + 0.75 * this.night)
++    this.sky.material.uniforms.uMoonBright.value = (0.4 + 0.55 * this.night)
+       * (0.3 + 0.7 * smoothstep(-0.05, 0.05, moon.y));
+     this.sky.material.uniforms.uMoonVisible.value = moon.y > -0.1 ? 1 : 0;
+ 
+     // eye adaptation: brighter exposure at night, gentle
+     // eye adaptation from the scene illuminance (direct sun on a horizontal surface + sky)
+     const E = Math.max(sunColor.r, sunColor.g, sunColor.b) * Math.max(shared.uSunDir.value.y, 0) + 0.5 * (1 - this.night) + 0.02;
+-    const targetExp = 0.62 * Math.pow(1.35 / (E + 0.5), 0.42) * (1 + 5.5 * this.night);
++    // Preserve daytime exposure exactly; night adaptation should reveal silhouettes,
++    // rather than amplify lunar glitter/clouds back toward daylight brightness.
++    const targetExp = 0.62 * Math.pow(1.35 / (E + 0.5), 0.42) * (1 + 2.1 * this.night);
+     this.exposure += (targetExp - this.exposure) * (1 - Math.exp(-dt * 1.5));
+     if (force) this.exposure = targetExp;
+   }
+diff --git a/src/world/walkable.ts b/src/world/walkable.ts
+index d843e60..02bdc82 100644
+--- a/src/world/walkable.ts
++++ b/src/world/walkable.ts
+@@ -65,6 +65,11 @@ function toBox(b: BoxSolid, x: number, z: number, out: { u: number; v: number })
+ 
+ export class WalkGeometry {
+   readonly solids: Solid[] = [];
++  /**
++   * Per-frame solids (moving crew, spec §9.8), checked brute-force in every query. Keep it short.
++   * Dynamic solids must have walkTop false; they never act as floors.
++   */
++  readonly dynamic: Solid[] = [];
+   private grid = new Map<number, Solid[]>();
+   private uv = { u: 0, v: 0 };
+   private n = new THREE.Vector3();
+@@ -141,6 +146,17 @@ export class WalkGeometry {
+       out.solid = s;
+       found = true;
+     }
++    for (const s of this.dynamic) {
++      if (!s.walkTop || s.y1 > maxY || (found && s.y1 <= out.y)) continue;
++      if (!this.inside(s, x, z)) continue;
++      out.y = s.y1;
++      out.nx = 0;
++      out.ny = 1;
++      out.nz = 0;
++      out.kind = s.surface;
++      out.solid = s;
++      found = true;
++    }
+     return found;
+   }
+ 
+@@ -154,38 +170,41 @@ export class WalkGeometry {
+     out.x = x;
+     out.z = z;
+     for (let iter = 0; iter < 2; iter++) {
+-      for (const s of this.near(out.x, out.z)) {
+-        if (s.y1 <= y0 + stepUp || s.y0 >= y1) continue;
+-        if (s.kind === 'cyl') {
+-          const dx = out.x - s.cx,
+-            dz = out.z - s.cz;
+-          const d = Math.hypot(dx, dz);
+-          const min = s.r + r;
+-          if (d >= min) continue;
+-          const k = d > 1e-6 ? min / d : 0;
+-          out.x = s.cx + (d > 1e-6 ? dx * k : min);
+-          out.z = s.cz + dz * k;
+-          hit = true;
+-        } else {
+-          const p = toBox(s, out.x, out.z, this.uv);
+-          const ox = s.hx + r - Math.abs(p.u),
+-            oz = s.hz + r - Math.abs(p.v);
+-          if (ox <= 0 || oz <= 0) continue;
+-          // shove along the axis of least penetration, back to world
+-          let du = 0,
+-            dv = 0;
+-          if (ox < oz) du = Math.sign(p.u || 1) * ox;
+-          else dv = Math.sign(p.v || 1) * oz;
+-          const c = Math.cos(s.rot),
+-            sn = Math.sin(s.rot);
+-          out.x += du * c + dv * sn;
+-          out.z += -du * sn + dv * c;
+-          hit = true;
+-        }
+-      }
++      for (const s of this.near(out.x, out.z)) if (this.pushOut(s, r, y0, y1, stepUp, out)) hit = true;
++      for (const s of this.dynamic) if (this.pushOut(s, r, y0, y1, stepUp, out)) hit = true;
+     }
+     return hit;
+   }
++
++  /** one push-out of the capsule (centre in out, radius r) from solid s; true when it overlapped */
++  private pushOut(s: Solid, r: number, y0: number, y1: number, stepUp: number, out: { x: number; z: number }): boolean {
++    if (s.y1 <= y0 + stepUp || s.y0 >= y1) return false;
++    if (s.kind === 'cyl') {
++      const dx = out.x - s.cx,
++        dz = out.z - s.cz;
++      const d = Math.hypot(dx, dz);
++      const min = s.r + r;
++      if (d >= min) return false;
++      const k = d > 1e-6 ? min / d : 0;
++      out.x = s.cx + (d > 1e-6 ? dx * k : min);
++      out.z = s.cz + dz * k;
++      return true;
++    }
++    const p = toBox(s, out.x, out.z, this.uv);
++    const ox = s.hx + r - Math.abs(p.u),
++      oz = s.hz + r - Math.abs(p.v);
++    if (ox <= 0 || oz <= 0) return false;
++    // shove along the axis of least penetration, back to world
++    let du = 0,
++      dv = 0;
++    if (ox < oz) du = Math.sign(p.u || 1) * ox;
++    else dv = Math.sign(p.v || 1) * oz;
++    const c = Math.cos(s.rot),
++      sn = Math.sin(s.rot);
++    out.x += du * c + dv * sn;
++    out.z += -du * sn + dv * c;
++    return true;
++  }
+ }
+ 
+ const EMPTY: Solid[] = [];
+diff --git a/tools/blender/figures.py b/tools/blender/figures.py
+index e13602c..06bea9c 100644
+--- a/tools/blender/figures.py
++++ b/tools/blender/figures.py
+@@ -184,7 +184,7 @@ def fig_sailor_idle():
+ 
+ def fig_marine():
+     P = pose_std()
+-    # left arm (x>0 is the figure's left in glTF, shield side) braces the shield forward
++    # left arm (x<0 is the figure's left, anatomical: +x is the figure's right) braces the shield forward
+     P['elL'] = (0.24, 1.12, -0.14)
+     P['wrL'] = (0.14, 1.07, -0.3)
+     P['hdL'] = (0.08, 1.05, -0.36)

@@ -1,5 +1,7 @@
 import { rng } from '../core/util';
+import { jonswap } from './spectrum';
 import type { Wind } from './wind';
+import { DETAIL_FEATHER, bandWeights, type SeaStateField, type SeaWaveModel } from './seaState';
 
 /**
  * Gerstner wave field whose components are drawn from a fetch-limited JONSWAP spectrum.
@@ -16,18 +18,7 @@ export const WAVE_COUNT = 24;
 export const GERSTNER_MIN_LAMBDA = 11;
 const G = 9.81;
 
-/** JONSWAP spectral density S(omega) [m^2 s] for wind speed U [m/s] and fetch F [m] */
-export function jonswap(omega: number, U: number, F: number) {
-  const alpha = 0.076 * Math.pow((U * U) / (F * G), 0.22);
-  const wp = jonswapPeak(U, F);
-  const gamma = 3.3;
-  const sigma = omega <= wp ? 0.07 : 0.09;
-  const r = Math.exp(-((omega - wp) ** 2) / (2 * sigma * sigma * wp * wp));
-  return ((alpha * G * G) / Math.pow(omega, 5)) * Math.exp(-1.25 * Math.pow(wp / omega, 4)) * Math.pow(gamma, r);
-}
-export function jonswapPeak(U: number, F: number) {
-  return 22 * Math.pow((G * G) / (U * F), 1 / 3);
-}
+export { jonswap, jonswapPeak } from './spectrum';
 
 export interface WaveComponent {
   dx: number;
@@ -38,23 +29,37 @@ export interface WaveComponent {
   amp: number; // current (smoothed) amplitude
   target: number;
   q: number; // steepness
+  /** sea state band weights (swell, long, mid, short); the local amplitude is amp * dot(envelope, band) */
+  band?: [number, number, number, number];
 }
 
 export interface FlowSample {
   height: number; hx: number; hz: number; vx: number; vy: number; vz: number;
   sigma: number; H: number; Hx: number; guarded: boolean;
   sin: Float64Array; cos: Float64Array;
+  /** sea state envelope at the sample's undisplaced point (valid when enveloped) */
+  env: Float64Array; enveloped: boolean;
 }
 export function createFlowSample(count = WAVE_COUNT): FlowSample {
   return { height: 0, hx: 0, hz: 0, vx: 0, vy: 0, vz: 0,
-    sigma: 1, H: 0, Hx: 0, guarded: false, sin: new Float64Array(count), cos: new Float64Array(count) };
+    sigma: 1, H: 0, Hx: 0, guarded: false, sin: new Float64Array(count), cos: new Float64Array(count),
+    env: new Float64Array(4), enveloped: false };
 }
 
-export class WaveField {
+export class WaveField implements SeaWaveModel {
   waves: WaveComponent[] = [];
-  /** packed for GPU: [dx, dz, k, amp] and [omega, phase, q, lambda] */
+  /** packed for GPU: [dx, dz, k, amp], [omega, phase, q, lambda] and the sea state band weights */
   readonly packedA = new Float32Array(WAVE_COUNT * 4);
   readonly packedB = new Float32Array(WAVE_COUNT * 4);
+  readonly packedC = new Float32Array(WAVE_COUNT * 4);
+  /**
+   * Sea state envelope (docs/sea-state-spec.md). null = the same sea everywhere: every query then runs
+   * the original code path unchanged.
+   */
+  field: SeaStateField | null = null;
+  /** per wind-sea component, from the last retarget: directional share and frequency bin width */
+  private share = new Float64Array(WAVE_COUNT);
+  private dOmega = new Float64Array(WAVE_COUNT);
   fetch = 40_000; // m — Aegean between islands
   swellHeight = 0.35; // m — residual swell from distant weather
   swellFrom = (300 * Math.PI) / 180; // WNW
@@ -88,6 +93,7 @@ export class WaveField {
         amp: 0,
         target: 0,
         q: 0,
+        band: [0, ...bandWeights(lambda)],
       });
     }
     // Long swell components (independent of local wind)
@@ -104,6 +110,7 @@ export class WaveField {
         amp: 0,
         target: 0,
         q: 0,
+        band: [1, 0, 0, 0],
       });
     }
     this.retarget(wind);
@@ -143,6 +150,8 @@ export class WaveField {
       const share = (dirW[i] / Math.max(1e-6, dirNorm)) * windCount;
       const variance = S * dOmega * share;
       w.target = Math.sqrt(2 * variance);
+      this.share[i] = share;
+      this.dOmega[i] = dOmega;
       m0 += S * dOmega;
       if (S > peakS) {
         peakS = S;
@@ -178,11 +187,67 @@ export class WaveField {
       const w = this.waves[i];
       this.packedA.set([w.dx, w.dz, w.k, w.amp], i * 4);
       this.packedB.set([w.omega, w.phase, w.q, (2 * Math.PI) / w.k], i * 4);
+      this.packedC.set(w.band ?? [0, 0, 0, 0], i * 4);
     }
+  }
+
+  /** SeaWaveModel: wind-sea variance of the long, mid and short bands for wind U and fetch F (current directional shares) */
+  windBandVariance(U: number, F: number, out: Float64Array) {
+    out[0] = out[1] = out[2] = 0;
+    const windCount = WAVE_COUNT - this.swellCount;
+    for (let i = 0; i < windCount && i < this.waves.length; i++) {
+      const b = this.waves[i].band;
+      if (!b) continue;
+      const v = jonswap(this.waves[i].omega, Math.max(0.5, U), F) * this.dOmega[i] * this.share[i];
+      out[0] += b[1] * v;
+      out[1] += b[2] * v;
+      out[2] += b[3] * v;
+    }
+  }
+  /** SeaWaveModel: variance of the swell components at their targets */
+  swellVariance() {
+    let v = 0;
+    for (let i = WAVE_COUNT - this.swellCount; i < this.waves.length; i++) v += (this.waves[i].target * this.waves[i].target) / 2;
+    return v;
+  }
+
+  private env4 = new Float64Array(4);
+  private envAmp = new Float64Array(WAVE_COUNT);
+  /** component amplitudes scaled by an envelope (swell, long, mid, short) */
+  private ampsFor(env: Float64Array) {
+    const out = this.envAmp;
+    for (let i = 0; i < this.waves.length; i++) {
+      const w = this.waves[i], b = w.band;
+      out[i] = b ? w.amp * (env[0] * b[0] + env[1] * b[1] + env[2] * b[2] + env[3] * b[3]) : w.amp;
+    }
+    return out;
+  }
+  /** local over open-sea wave height here (1 without a sea state field) */
+  seaRatio(x: number, z: number) {
+    if (!this.field) return 1;
+    let v = 0;
+    for (const w of this.waves) v += (w.amp * w.amp) / 2;
+    const open = 4 * Math.sqrt(v);
+    return open > 1e-6 ? this.localHs(x, z) / open : 1;
+  }
+  /** significant wave height here (Gerstner bands, current amplitudes) */
+  localHs(x: number, z: number) {
+    let v = 0;
+    if (this.field) {
+      this.field.sample(x, z, this.env4);
+      const a = this.ampsFor(this.env4);
+      for (let i = 0; i < this.waves.length; i++) v += (a[i] * a[i]) / 2;
+    } else for (const w of this.waves) v += (w.amp * w.amp) / 2;
+    return 4 * Math.sqrt(v);
   }
 
   /** Gerstner displacement at undisplaced grid point (x,z). Writes into out[0..2]. */
   displacement(x: number, z: number, t: number, out: Float64Array | number[]) {
+    if (this.field) {
+      this.field.sample(x, z, this.env4);
+      this.displacementWith(this.ampsFor(this.env4), x, z, t, out);
+      return;
+    }
     let dx = 0,
       dy = 0,
       dz = 0;
@@ -194,6 +259,22 @@ export class WaveField {
       dx += qa * w.dx * c;
       dz += qa * w.dz * c;
       dy += w.amp * Math.sin(th);
+    }
+    out[0] = dx;
+    out[1] = dy;
+    out[2] = dz;
+  }
+
+  private displacementWith(amp: Float64Array, x: number, z: number, t: number, out: Float64Array | number[]) {
+    let dx = 0, dy = 0, dz = 0;
+    for (let i = 0; i < this.waves.length; i++) {
+      const w = this.waves[i];
+      const th = w.k * (w.dx * x + w.dz * z) - w.omega * t + w.phase;
+      const c = Math.cos(th);
+      const qa = w.q * amp[i];
+      dx += qa * w.dx * c;
+      dz += qa * w.dz * c;
+      dy += amp[i] * Math.sin(th);
     }
     out[0] = dx;
     out[1] = dy;
@@ -225,16 +306,24 @@ export class WaveField {
     }
     let height = 0, gx = 0, gz = 0, jxx = 1, jzz = 1, jxz = 0, H = 0, Hx = 0;
     if (this.waves.length > out.sin.length) throw new Error('Flow cache is too small');
+    // sea state: amplitudes from the envelope at the undisplaced point (its gradient is neglected)
+    let amp: Float64Array | null = null;
+    out.enveloped = this.field !== null;
+    if (this.field) {
+      this.field.sample(px, pz, out.env);
+      amp = this.ampsFor(out.env);
+    }
     for (let i = 0; i < this.waves.length; i++) {
       const w = this.waves[i];
+      const A = amp ? amp[i] : w.amp;
       const th = w.k * (w.dx * px + w.dz * pz) - w.omega * t + w.phase;
       const sn = Math.sin(th), cs = Math.cos(th);
       out.sin[i] = sn; out.cos[i] = cs;
-      height += w.amp * sn;
-      gx += w.amp * w.k * w.dx * cs; gz += w.amp * w.k * w.dz * cs;
-      const jk = w.q * w.amp * w.k * sn;
+      height += A * sn;
+      gx += A * w.k * w.dx * cs; gz += A * w.k * w.dz * cs;
+      const jk = w.q * A * w.k * sn;
       jxx -= jk * w.dx * w.dx; jzz -= jk * w.dz * w.dz; jxz -= jk * w.dx * w.dz;
-      H += Math.abs(w.amp) * w.k * w.k; Hx += Math.abs(w.q * w.amp) * w.k * w.k;
+      H += Math.abs(A) * w.k * w.k; Hx += Math.abs(w.q * A) * w.k * w.k;
     }
     let det = jxx * jzz - jxz * jxz;
     out.guarded = Math.abs(det) < 0.10;
@@ -250,13 +339,28 @@ export class WaveField {
   /** Reuse an inverse query's component phases, adjusting only physical sample depth. */
   flowAtDepth(cache: FlowSample, depth: number, out: { vx: number; vy: number; vz: number }) {
     let vx = 0, vy = 0, vz = 0;
+    const amp = cache.enveloped ? this.ampsFor(cache.env) : null;
     for (let i = 0; i < this.waves.length; i++) {
       const w = this.waves[i];
-      const a = Math.exp(-w.k * Math.max(0, depth)) * w.amp * w.omega;
+      const a = Math.exp(-w.k * Math.max(0, depth)) * (amp ? amp[i] : w.amp) * w.omega;
       vx += a * w.q * w.dx * cache.sin[i]; vz += a * w.q * w.dz * cache.sin[i];
       vy -= a * cache.cos[i];
     }
     out.vx = vx; out.vy = vy; out.vz = vz;
+  }
+
+  /** Local fluid acceleration (time derivative of flowAtDepth) from an inverse query's cached phases. */
+  accelAtDepth(cache: FlowSample, depth: number, out: { x: number; y: number; z: number }) {
+    let ax = 0, ay = 0, az = 0;
+    const amp = cache.enveloped ? this.ampsFor(cache.env) : null;
+    for (let i = 0; i < this.waves.length; i++) {
+      const w = this.waves[i];
+      const a = Math.exp(-w.k * Math.max(0, depth)) * (amp ? amp[i] : w.amp) * w.omega * w.omega;
+      ax -= a * w.q * w.dx * cache.cos[i]; az -= a * w.q * w.dz * cache.cos[i];
+      ay -= a * cache.sin[i];
+    }
+    out.x = ax; out.y = ay; out.z = az;
+    return out;
   }
 
   private flowScratch = createFlowSample();
@@ -273,13 +377,16 @@ export const WAVES_GLSL = /* glsl */ `
 #define WAVE_COUNT ${WAVE_COUNT}
 uniform vec4 uWaveA[WAVE_COUNT]; // dx, dz, k, amp
 uniform vec4 uWaveB[WAVE_COUNT]; // omega, phase, q, lambda
+uniform vec4 uWaveC[WAVE_COUNT]; // sea state band weights: swell, long, mid, short
+uniform float uSeaOn;
 uniform float uTime;
 
 // slope variance of the components faded out by distance (sub-pixel waves): becomes roughness
 float gLostVar;
-// p: undisplaced world xz; dist: distance to camera for anti-alias fade.
-// returns displacement; outputs normal and jacobian (surface compression -> foam).
-vec3 gerstner(vec2 p, float dist, out vec3 N, out float J) {
+// p: undisplaced world xz; dist: distance to camera for anti-alias fade; env: sea state envelope
+// (swell, long, mid, short) at p. Returns displacement; outputs normal and jacobian (surface
+// compression -> foam).
+vec3 gerstner(vec2 p, float dist, vec4 env, out vec3 N, out float J) {
   vec3 d = vec3(0.0);
   float nx = 0.0, nz = 0.0, ny = 0.0;
   float jxx = 0.0, jzz = 0.0, jxz = 0.0;
@@ -289,9 +396,10 @@ vec3 gerstner(vec2 p, float dist, out vec3 N, out float J) {
     vec4 B = uWaveB[i];
     float lambda = B.w;
     float fade = 1.0 - smoothstep(lambda * 30.0, lambda * 110.0, dist);
-    float lost = A.z * A.w * (1.0 - fade);
+    float local = uSeaOn > 0.5 ? A.w * dot(env, uWaveC[i]) : A.w;
+    float lost = A.z * local * (1.0 - fade);
     gLostVar += 0.5 * lost * lost;
-    float amp = A.w * fade;
+    float amp = local * fade;
     if (amp < 1e-5) continue;
     float th = A.z * dot(A.xy, p) - B.x * uTime + B.y;
     float s = sin(th), c = cos(th);
@@ -310,5 +418,44 @@ vec3 gerstner(vec2 p, float dist, out vec3 N, out float J) {
   N = normalize(vec3(-nx, 1.0 - ny, -nz));
   J = (1.0 - jxx) * (1.0 - jzz) - jxz * jxz;
   return d;
+}
+`;
+
+/**
+ * GLSL matching SeaStateField.sample (vertex shader only: the fragment shader is at its sampler limit
+ * and receives the envelope as varyings). Same Float32 texels, texel-centre bilinear, edge clamp and
+ * detail feather as the CPU.
+ */
+export const SEA_ENV_GLSL = /* glsl */ `
+uniform sampler2D uSeaEnv; // rows [0, n): env0; rows [n, 2n): env1
+uniform vec4 uSeaGlobal; // origin x, origin z, cell (m), cells per side
+uniform vec4 uSeaDetail; // origin x, origin z, cell (m; 0 = none), atlas column offset
+void seaBilinear(vec2 origin, float cell, float off, vec2 p, out vec4 e0, out vec4 e1) {
+  float n = uSeaGlobal.w;
+  vec2 f = clamp((p - origin) / cell - 0.5, vec2(0.0), vec2(n - 1.0));
+  vec2 i0 = min(vec2(n - 2.0), floor(f));
+  vec2 t = f - i0;
+  ivec2 a = ivec2(int(i0.x + off), int(i0.y));
+  ivec2 bx = a + ivec2(1, 0), cz = a + ivec2(0, 1), d = a + ivec2(1, 1), r = ivec2(0, int(n));
+  vec4 w = vec4((1.0 - t.x) * (1.0 - t.y), t.x * (1.0 - t.y), (1.0 - t.x) * t.y, t.x * t.y);
+  e0 = texelFetch(uSeaEnv, a, 0) * w.x + texelFetch(uSeaEnv, bx, 0) * w.y + texelFetch(uSeaEnv, cz, 0) * w.z + texelFetch(uSeaEnv, d, 0) * w.w;
+  e1 = texelFetch(uSeaEnv, a + r, 0) * w.x + texelFetch(uSeaEnv, bx + r, 0) * w.y + texelFetch(uSeaEnv, cz + r, 0) * w.z + texelFetch(uSeaEnv, d + r, 0) * w.w;
+}
+void seaEnv(vec2 p, out vec4 e0, out vec4 e1) {
+  e0 = vec4(1.0);
+  e1 = vec4(1.0, 1.0, 60.0, 0.0);
+  if (uSeaOn < 0.5) return;
+  seaBilinear(uSeaGlobal.xy, uSeaGlobal.z, 0.0, p, e0, e1);
+  if (uSeaDetail.z > 0.0) {
+    float size = uSeaGlobal.w * uSeaDetail.z;
+    vec2 l = p - uSeaDetail.xy;
+    if (l.x > 0.0 && l.y > 0.0 && l.x < size && l.y < size) {
+      float f = min(1.0, min(min(l.x, l.y), min(size - l.x, size - l.y)) / ${DETAIL_FEATHER.toFixed(1)});
+      vec4 g0, g1;
+      seaBilinear(uSeaDetail.xy, uSeaDetail.z, uSeaDetail.w, p, g0, g1);
+      e0 += (g0 - e0) * f;
+      e1 += (g1 - e1) * f;
+    }
+  }
 }
 `;

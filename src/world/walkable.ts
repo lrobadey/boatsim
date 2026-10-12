@@ -65,6 +65,11 @@ function toBox(b: BoxSolid, x: number, z: number, out: { u: number; v: number })
 
 export class WalkGeometry {
   readonly solids: Solid[] = [];
+  /**
+   * Per-frame solids (moving crew, spec §9.8), checked brute-force in every query. Keep it short.
+   * Dynamic solids must have walkTop false; they never act as floors.
+   */
+  readonly dynamic: Solid[] = [];
   private grid = new Map<number, Solid[]>();
   private uv = { u: 0, v: 0 };
   private n = new THREE.Vector3();
@@ -141,6 +146,17 @@ export class WalkGeometry {
       out.solid = s;
       found = true;
     }
+    for (const s of this.dynamic) {
+      if (!s.walkTop || s.y1 > maxY || (found && s.y1 <= out.y)) continue;
+      if (!this.inside(s, x, z)) continue;
+      out.y = s.y1;
+      out.nx = 0;
+      out.ny = 1;
+      out.nz = 0;
+      out.kind = s.surface;
+      out.solid = s;
+      found = true;
+    }
     return found;
   }
 
@@ -154,37 +170,40 @@ export class WalkGeometry {
     out.x = x;
     out.z = z;
     for (let iter = 0; iter < 2; iter++) {
-      for (const s of this.near(out.x, out.z)) {
-        if (s.y1 <= y0 + stepUp || s.y0 >= y1) continue;
-        if (s.kind === 'cyl') {
-          const dx = out.x - s.cx,
-            dz = out.z - s.cz;
-          const d = Math.hypot(dx, dz);
-          const min = s.r + r;
-          if (d >= min) continue;
-          const k = d > 1e-6 ? min / d : 0;
-          out.x = s.cx + (d > 1e-6 ? dx * k : min);
-          out.z = s.cz + dz * k;
-          hit = true;
-        } else {
-          const p = toBox(s, out.x, out.z, this.uv);
-          const ox = s.hx + r - Math.abs(p.u),
-            oz = s.hz + r - Math.abs(p.v);
-          if (ox <= 0 || oz <= 0) continue;
-          // shove along the axis of least penetration, back to world
-          let du = 0,
-            dv = 0;
-          if (ox < oz) du = Math.sign(p.u || 1) * ox;
-          else dv = Math.sign(p.v || 1) * oz;
-          const c = Math.cos(s.rot),
-            sn = Math.sin(s.rot);
-          out.x += du * c + dv * sn;
-          out.z += -du * sn + dv * c;
-          hit = true;
-        }
-      }
+      for (const s of this.near(out.x, out.z)) if (this.pushOut(s, r, y0, y1, stepUp, out)) hit = true;
+      for (const s of this.dynamic) if (this.pushOut(s, r, y0, y1, stepUp, out)) hit = true;
     }
     return hit;
+  }
+
+  /** one push-out of the capsule (centre in out, radius r) from solid s; true when it overlapped */
+  private pushOut(s: Solid, r: number, y0: number, y1: number, stepUp: number, out: { x: number; z: number }): boolean {
+    if (s.y1 <= y0 + stepUp || s.y0 >= y1) return false;
+    if (s.kind === 'cyl') {
+      const dx = out.x - s.cx,
+        dz = out.z - s.cz;
+      const d = Math.hypot(dx, dz);
+      const min = s.r + r;
+      if (d >= min) return false;
+      const k = d > 1e-6 ? min / d : 0;
+      out.x = s.cx + (d > 1e-6 ? dx * k : min);
+      out.z = s.cz + dz * k;
+      return true;
+    }
+    const p = toBox(s, out.x, out.z, this.uv);
+    const ox = s.hx + r - Math.abs(p.u),
+      oz = s.hz + r - Math.abs(p.v);
+    if (ox <= 0 || oz <= 0) return false;
+    // shove along the axis of least penetration, back to world
+    let du = 0,
+      dv = 0;
+    if (ox < oz) du = Math.sign(p.u || 1) * ox;
+    else dv = Math.sign(p.v || 1) * oz;
+    const c = Math.cos(s.rot),
+      sn = Math.sin(s.rot);
+    out.x += du * c + dv * sn;
+    out.z += -du * sn + dv * c;
+    return true;
   }
 }
 

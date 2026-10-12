@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { patchMaterial, shared } from '../gfx/shared';
 import { rng } from '../core/util';
-import type { WorldGenResult } from './worldgenTypes';
+import type { House, Sites, WorldGenResult } from './worldgenTypes';
 import type { Terrain } from './terrain';
-import { QUAY, berthBollards, pierFrame, houseFootprint } from './harbour';
+import { QUAY, STALL_RADIUS, berthBollards, pierFrame, houseFootprint, portSites, stallGeometry, type PortSite, type StallGeometry } from './harbour';
 import type { WaveField } from './waves';
 import type { Quality } from '../core/quality';
 import type { VisualAssets } from '../gfx/assets';
@@ -168,13 +168,17 @@ export class Props {
 
   constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets, private models: ModelKit) {
     this.fireMat = models.material('fire');
+    const ports = portSites(gen);
     this.buildVegetation(gen);
-    this.buildVillage(gen);
+    for (const p of ports) this.buildVillage(p.houses);
     this.buildTemple(gen);
-    this.buildPier(gen);
-    this.buildDockLife(gen);
-    this.buildRockFaces(gen, assets);
-    this.buildBoats(gen);
+    for (const p of ports) this.buildPier(p.pier);
+    // stalls are placed before dock life, which treats their footprints as pre-placed (§8)
+    const stalls = ports.map((p) => stallGeometry(pierFrame(p.pier), p.id));
+    stalls.forEach((g) => this.buildStall(g));
+    ports.forEach((p, i) => this.buildDockLife(p, stalls[i]));
+    this.buildRockFaces(ports, assets);
+    this.buildBoats(ports);
     // beacon fire in front of the temple (east side)
     const t = gen.sites.temple;
     this.beaconMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff8a30, emissiveIntensity: 2, transparent: true, opacity: 0.9, depthWrite: false });
@@ -263,8 +267,7 @@ export class Props {
     }
   }
 
-  private buildVillage(gen: WorldGenResult) {
-    const houses = gen.sites.houses;
+  private buildVillage(houses: House[]) {
     if (!houses.length) return;
     // modelled footprints (m); a house takes the smallest variant that holds its area
     const variants = [
@@ -360,8 +363,8 @@ export class Props {
   }
 
   /** the mole from the kit: quay_head at the sea end, quay_segment tiles back to the shore, bollards and fenders at the berth */
-  private buildPier(gen: WorldGenResult) {
-    const f = pierFrame(gen.sites.pier);
+  private buildPier(pier: Sites['pier']) {
+    const f = pierFrame(pier);
     // model +z runs shore → sea
     const Q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(f.ux, f.uz));
     const at = (a: number, lat: number, y: number) => new THREE.Vector3(f.x0 + f.ux * a + f.lx * lat, y, f.z0 + f.uz * a + f.lz * lat);
@@ -398,23 +401,40 @@ export class Props {
     fb.addTo(this.group, true);
   }
 
+  /** the trade stall (§8): the merchant figure, the awning, the bench and three amphorae. No RNG. */
+  private buildStall(g: StallGeometry) {
+    const put = (name: string, x: number, y: number, z: number, yaw: number) => {
+      const o = this.models.get(name);
+      o.position.set(x, y, z);
+      o.rotation.y = yaw;
+      this.group.add(o);
+    };
+    const s = g.site;
+    put('fig_sailor_idle', s.x, s.y, s.z, s.yaw);
+    this.solids.push({ kind: 'cyl', cx: s.x, cz: s.z, r: 0.3, y0: s.y, y1: s.y + 1.8, surface: 'stone', walkTop: false });
+    put('awning', g.awning.x, s.y, g.awning.z, g.awning.yaw);
+    put('bench', g.bench.x, s.y, g.bench.z, g.bench.yaw);
+    for (const a of g.amphorae) put('amphora', a.x, s.y, a.z, a.yaw);
+  }
+
   /**
    * Life on the shore half of the mole: a cluster of goods on one side, a porter on the other, a fisher
    * sitting on the edge and a sailor by a bollard. Everything blocks people except the fisher, whose
    * legs hang over the face.
    */
-  private buildDockLife(gen: WorldGenResult) {
-    const f = pierFrame(gen.sites.pier);
+  private buildDockLife(port: PortSite, stall: StallGeometry) {
+    const f = pierFrame(port.pier);
     const a0 = 4,
       a1 = f.berthStart - 2;
     if (a1 - a0 < 8) return;
-    const r = rng(41);
+    const r = rng(41 + 7 * port.id); // harbour 0 keeps 41
     const top = f.top;
     const hw = f.width / 2;
     const at = (a: number, lat: number) => ({ x: f.x0 + f.ux * a + f.lx * lat, z: f.z0 + f.uz * a + f.lz * lat });
     // yaw that points a model's -z (its facing) along (dx, dz)
     const face = (dx: number, dz: number) => Math.atan2(-dx, -dz);
-    const placed: { x: number; z: number; rad: number }[] = [];
+    // the trade stall's footprint is pre-placed (§8)
+    const placed: { x: number; z: number; rad: number }[] = [{ x: stall.site.x, z: stall.site.z, rad: STALL_RADIUS }];
     const clear = (x: number, z: number, rad: number) => placed.every((p) => Math.hypot(p.x - x, p.z - z) >= p.rad + rad + 0.1);
     const figure = (name: string, x: number, y: number, z: number, yaw: number, blocks: boolean) => {
       const o = this.models.get(name);
@@ -476,11 +496,7 @@ export class Props {
     }
   }
 
-  private buildRockFaces(gen: WorldGenResult, assets: VisualAssets) {
-    // Find exposed shore on both sides of the pier from navigable harbor water.
-    const h = gen.sites.harbour;
-    const shoreAngle = gen.sites.pier.angle + Math.PI;
-    const offsets = [-0.58, -0.4, -0.23, 0.23, 0.4, 0.58];
+  private buildRockFaces(ports: PortSite[], assets: VisualAssets) {
     assets.rockFace.traverse((obj) => {
       if (!(obj instanceof THREE.Mesh)) return;
       obj.castShadow = true;
@@ -489,31 +505,36 @@ export class Props {
       const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
       for (const material of materials) patchMaterial(material, undefined, 'rockface');
     });
-    for (let i = 0; i < offsets.length; i++) {
-      const a = shoreAngle + offsets[i];
-      const dx = Math.cos(a), dz = Math.sin(a);
-      let d = 0;
-      for (let probe = 35; probe <= 650; probe += 6) {
-        if (this.terrain.heightAt(h.x + dx * probe, h.z + dz * probe) > 2) {
-          d = probe;
-          break;
+    // exposed shore on both sides of each pier, seen from that harbour's water
+    const offsets = [-0.58, -0.4, -0.23, 0.23, 0.4, 0.58];
+    for (const port of ports) {
+      const h = port.harbour;
+      const shoreAngle = port.pier.angle + Math.PI;
+      for (let i = 0; i < offsets.length; i++) {
+        const a = shoreAngle + offsets[i];
+        const dx = Math.cos(a), dz = Math.sin(a);
+        let d = 0;
+        for (let probe = 35; probe <= 650; probe += 6) {
+          if (this.terrain.heightAt(h.x + dx * probe, h.z + dz * probe) > 2) {
+            d = probe;
+            break;
+          }
         }
+        if (!d) continue;
+        const x = h.x + dx * (d + 3), z = h.z + dz * (d + 3);
+        const scale = 2.0 + (i % 3) * 0.4;
+        const rock = assets.rockFace.clone(true);
+        rock.scale.setScalar(scale);
+        rock.rotation.y = -Math.PI / 2 - a + (i % 2 ? 0.2 : -0.15);
+        rock.position.set(x, this.terrain.heightAt(x, z) - scale * 0.75, z);
+        rock.updateMatrixWorld(true);
+        this.group.add(rock);
+        this.blocks.push({ obj: rock, center: new THREE.Vector3(x, 0, z), maxDist: 2200 });
       }
-      if (!d) continue;
-      const x = h.x + dx * (d + 3), z = h.z + dz * (d + 3);
-      const scale = 2.0 + (i % 3) * 0.4;
-      const rock = assets.rockFace.clone(true);
-      rock.scale.setScalar(scale);
-      rock.rotation.y = -Math.PI / 2 - a + (i % 2 ? 0.2 : -0.15);
-      rock.position.set(x, this.terrain.heightAt(x, z) - scale * 0.75, z);
-      rock.updateMatrixWorld(true);
-      this.group.add(rock);
-      this.blocks.push({ obj: rock, center: new THREE.Vector3(x, 0, z), maxDist: 2200 });
     }
   }
 
-  private buildBoats(gen: WorldGenResult) {
-    const h = gen.sites.harbour;
+  private buildBoats(ports: PortSite[]) {
     const hull = new THREE.CylinderGeometry(1, 1, 7, 12, 4, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateY(Math.PI / 2);
     const p = hull.attributes.position;
     for (let i = 0; i < p.count; i++) {
@@ -525,30 +546,33 @@ export class Props {
     hull.computeVertexNormals();
     const mats = [0x2b5a8a, 0xe8e2d4, 0x8f2a1c, 0x3a6a4a].map((c) => patchMaterial(new THREE.MeshStandardMaterial({ color: c, roughness: 0.7, side: THREE.DoubleSide }), undefined, 'boat'));
     const r = rng(8);
-    // keep clear of the mole and its berth zone
-    const pier = gen.sites.pier;
-    const pux = Math.cos(pier.angle),
-      puz = Math.sin(pier.angle);
-    const pierDist = (x: number, z: number) => {
-      const t = Math.max(0, Math.min(pier.length, (x - pier.x) * pux + (z - pier.z) * puz));
-      return Math.hypot(x - (pier.x + pux * t), z - (pier.z + puz * t));
-    };
-    for (let i = 0; i < 4; i++) {
-      const a = r() * Math.PI * 2;
-      const d = 40 + r() * 120;
-      const x = h.x + Math.cos(a) * d,
-        z = h.z + Math.sin(a) * d;
-      if (this.terrain.heightAt(x, z) > -1.5) continue;
-      if (pierDist(x, z) < 30) continue;
-      const g = new THREE.Group();
-      const m = new THREE.Mesh(hull, mats[i % mats.length]);
-      m.castShadow = true;
-      g.add(m);
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 4.5, 5), mats[1]);
-      mast.position.set(0, 2.3, -0.8);
-      g.add(mast);
-      this.group.add(g);
-      this.boats.push({ mesh: g, x, z, yaw: r() * Math.PI * 2, phase: r() * 10 });
+    for (const port of ports) {
+      const h = port.harbour;
+      // keep clear of the mole and its berth zone
+      const pier = port.pier;
+      const pux = Math.cos(pier.angle),
+        puz = Math.sin(pier.angle);
+      const pierDist = (x: number, z: number) => {
+        const t = Math.max(0, Math.min(pier.length, (x - pier.x) * pux + (z - pier.z) * puz));
+        return Math.hypot(x - (pier.x + pux * t), z - (pier.z + puz * t));
+      };
+      for (let i = 0; i < 4; i++) {
+        const a = r() * Math.PI * 2;
+        const d = 40 + r() * 120;
+        const x = h.x + Math.cos(a) * d,
+          z = h.z + Math.sin(a) * d;
+        if (this.terrain.heightAt(x, z) > -1.5) continue;
+        if (pierDist(x, z) < 30) continue;
+        const g = new THREE.Group();
+        const m = new THREE.Mesh(hull, mats[i % mats.length]);
+        m.castShadow = true;
+        g.add(m);
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 4.5, 5), mats[1]);
+        mast.position.set(0, 2.3, -0.8);
+        g.add(mast);
+        this.group.add(g);
+        this.boats.push({ mesh: g, x, z, yaw: r() * Math.PI * 2, phase: r() * 10 });
+      }
     }
   }
 

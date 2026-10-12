@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 import { patchMaterial } from './shared';
 import type { VisualAssets } from './assets';
 
@@ -16,6 +17,7 @@ export const MODEL_FILES = [
   'house_b.glb',
   'house_c.glb',
   'figures.glb',
+  'crew.glb',
 ];
 
 export interface ModelKit {
@@ -29,6 +31,8 @@ export interface ModelKit {
   parts(names: string | string[]): { geometry: THREE.BufferGeometry; material: THREE.MeshStandardMaterial }[];
   /** the shared material behind a slot; the game drives `fire` (lamps, house windows) by night */
   material(slot: string): THREE.MeshStandardMaterial;
+  /** the AnimationClips of a loaded glb, by file name (e.g. 'crew.glb'); empty if it has none or is not loaded */
+  clips(file: string): THREE.AnimationClip[];
 }
 
 const ROOT = '/assets/models/';
@@ -110,6 +114,11 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
   const gltfs = await Promise.all(MODEL_FILES.map((f) => loader.loadAsync(ROOT + f)));
 
   const objects = new Map<string, THREE.Object3D>();
+  const clipsByFile = new Map<string, THREE.AnimationClip[]>();
+  const skinnedCache = new Map<THREE.Object3D, boolean>();
+  gltfs.forEach((gltf, i) => {
+    clipsByFile.set(MODEL_FILES[i], gltf.animations);
+  });
   for (const gltf of gltfs) {
     gltf.scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
@@ -132,6 +141,19 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
     });
   }
 
+  /** cached per source: does this subtree contain a SkinnedMesh (which needs SkeletonUtils to clone)? */
+  const hasSkinned = (src: THREE.Object3D): boolean => {
+    let v = skinnedCache.get(src);
+    if (v === undefined) {
+      v = false;
+      src.traverse((c) => {
+        if (c instanceof THREE.SkinnedMesh) v = true;
+      });
+      skinnedCache.set(src, v);
+    }
+    return v;
+  };
+
   return {
     objects,
     get(name: string): THREE.Object3D {
@@ -140,7 +162,11 @@ export async function loadModels(assets: VisualAssets): Promise<ModelKit> {
         console.warn(`[models] missing model object "${name}"`);
         return new THREE.Group();
       }
-      return src.clone(true);
+      // a plain clone shares one skeleton across instances, so skinned subtrees need their own
+      return hasSkinned(src) ? skeletonClone(src) : src.clone(true);
+    },
+    clips(file: string): THREE.AnimationClip[] {
+      return clipsByFile.get(file) ?? [];
     },
     geometry(name: string): THREE.BufferGeometry[] {
       const src = objects.get(name);

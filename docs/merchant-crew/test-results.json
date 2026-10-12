@@ -1,0 +1,673 @@
+{
+ "tests": [
+  {
+   "name": "seam: the merchant builds the crew system with six sweeps and eight hands",
+   "status": "passed",
+   "ms": 61
+  },
+  {
+   "name": "energy audit closes per oar at every order; patch power identity holds in calm water",
+   "status": "passed",
+   "ms": 4436
+  },
+  {
+   "name": "no hidden clipping: no force scaling in the crew code, cap fractions stay zero",
+   "status": "passed",
+   "ms": 1
+  },
+  {
+   "name": "passivity: blades only ever dissipate; a held blade at rest does no rower work",
+   "status": "passed",
+   "ms": 84
+  },
+  {
+   "name": "continuity over 10 minutes of mixed orders, helm, hold and shipping",
+   "status": "passed",
+   "ms": 3316
+  },
+  {
+   "name": "timestep independence: Full and Half steady within 0.5 %, speed at 60 s within 0.02 kn",
+   "status": "passed",
+   "ms": 7505
+  },
+  {
+   "name": "speed bands and acceleration (calm, 240 s)",
+   "status": "passed",
+   "ms": 0
+  },
+  {
+   "name": "propulsive efficiency at Full and Half is at least 0.35",
+   "status": "passed",
+   "ms": 0
+  },
+  {
+   "name": "hold water stops her from 2 kn within 5 lengths, inside the hold capacity",
+   "status": "passed",
+   "ms": 890
+  },
+  {
+   "name": "payload: nine people sink her about 1.7 cm, cost under 1 % at Full, and walking trims her smoothly",
+   "status": "passed",
+   "ms": 1251
+  },
+  {
+   "name": "waves: a single 0.5 m swell with orders cycled stays finite and physical",
+   "status": "passed",
+   "ms": 1953
+  },
+  {
+   "name": "determinism: two identical runs are bit-identical",
+   "status": "passed",
+   "ms": 1279
+  },
+  {
+   "name": "CPU: crew propulsion costs at most 0.1 ms per physics step",
+   "status": "passed",
+   "ms": 286
+  },
+  {
+   "name": "rhythm: a ragged start settles, holds, and falls apart without coupling",
+   "status": "passed",
+   "ms": 994
+  },
+  {
+   "name": "startup: short heavy strokes that lengthen as she gathers way",
+   "status": "passed",
+   "ms": 408
+  },
+  {
+   "name": "turning: a pivot from rest, crew assist underway, no rowing on Oars Up",
+   "status": "passed",
+   "ms": 1984
+  },
+  {
+   "name": "turning at 2 kn: hard over turns at least 1.3 deg/s on average over 60 s (the inner side backs once she is slow)",
+   "status": "passed",
+   "ms": 609
+  },
+  {
+   "name": "watches: Slow mans one oar per side and keeps the same men on",
+   "status": "passed",
+   "ms": 523
+  },
+  {
+   "name": "rotation: reliefs swap in at Full over an hour without leaving an oar empty",
+   "status": "passed",
+   "ms": 16203
+  },
+  {
+   "name": "reading the water: fewer missed drives in a real sea, and no speed lost (relative: reading on vs off)",
+   "status": "passed",
+   "ms": 105614
+  },
+  {
+   "name": "animator view: eight members, valid modes, walks on deck and clear of manned stances, relief swap seen",
+   "status": "passed",
+   "ms": 2827
+  },
+  {
+   "name": "animator view: fillView and updatePayload allocate nothing per step (needs --expose-gc)",
+   "status": "passed",
+   "ms": 0
+  }
+ ],
+ "measured": {
+  "order0": {
+   "kn": -2.004265041154547,
+   "t30": -0.9525613573000763,
+   "t60": -1.4591449411002537,
+   "to1": 30.775,
+   "thrustN": -188.0960575588849,
+   "crewW": 484.9507018673739,
+   "efficiency": 0.3999225047797103,
+   "spm": 15.247570038013496
+  },
+  "order2": {
+   "kn": 1.0023750419739892,
+   "t30": 0.2858536910700789,
+   "t60": 0.4860831314897385,
+   "to1": 204.76666666666665,
+   "thrustN": 53.32252816946287,
+   "crewW": 90.32477408263136,
+   "efficiency": 0.30441965161999485,
+   "spm": 13.946110632593161
+  },
+  "order3": {
+   "kn": 2.2065344143534813,
+   "t30": 0.9657972657680487,
+   "t60": 1.5085657868177849,
+   "to1": 31.633333333333333,
+   "thrustN": 166.15466147119113,
+   "crewW": 478.8524391554779,
+   "efficiency": 0.393876547887307,
+   "spm": 16.280526814128585
+  },
+  "order4": {
+   "kn": 2.4803423277814187,
+   "t30": 1.0867391004955314,
+   "t60": 1.7647139012555386,
+   "to1": 27.9,
+   "thrustN": 197.93853385398003,
+   "crewW": 641.7867700061652,
+   "efficiency": 0.3935408372314801,
+   "spm": 18.18033628629739
+  },
+  "continuity": {
+   "maxAcc": 15.31817804739943,
+   "maxDipJump": 0.36053403272243695,
+   "maxFeJump": 6.154932876962623,
+   "thMin": -0.40234060587851866,
+   "thMax": 0.4801062879527639,
+   "maxArcDeg": 45.17500854825613
+  },
+  "timestep": {
+   "3": [
+    {
+     "h": 0.016666666666666666,
+     "kn": 2.1998567990412083,
+     "k60": 1.5076457684744444
+    },
+    {
+     "h": 0.008333333333333333,
+     "kn": 2.2065344143534813,
+     "k60": 1.5085657868177849
+    },
+    {
+     "h": 0.004166666666666667,
+     "kn": 2.209382635390275,
+     "k60": 1.508357314968622
+    }
+   ],
+   "4": [
+    {
+     "h": 0.016666666666666666,
+     "kn": 2.4728083055434587,
+     "k60": 1.761577999697631
+    },
+    {
+     "h": 0.008333333333333333,
+     "kn": 2.4803423277814187,
+     "k60": 1.7647139012555386
+    },
+    {
+     "h": 0.004166666666666667,
+     "kn": 2.4835712885517145,
+     "k60": 1.764114584167768
+    }
+   ]
+  },
+  "holdStop": {
+   "dist": 28.45285573345751,
+   "lengths": 2.0649884048174,
+   "peakOfCapacity": 0.6247718011371891
+  },
+  "payload": {
+   "sinkCm": 1.7386560505413984,
+   "fullWith": 2.4803423277814187,
+   "fullWithout": 2.48816019942628
+  },
+  "cpuMsPerStep": 0.007933477222216222,
+  "rhythm": [
+   {
+    "k": 0,
+    "t": 2.77,
+    "meanMs": 202,
+    "spreadMs": 8
+   },
+   {
+    "k": 1,
+    "t": 6.21,
+    "meanMs": 37,
+    "spreadMs": 28
+   },
+   {
+    "k": 2,
+    "t": 9.51,
+    "meanMs": 80,
+    "spreadMs": 25
+   },
+   {
+    "k": 3,
+    "t": 12.86,
+    "meanMs": 48,
+    "spreadMs": 28
+   },
+   {
+    "k": 4,
+    "t": 16.17,
+    "meanMs": 55,
+    "spreadMs": 37
+   },
+   {
+    "k": 5,
+    "t": 19.46,
+    "meanMs": 88,
+    "spreadMs": 29
+   },
+   {
+    "k": 6,
+    "t": 22.76,
+    "meanMs": 65,
+    "spreadMs": 23
+   },
+   {
+    "k": 7,
+    "t": 26.05,
+    "meanMs": 60,
+    "spreadMs": 18
+   },
+   {
+    "k": 8,
+    "t": 29.33,
+    "meanMs": 58,
+    "spreadMs": 27
+   },
+   {
+    "k": 9,
+    "t": 32.62,
+    "meanMs": 33,
+    "spreadMs": 22
+   },
+   {
+    "k": 10,
+    "t": 35.92,
+    "meanMs": 10,
+    "spreadMs": 29
+   },
+   {
+    "k": 11,
+    "t": 39.2,
+    "meanMs": -7,
+    "spreadMs": 22
+   },
+   {
+    "k": 12,
+    "t": 42.49,
+    "meanMs": -17,
+    "spreadMs": 14
+   },
+   {
+    "k": 13,
+    "t": 45.8,
+    "meanMs": -22,
+    "spreadMs": 17
+   },
+   {
+    "k": 14,
+    "t": 49.13,
+    "meanMs": -45,
+    "spreadMs": 24
+   },
+   {
+    "k": 15,
+    "t": 52.47,
+    "meanMs": -68,
+    "spreadMs": 11
+   },
+   {
+    "k": 16,
+    "t": 55.82,
+    "meanMs": -78,
+    "spreadMs": 15
+   },
+   {
+    "k": 17,
+    "t": 59.12,
+    "meanMs": -20,
+    "spreadMs": 16
+   },
+   {
+    "k": 18,
+    "t": 62.43,
+    "meanMs": 8,
+    "spreadMs": 17
+   },
+   {
+    "k": 19,
+    "t": 65.77,
+    "meanMs": -5,
+    "spreadMs": 17
+   },
+   {
+    "k": 20,
+    "t": 69.08,
+    "meanMs": 3,
+    "spreadMs": 26
+   },
+   {
+    "k": 21,
+    "t": 72.41,
+    "meanMs": 3,
+    "spreadMs": 16
+   },
+   {
+    "k": 22,
+    "t": 75.73,
+    "meanMs": 27,
+    "spreadMs": 14
+   },
+   {
+    "k": 23,
+    "t": 78.98,
+    "meanMs": 97,
+    "spreadMs": 26
+   },
+   {
+    "k": 24,
+    "t": 82.23,
+    "meanMs": 113,
+    "spreadMs": 26
+   },
+   {
+    "k": 25,
+    "t": 85.56,
+    "meanMs": 27,
+    "spreadMs": 30
+   },
+   {
+    "k": 26,
+    "t": 88.77,
+    "meanMs": 107,
+    "spreadMs": 27
+   },
+   {
+    "k": 27,
+    "t": 92.04,
+    "meanMs": 53,
+    "spreadMs": 30
+   },
+   {
+    "k": 28,
+    "t": 95.25,
+    "meanMs": 93,
+    "spreadMs": 23
+   },
+   {
+    "k": 29,
+    "t": 98.51,
+    "meanMs": 50,
+    "spreadMs": 17
+   },
+   {
+    "k": 30,
+    "t": 101.77,
+    "meanMs": 28,
+    "spreadMs": 21
+   },
+   {
+    "k": 31,
+    "t": 105,
+    "meanMs": 47,
+    "spreadMs": 12
+   },
+   {
+    "k": 32,
+    "t": 108.28,
+    "meanMs": -15,
+    "spreadMs": 6
+   },
+   {
+    "k": 33,
+    "t": 111.54,
+    "meanMs": -13,
+    "spreadMs": 27
+   },
+   {
+    "k": 34,
+    "t": 114.87,
+    "meanMs": -65,
+    "spreadMs": 17
+   },
+   {
+    "k": 35,
+    "t": 118.16,
+    "meanMs": -65,
+    "spreadMs": 19
+   },
+   {
+    "k": 36,
+    "t": 121.48,
+    "meanMs": -73,
+    "spreadMs": 33
+   },
+   {
+    "k": 37,
+    "t": 124.8,
+    "meanMs": -82,
+    "spreadMs": 14
+   },
+   {
+    "k": 38,
+    "t": 128.07,
+    "meanMs": 5,
+    "spreadMs": 15
+   },
+   {
+    "k": 39,
+    "t": 131.39,
+    "meanMs": -18,
+    "spreadMs": 12
+   }
+  ],
+  "rhythmUncoupled15": 578,
+  "startup": [
+   {
+    "stroke": 1,
+    "arcDeg": 22.6,
+    "peakN": 444
+   },
+   {
+    "stroke": 2,
+    "arcDeg": 25.3,
+    "peakN": 543
+   },
+   {
+    "stroke": 3,
+    "arcDeg": 27.7,
+    "peakN": 663
+   },
+   {
+    "stroke": 4,
+    "arcDeg": 30.6,
+    "peakN": 757
+   },
+   {
+    "stroke": 5,
+    "arcDeg": 31.4,
+    "peakN": 750
+   },
+   {
+    "stroke": 6,
+    "arcDeg": 31.3,
+    "peakN": 743
+   },
+   {
+    "stroke": 7,
+    "arcDeg": 31.6,
+    "peakN": 710
+   },
+   {
+    "stroke": 8,
+    "arcDeg": 32.1,
+    "peakN": 678
+   },
+   {
+    "stroke": 9,
+    "arcDeg": 32.8,
+    "peakN": 661
+   },
+   {
+    "stroke": 10,
+    "arcDeg": 33.7,
+    "peakN": 654
+   },
+   {
+    "stroke": 11,
+    "arcDeg": 34.6,
+    "peakN": 651
+   },
+   {
+    "stroke": 12,
+    "arcDeg": 35.5,
+    "peakN": 645
+   },
+   {
+    "stroke": 13,
+    "arcDeg": 36.4,
+    "peakN": 633
+   },
+   {
+    "stroke": 14,
+    "arcDeg": 37.2,
+    "peakN": 617
+   },
+   {
+    "stroke": 15,
+    "arcDeg": 36.4,
+    "peakN": 601
+   },
+   {
+    "stroke": 16,
+    "arcDeg": 38,
+    "peakN": 588
+   },
+   {
+    "stroke": 17,
+    "arcDeg": 37.4,
+    "peakN": 577
+   },
+   {
+    "stroke": 18,
+    "arcDeg": 37.4,
+    "peakN": 578
+   }
+  ],
+  "pivot60": {
+   "turnedDeg": 94.59315244352193,
+   "maxKn": 0.1615939799751909
+  },
+  "turnRate": {
+   "assistDegS": 1.354645493324553,
+   "rudderOnlyDegS": 0.71248382002173
+  },
+  "turn2kn": {
+   "rateDegS": 1.385,
+   "kn": 0.268,
+   "reachedAt": 74.8
+  },
+  "rotation": {
+   "swaps": 15,
+   "list": [
+    {
+     "t": 611,
+     "oar": 0,
+     "out": 0,
+     "in": 6,
+     "walk": 4.3
+    },
+    {
+     "t": 1102,
+     "oar": 3,
+     "out": 3,
+     "in": 7,
+     "walk": 3.4
+    },
+    {
+     "t": 1135,
+     "oar": 4,
+     "out": 4,
+     "in": 0,
+     "walk": 7.3
+    },
+    {
+     "t": 1282,
+     "oar": 0,
+     "out": 6,
+     "in": 3,
+     "walk": 7.6
+    },
+    {
+     "t": 1587,
+     "oar": 4,
+     "out": 0,
+     "in": 4,
+     "walk": 6
+    },
+    {
+     "t": 1668,
+     "oar": 3,
+     "out": 7,
+     "in": 6,
+     "walk": 6.7
+    },
+    {
+     "t": 2053,
+     "oar": 4,
+     "out": 4,
+     "in": 7,
+     "walk": 6
+    },
+    {
+     "t": 2189,
+     "oar": 3,
+     "out": 6,
+     "in": 0,
+     "walk": 3.4
+    },
+    {
+     "t": 2543,
+     "oar": 3,
+     "out": 0,
+     "in": 4,
+     "walk": 3.4
+    },
+    {
+     "t": 2619,
+     "oar": 0,
+     "out": 3,
+     "in": 6,
+     "walk": 7.6
+    }
+   ]
+  },
+  "waterRead": {
+   "U6_off": {
+    "kn": 0.531,
+    "hs": 0.78,
+    "missedPct": 8.03
+   },
+   "U6_reading": {
+    "kn": 0.637,
+    "hs": 0.78,
+    "missedPct": 0.26
+   },
+   "U10_off": {
+    "kn": 0.21,
+    "hs": 1.26,
+    "missedPct": 10.52
+   },
+   "U10_reading": {
+    "kn": 0.23,
+    "hs": 1.26,
+    "missedPct": 0.97
+   }
+  },
+  "animatorView": {
+   "walkSamples": 633,
+   "minStanceClearance": 0.692,
+   "worstHalfBeamExcess": -0.725,
+   "modes": [
+    "row",
+    "rest",
+    "walk",
+    "stepIn",
+    "stepOut"
+   ],
+   "reliefFirstDrives": 1,
+   "secondMenOnLoom": 167,
+   "yawPairs": 631,
+   "maxYawStepDeg": 1.43
+  },
+  "allocation": "skipped: run with node --expose-gc"
+ }
+}

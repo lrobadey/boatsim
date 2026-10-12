@@ -42,7 +42,9 @@ class GradeEffect extends Effect {
         c *= mix(shadowTint, hiTint, smoothstep(0.05, 1.2, l));
         // moonlit night: blue shift & desaturate (scotopic)
         float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
-        c = mix(c, lum * vec3(0.62, 0.78, 1.12), nightTint * 0.55);
+        // Cool the dim adaptation range while retaining warm fire/lantern highlights.
+        float scotopic = nightTint * 0.35 * (1.0 - smoothstep(0.04, 0.45, lum));
+        c = mix(c, lum * vec3(0.62, 0.78, 1.12), scotopic);
         // spyglass: circular mask
         if (spyglass > 0.0) {
           vec2 p = (uv - 0.5) * vec2(resolution.x / resolution.y, 1.0);
@@ -92,7 +94,27 @@ export class Pipeline {
   private timerExt: { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null = null;
   private activeQuery: WebGLQuery | null = null;
   private pendingQueries: WebGLQuery[] = [];
+  private readonly onContextLost = () => {
+    // Query objects belong to the lost context. Do not call into GL while it is unavailable.
+    this.activeQuery = null;
+    this.pendingQueries.length = 0;
+    this.gpuMs = 0;
+    this.gpuSamples.length = 0;
+  };
+  private readonly onContextRestored = () => {
+    this.timerExt = this.renderer.getContext().getExtension('EXT_disjoint_timer_query_webgl2');
+    this.activeQuery = null;
+    this.pendingQueries.length = 0;
+    this.gpuMs = 0;
+    this.gpuSamples.length = 0;
+  };
   gpuMs = 0;
+  /** Bounded raw samples for development comparisons; EMA remains the adaptation signal. */
+  readonly gpuSamples: number[] = [];
+  /** Review pages may raise this for a complete timed run; normal retention stays bounded. */
+  gpuSampleLimit = 600;
+  /** Stage elapsed queries are exclusive with whole-frame elapsed queries. */
+  profileEnvironment = false;
   private upBlockedAt = 0; // render scale that last overloaded the GPU (don't retry it for a while)
   private upBlockT = 0;
 
@@ -147,6 +169,8 @@ export class Pipeline {
     });
 
     this.timerExt = this.renderer.getContext().getExtension('EXT_disjoint_timer_query_webgl2');
+    this.renderer.domElement.addEventListener('webglcontextlost', this.onContextLost);
+    this.renderer.domElement.addEventListener('webglcontextrestored', this.onContextRestored);
 
     // measure the display refresh interval for adaptive resolution
     let last = performance.now();
@@ -188,7 +212,7 @@ export class Pipeline {
   /** bracket all of a frame's GPU work */
   beginGpuTimer() {
     const ext = this.timerExt;
-    if (!ext || this.activeQuery || this.pendingQueries.length > 4) return;
+    if (!ext || this.profileEnvironment || this.activeQuery || this.pendingQueries.length > 4) return;
     const gl = this.renderer.getContext() as WebGL2RenderingContext;
     const q = gl.createQuery();
     if (!q) return;
@@ -209,10 +233,30 @@ export class Pipeline {
       if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) break;
       const disjoint = gl.getParameter(ext.GPU_DISJOINT_EXT);
       const ms = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6;
-      if (!disjoint && ms > 0) this.gpuMs = this.gpuMs === 0 ? ms : this.gpuMs + (ms - this.gpuMs) * 0.08;
+      if (!disjoint && ms > 0) {
+        this.gpuMs = this.gpuMs === 0 ? ms : this.gpuMs + (ms - this.gpuMs) * 0.08;
+        this.gpuSamples.push(ms);
+        if (this.gpuSamples.length > this.gpuSampleLimit) this.gpuSamples.shift();
+      }
       gl.deleteQuery(q);
       this.pendingQueries.shift();
     }
+  }
+
+  /** Reset raw GPU measurements and discard any queries left over from the previous mode. */
+  resetGpuSamples(limit = this.gpuSampleLimit) {
+    this.gpuSampleLimit = Math.max(1, Math.floor(limit));
+    const gl = this.renderer.getContext() as WebGL2RenderingContext;
+    const ext = this.timerExt;
+    if (this.activeQuery) {
+      if (ext) gl.endQuery(ext.TIME_ELAPSED_EXT);
+      gl.deleteQuery(this.activeQuery);
+      this.activeQuery = null;
+    }
+    for (const query of this.pendingQueries) gl.deleteQuery(query);
+    this.pendingQueries.length = 0;
+    this.gpuSamples.length = 0;
+    this.gpuMs = 0;
   }
 
   setSize(w: number, h: number) {

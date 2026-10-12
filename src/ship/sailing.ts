@@ -7,8 +7,8 @@ const AIR_DENSITY = 1.225;
 const PI = Math.PI;
 const INCIDENCE_START = (2 * PI) / 180;
 const INCIDENCE_FULL = (9 * PI) / 180;
-const SEPARATION_START = (18 * PI) / 180;
-const SEPARATION_FULL = (32 * PI) / 180;
+export const SEPARATION_START = (18 * PI) / 180;
+export const SEPARATION_FULL = (32 * PI) / 180;
 /** Gameplay calibration/preferences, not historically measured coefficients. */
 export const SAIL_AERO = Object.freeze({
   pressureDrag: 1.7,

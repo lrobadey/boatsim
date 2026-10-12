@@ -1,0 +1,95 @@
+{
+  "checkedPairs": [
+    {
+      "scene": "0724",
+      "before": "before-0724-state.json",
+      "after": "after-0724-state.json",
+      "matchingFields": [
+        "hours",
+        "phase",
+        "exposure",
+        "cloudCoverage",
+        "cloudWind",
+        "shaderTime",
+        "shipTime",
+        "viewport",
+        "camera",
+        "cameraQuaternion",
+        "shipPose"
+      ]
+    },
+    {
+      "scene": "1230",
+      "before": "before-1230-state.json",
+      "after": "after-1230-state.json",
+      "matchingFields": [
+        "hours",
+        "phase",
+        "exposure",
+        "cloudCoverage",
+        "cloudWind",
+        "shaderTime",
+        "shipTime",
+        "viewport",
+        "camera",
+        "cameraQuaternion",
+        "shipPose"
+      ]
+    },
+    {
+      "scene": "1700",
+      "before": "before-1700-state.json",
+      "after": "after-1700-state.json",
+      "matchingFields": [
+        "hours",
+        "phase",
+        "exposure",
+        "cloudCoverage",
+        "cloudWind",
+        "shaderTime",
+        "shipTime",
+        "viewport",
+        "camera",
+        "cameraQuaternion",
+        "shipPose"
+      ]
+    },
+    {
+      "scene": "1930",
+      "before": "before-1930-state.json",
+      "after": "after1930-coherent-state.json",
+      "matchingFields": [
+        "hours",
+        "phase",
+        "exposure",
+        "cloudCoverage",
+        "cloudWind",
+        "shaderTime",
+        "shipTime",
+        "viewport",
+        "camera",
+        "cameraQuaternion",
+        "shipPose"
+      ]
+    },
+    {
+      "scene": "2300",
+      "before": "before-2300-state.json",
+      "after": "after2300-coherent-state.json",
+      "matchingFields": [
+        "hours",
+        "phase",
+        "exposure",
+        "cloudCoverage",
+        "cloudWind",
+        "shaderTime",
+        "shipTime",
+        "viewport",
+        "camera",
+        "cameraQuaternion",
+        "shipPose"
+      ]
+    }
+  ],
+  "note": "09:00 reference predates per-capture JSON; its deterministic query and frozen camera are recorded in the baseline evidence. The five listed pairs have exact telemetry equality for the fields shown."
+}

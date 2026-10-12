@@ -1,0 +1,150 @@
+{
+  "purpose": "Final startup warmup covers HDR main, refraction, reflection clipping, and cloud variants; manual live transition check, not a benchmark.",
+  "initial": {
+    "geometries": 236,
+    "programs": 438,
+    "textures": 94
+  },
+  "final": {
+    "textures": 94,
+    "geometries": 252,
+    "programs": 439
+  },
+  "hours": 10.99760833333336,
+  "environment": {
+    "generation": 41,
+    "ageMs": 1425.5,
+    "previousAgeMs": 1425.5,
+    "nextAgeMs": 1425.5,
+    "dirtyReason": "age",
+    "captureMs": 0.20000000298023224,
+    "filterMs": 0,
+    "stagedLatencyMs": 88.80000000074506,
+    "appliedBlend": 0,
+    "deadlineMissed": false,
+    "deadlineMisses": 1,
+    "blend": 1,
+    "blendDurationMs": 200,
+    "blendShortened": false,
+    "captures": 41,
+    "stagedFace": -1,
+    "stagedCaptures": true,
+    "forceCurrent": false,
+    "deadlineReason": "old-endpoint-age-limit",
+    "deadlineReasons": {
+      "old-endpoint-age-limit": 1
+    },
+    "cancellationCount": 0,
+    "cancellationReasons": {},
+    "forceCount": 8,
+    "forceReason": "clock-discontinuity",
+    "forceReasons": {
+      "explicit-force": 1,
+      "clock-discontinuity": 7
+    },
+    "resources": {
+      "basis": "source-estimate",
+      "driverOverhead": "unknown",
+      "bundleCount": 2,
+      "poolReadyCount": 2,
+      "poolReady": true,
+      "bundles": [
+        {
+          "raw": {
+            "width": 256,
+            "height": 256,
+            "faces": 6,
+            "mipLevels": 9,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 4194288,
+            "depthBytes": 131072,
+            "totalBytes": 4325360
+          },
+          "clear": {
+            "width": 32,
+            "height": 32,
+            "faces": 6,
+            "mipLevels": 6,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 65520,
+            "depthBytes": 2048,
+            "totalBytes": 67568
+          },
+          "pmrem": {
+            "width": 768,
+            "height": 1024,
+            "faces": 1,
+            "mipLevels": 1,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 6291456,
+            "depthBytes": 0,
+            "totalBytes": 6291456
+          },
+          "totalBytes": 10684384
+        },
+        {
+          "raw": {
+            "width": 256,
+            "height": 256,
+            "faces": 6,
+            "mipLevels": 9,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 4194288,
+            "depthBytes": 131072,
+            "totalBytes": 4325360
+          },
+          "clear": {
+            "width": 32,
+            "height": 32,
+            "faces": 6,
+            "mipLevels": 6,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 65520,
+            "depthBytes": 2048,
+            "totalBytes": 67568
+          },
+          "pmrem": {
+            "width": 768,
+            "height": 1024,
+            "faces": 1,
+            "mipLevels": 1,
+            "format": "RGBAFormat",
+            "formatValue": 1023,
+            "type": "HalfFloatType",
+            "typeValue": 1016,
+            "bytesPerPixel": 8,
+            "colorBytes": 6291456,
+            "depthBytes": 0,
+            "totalBytes": 6291456
+          },
+          "totalBytes": 10684384
+        }
+      ],
+      "rawTotalBytes": 8650720,
+      "clearTotalBytes": 135136,
+      "pmremTotalBytes": 12582912,
+      "pairTotalBytes": 21368768
+    }
+  },
+  "environmentStatus": "ready"
+}

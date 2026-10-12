@@ -4,6 +4,7 @@ import type { ShipVisual } from '../ship/shipVisual';
 import type { RowEventCursor } from '../ship/rowing';
 import type { WaveField } from './waves';
 import { FOG_PARS_GLSL, shared } from '../gfx/shared';
+import { registerEnvironmentMaterial } from '../gfx/environmentMaterials';
 import { LAYER_NOREFLECT } from '../core/pipeline';
 import { TRIREME_HULL, type HullShape } from '../ship/hullShape';
 
@@ -200,6 +201,7 @@ export class OarWater {
     const sprayMat = new THREE.ShaderMaterial({
       uniforms: {
         uFogEnv: shared.uFogEnv, uFogDensity: shared.uFogDensity, uFogHeight: shared.uFogHeight,
+        uFogEnvNext: shared.uFogEnvNext, uEnvBlend: shared.uEnvBlend,
         uFogEnvScale: shared.uFogEnvScale, uSunDir: shared.uSunDir, uSunColor: shared.uSunColor,
         uViewH: this.viewH,
       },
@@ -231,7 +233,7 @@ export class OarWater {
           if (r2 > 1.0) discard;
           vec3 L = normalize(uSunDir);
           vec3 V = normalize(vWorld - cameraPosition);
-          vec3 skyIrr = textureLod(uFogEnv, vec3(0.0, 1.0, 0.0), 5.0).rgb;
+          vec3 skyIrr = sampleSkyEnv(vec3(0.0, 1.0, 0.0), 5.0);
           float sun = max(L.y, 0.0);
           // white water: the same light balance the ocean uses for foam
           vec3 white = uSunColor * (sun * 0.3 + 0.05) + skyIrr * 0.95;
@@ -257,6 +259,7 @@ export class OarWater {
       depthWrite: false,
       side: THREE.DoubleSide,
     });
+    registerEnvironmentMaterial(sprayMat);
     this.spray = new THREE.Mesh(this.sprayGeo, sprayMat);
     this.spray.frustumCulled = false;
     this.spray.renderOrder = 30;

@@ -13,12 +13,15 @@ import { GERSTNER_MIN_LAMBDA, jonswap, jonswapPeak } from './waves';
  *
  * Per cascade and frame: evolve h(k,t) and its derivative spectra -> 2 x log2(N) Stockham butterfly
  * passes (inverse DFT, no bit reversal) -> one combine pass that writes
- *   slope  (sx, sz, sx^2, sz^2)  — mip-mapped, so filtered texels also carry the slope *variance*
+ *   slope  (sx, sz, sx^2 + sz^2, J) — mip-mapped, so filtered texels also carry the slope *variance*
  *                                   the shader turns into GGX roughness (LEAN-style), keeping the
- *                                   distant sea glittering correctly instead of aliasing;
- *   disp   (Dx, Dy, Dz, J)       — choppy displacement and its Jacobian;
- *   foam   persistent whitecap foam: max(previous * decay, breaking(J)) — lives in the periodic
- *                                   tile domain, so foam drifts and frays with the waves that made it.
+ *                                   distant sea glittering correctly instead of aliasing; and the
+ *                                   choppy surface's Jacobian (compression -> whitecaps);
+ *   disp   (Dx, Dy, Dz, foam)    — choppy displacement, and persistent whitecap foam:
+ *                                   max(previous * decay, breaking(J)) — it lives in the periodic tile
+ *                                   domain, so foam drifts and frays with the waves that made it.
+ * Two outputs, not three: the ocean's vertex and fragment stages share one texture unit for disp
+ * (three.js counts units across both stages against a 16-unit budget).
  * Real-valued outputs are packed two per complex IFFT (a + i b) so 8 fields cost 4 transforms.
  */
 const G = 9.81;
@@ -115,7 +118,6 @@ uniform float uFoamBias;
 uniform float uFoamGain;
 layout(location = 0) out vec4 oSlope;
 layout(location = 1) out vec4 oDisp;
-layout(location = 2) out vec4 oFoam;
 void main() {
   ivec2 id = ivec2(gl_FragCoord.xy);
   // centred spectrum -> (-1)^(x+y) after the transform
@@ -126,11 +128,11 @@ void main() {
   float J = jxx * jzz - jxz * jxz;
   // slope of the choppy (displaced) surface: horizontal compression steepens the faces
   vec2 s = b.xy / max(vec2(jxx, jzz), 0.35);
-  oSlope = vec4(s, s * s);
-  oDisp = vec4(a.x * uChop, a.y, a.z * uChop, J);
-  float prev = texelFetch(uPrevFoam, id, 0).r;
+  // the shader needs only the total slope variance: mean of (sx^2 + sz^2) minus the mean slope squared
+  oSlope = vec4(s, dot(s, s), J);
+  float prev = texelFetch(uPrevFoam, id, 0).a;
   float src = clamp((uFoamBias - J) * uFoamGain, 0.0, 1.0);
-  oFoam = vec4(max(prev * uDecay, src), 0.0, 0.0, 1.0);
+  oDisp = vec4(a.x * uChop, a.y, a.z * uChop, max(prev * uDecay, src));
 }`;
 
 /** Lanczos log-gamma (for the directional spreading normalisation) */
@@ -200,7 +202,7 @@ export class OceanFFT {
       wrapT: THREE.RepeatWrapping,
       depthBuffer: false,
       generateMipmaps: true,
-      count: 3,
+      count: 2,
     };
     for (const d of defs) {
       const noise = new Float32Array(N * N * 2);
@@ -318,10 +320,6 @@ export class OceanFFT {
     const c = this.cascades[i];
     return c.out[c.cur].textures[1];
   }
-  foam(i: number) {
-    const c = this.cascades[i];
-    return c.out[c.cur].textures[2];
-  }
 
   update(renderer: THREE.WebGLRenderer, time: number, dt: number) {
     const prevTarget = renderer.getRenderTarget();
@@ -361,7 +359,7 @@ export class OceanFFT {
       c.cur ^= 1;
       cu.uIn0.value = src.textures[0];
       cu.uIn1.value = src.textures[1];
-      cu.uPrevFoam.value = prev.textures[2];
+      cu.uPrevFoam.value = prev.textures[1];
       this.quad.material = this.combine;
       renderer.setRenderTarget(c.out[c.cur]);
       renderer.render(this.scene, this.cam);
@@ -380,13 +378,15 @@ export class OceanFFT {
     const f = THREE.DataUtils.fromHalfFloat;
     for (let p = 0; p < N * N; p++) {
       const h = f(buf[p * 4 + 1]);
-      const J = f(buf[p * 4 + 3]);
       out.hRms += h * h;
+    }
+    renderer.readRenderTargetPixels(c.out[c.cur], 0, 0, N, N, buf, undefined, 0);
+    for (let p = 0; p < N * N; p++) {
+      out.sRms += f(buf[p * 4 + 2]);
+      const J = f(buf[p * 4 + 3]);
       out.jMin = Math.min(out.jMin, J);
       if (J < this.combine.uniforms.uFoamBias.value) out.jBelow++;
     }
-    renderer.readRenderTargetPixels(c.out[c.cur], 0, 0, N, N, buf, undefined, 0);
-    for (let p = 0; p < N * N; p++) out.sRms += f(buf[p * 4 + 2]) + f(buf[p * 4 + 3]);
     out.hRms = Math.sqrt(out.hRms / (N * N));
     out.sRms = Math.sqrt(out.sRms / (N * N));
     out.jBelow /= N * N;

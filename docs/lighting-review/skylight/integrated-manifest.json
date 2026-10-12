@@ -1,0 +1,30 @@
+{
+  "reference": "skylight-baseline-01",
+  "snapshot": "/private/tmp/boatsim-skylight-integrated-01",
+  "purpose": "Lighting-only overlay onto frozen world/physics baseline, to prevent unrelated concurrent work or HMR from changing comparisons. Shared workspace remains fully integrated with concurrent changes.",
+  "overlaidFiles": {
+    "src/core/pipeline.ts": "ce40548621ecc265d6c388bdd44131e6fe1064b226eb48567ac243fed13b6b28",
+    "src/core/quality.ts": "eb60cb009b9a0c3efe9f92209251eaed74ab8fe3c8df3210f18d7ce2ec50fb1b",
+    "src/gfx/shared.ts": "3a258335ec22a9ed13d463417709b59275a42a22893e89d45b077261ce4e07cc",
+    "src/gfx/clouds.ts": "1604ae3e62923f3b64beffbfa73aafccae6ae579768f2cbd21111df64d45cea7",
+    "src/gfx/cloudModel.ts": "9e47237f26e87c4f1ca5e197ecbd519874c6fab5cabe1ad5533e0655ed16b69e",
+    "src/gfx/skyEnvironment.ts": "1403d74bd3cbb78b618496ca2dcf76d4981c475eacaa52ba622542832eda2085",
+    "src/gfx/environmentPolicy.ts": "d628886d5d46f9f26047edcf1dd6529e911e8cea45652cbe9d502245f9db2ff5",
+    "src/gfx/gpuProfiler.ts": "7d0ccea5cef173635f579018a264253a5f62c4a5197bf31d308721d9cdc1850d",
+    "src/gfx/lightingFixtures.ts": "e97cde9d5c1e6bf42b9466d632d0ded8583eae034bc6f38544b89bcb9a5c5470",
+    "src/world/ocean.ts": "79c0c142ea3a6f12b2e9864a46a1067163c48e4661ef77af395b9e4dd00c1fc8",
+    "src/world/oceanFFT.ts": "5dbd90197df4e3bbfa2ad9d6d9529459c5137a3267ebe8e50a30398fa534855b",
+    "src/world/oarWater.ts": "a5629f99e6bf40fd9a26689423e3b6abcd78dd4a97e937375f30e8996a236b4e",
+    "src/world/sky.ts": "c7e61f6f872f8e2a742843c2f4893a48d6f25b4669b4f2c562759acb53a4f2d6",
+    "src/world/lightingState.ts": "0cee20ef8ceab4b64123436c2b789dc9bcba1387e33248018eb8a65186ebc7fe",
+    "src/lightingReview.ts": "949316498df8f175ced23e0d437b0a7b5db4dbf396564a1e0e1ed7f85bceff59",
+    "src/game.ts": "250e8e5229564aced0ca4cf3fc07cf08fece996712e327dba71d5aa97926b09e",
+    "src/gfx/environmentMaterials.ts": "f86fb9189c5bfae6afe9098c63df9113785a61c708486c3784a77b34caf25c9e",
+    "src/main.ts": "bd3be0a4b1a1a2a81cbde59785ae0a18b773e8981710d31b3e105cc41e32e695",
+    "src/gfx/reflection.ts": "874e1aff13370ce87d8e321bca6dcc38e17fe4839aa38dc79f3aeb1ecaf6c4fe"
+  },
+  "gameExclusions": [
+    "CrewSolids import, property, construction and per-frame call from unrelated crew work",
+    "Concurrent SeaState import, field, initialization and updates; frozen wave/physics baseline retained"
+  ]
+}

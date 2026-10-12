@@ -1,0 +1,36 @@
+{
+  "baseline": {
+    "file": "before-day-final.json",
+    "wallSeconds": 60.213199999999254,
+    "simulationSeconds": 60.19780000000079,
+    "simulationWallRatio": 0.9997442421263366,
+    "gpuMedianMs": 33.8814785,
+    "gpuP95Ms": 54.467833,
+    "gpuP99Ms": 100.502458,
+    "samples": 2368,
+    "captures": 53,
+    "firstResources": null,
+    "finalResources": null
+  },
+  "hdrWarm": {
+    "file": "after-day-hdr-warm.json",
+    "wallSeconds": 60.196699999999254,
+    "simulationSeconds": 59.84830000000043,
+    "simulationWallRatio": 0.9942123073191914,
+    "gpuMedianMs": 19.039791,
+    "gpuP95Ms": 33.615458,
+    "gpuP99Ms": 58.1085,
+    "samples": 3319,
+    "captures": 17,
+    "firstResources": {
+      "textures": 93,
+      "geometries": 236,
+      "programs": 277
+    },
+    "finalResources": {
+      "textures": 94,
+      "geometries": 239,
+      "programs": 316
+    }
+  }
+}

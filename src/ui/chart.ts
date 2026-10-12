@@ -60,10 +60,18 @@ export class Chart {
   private statKey = '';
   private fontsOk = false;
   private berths: { cx: number; cz: number }[] = [];
+  private ports: { name: string; x: number; z: number }[] = [];
 
   /** berth positions (world xz) for the anchor icons */
   setBerths(berths: { cx: number; cz: number }[]) {
     this.berths = berths;
+  }
+
+  /** harbour names, each drawn at its pier root (the shore end of the mole); replaces the single "Harbour" label */
+  setPorts(ports: { name: string; x: number; z: number }[]) {
+    this.ports = ports;
+    this.statKey = '';
+    this.layout();
   }
 
   constructor(private gen: WorldGenResult, private terrain: Terrain) {
@@ -206,8 +214,15 @@ export class Chart {
     g.textAlign = 'left';
     g.fillText('Temple', tx + 7, ty);
     g.textAlign = 'center';
-    const [hx, hy] = this.toPx(harbour.x, harbour.z);
-    g.fillText('Harbour', hx, hy - 16);
+    if (this.ports.length) {
+      for (const p of this.ports) {
+        const [px, py] = this.toPx(p.x, p.z);
+        g.fillText(p.name, px, py - 16);
+      }
+    } else {
+      const [hx, hy] = this.toPx(harbour.x, harbour.z);
+      g.fillText('Harbour', hx, hy - 16);
+    }
     g.shadowBlur = 0;
 
     // north, top right inside the plate

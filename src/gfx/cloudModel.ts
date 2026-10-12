@@ -96,10 +96,11 @@ float vcDensityLod(vec3 p, float hf, bool cheap, float shapeLod) {
 
   // Erode only the wispy silhouette. Solid interiors and the cheap light/shadow path do not pay
   // for the detail texture. uCloudErosion can be set to zero to inspect the primary form.
-  if (!cheap && uCloudErosion > 0.0 && body < 0.46) {
+  float detailFade = 1.0 - smoothstep(0.5, 2.5, shapeLod);
+  if (!cheap && uCloudErosion > 0.0 && body < 0.46 && detailFade > 0.0) {
     float edge = 1.0 - smoothstep(0.14, 0.46, body);
     float detail = texture(uCloudDetail, q / 1500.0).r;
-    body = max(0.0, body - uCloudErosion * edge * detail);
+    body = max(0.0, body - uCloudErosion * edge * detail * detailFade);
   }
   float localDensity = mix(0.18, 0.42, weather.a);
   float coverageFade = smoothstep(0.0, 0.08, clamp(uCloudCoverage, 0.0, 1.0));

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { shared } from './shared';
 import { CLOUD_MODEL_GLSL } from './cloudModel';
 import { CLOUD_FLOW_GLSL } from './cloudFlow';
+import { registerEnvironmentMaterial } from './environmentMaterials';
 
 /**
  * Volumetric cumulus.
@@ -20,20 +21,40 @@ import { CLOUD_FLOW_GLSL } from './cloudFlow';
  * the same clouds. A top-down cloud-shadow map lets terrain and sea receive moving cloud shadows.
  */
 export const CLOUD_GLSL = /* glsl */ `
+#ifndef SKY_ENV_BLEND
+#define SKY_ENV_BLEND 0
+#endif
 ${CLOUD_MODEL_GLSL}
 uniform samplerCube uCloudHazeSky;
+#if SKY_ENV_BLEND && !defined(CLOUD_HAZE_SINGLE_SOURCE)
+uniform samplerCube uCloudHazeSkyNext;
+uniform float uCloudHazeBlend;
+#endif
 uniform float uCloudHazeReady;
-vec3 vcHazeSky(vec3 rd) {
+vec3 vcHazeSkySample(samplerCube sky, vec3 rd) {
 #if __VERSION__ >= 300
-  return textureLod(uCloudHazeSky, rd, 1.0).rgb;
+  return textureLod(sky, rd, 1.0).rgb;
 #else
-  return textureCube(uCloudHazeSky, rd).rgb;
+  return textureCube(sky, rd).rgb;
+#endif
+}
+vec3 vcHazeSky(vec3 rd) {
+  vec3 currentRadiance = vcHazeSkySample(uCloudHazeSky, rd);
+#if SKY_ENV_BLEND && !defined(CLOUD_HAZE_SINGLE_SOURCE)
+  vec3 nextEnv = vcHazeSkySample(uCloudHazeSkyNext, rd);
+  return mix(currentRadiance, nextEnv, clamp(uCloudHazeBlend, 0.0, 1.0));
+#else
+  return currentRadiance;
 #endif
 }
 // march a view ray; returns premultiplied radiance (rgb) and transmittance (a).
 // Representative distance is the opacity-weighted centre of the visible cloud (metres).
 vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float representativeDistance) {
   representativeDistance = 0.0;
+  // A grazing ray can reach clouds hundreds of kilometres away. Filter morphology
+  // over its pixel cone as well as the integration interval; LOD0 aliases into bands.
+  // Derivatives also account for reduced-resolution and environment-cube captures.
+  float rayCone = max(length(dFdx(rd)), length(dFdy(rd)));
   vec3 ro = uCloudOrigin;
   vec3 roE = vec3(0.0, ro.y + C_EARTH, 0.0);
   vec2 interval = vcCloudInterval(roE, rd);
@@ -69,8 +90,9 @@ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float re
       float shift = (jitter - 0.5) * 0.2;
       vec3 pa = ro + rd * (cellStart + (0.25 + shift) * cellLen);
       vec3 pb = ro + rd * (cellStart + (0.75 + shift) * cellLen);
-      if (vcDensity(pa, vcHeightFrac(pa), true) <= 0.0 &&
-          vcDensity(pb, vcHeightFrac(pb), true) <= 0.0) continue;
+      float probeLod = clamp(log2(max(max(cellLen * 0.25, (cellStart + cellLen) * rayCone), 56.25) / 56.25), 0.0, 4.0);
+      if (vcDensityLod(pa, vcHeightFrac(pa), true, probeLod) <= 0.0 &&
+          vcDensityLod(pb, vcHeightFrac(pb), true, probeLod) <= 0.0) continue;
     }
     // Three samples per cell through 60 cells. Above that, distribute a fixed 180
     // sample budget over the actual cell count, including short clipped rays.
@@ -83,7 +105,8 @@ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float re
       float t = cellStart + (float(j) + 0.5 + (jitter - 0.5) * 0.5) * fineStep;
       vec3 p = ro + rd * t;
       float hf = vcHeightFrac(p);
-      float d = vcDensity(p, hf, false);
+      float shapeLod = clamp(log2(max(max(fineStep * 0.5, t * rayCone), 56.25) / 56.25), 0.0, 4.0);
+      float d = vcDensityLod(p, hf, false, shapeLod);
       if (d <= 0.002) continue;
       cellHit = true;
       if (firstHit < 0.0) firstHit = t;
@@ -323,6 +346,8 @@ export class Clouds {
       uCloudAmbTop: { value: new THREE.Color() },
       uCloudAmbBottom: { value: new THREE.Color() },
       uCloudHazeSky: { value: null },
+      uCloudHazeSkyNext: { value: null },
+      uCloudHazeBlend: { value: 0 },
       uCloudHazeReady: { value: 0 },
     };
     const mk = () =>
@@ -350,6 +375,7 @@ export class Clouds {
       depthTest: false,
       depthWrite: false,
     });
+    registerEnvironmentMaterial(this.mat);
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);
     quad.frustumCulled = false;
     this.scene.add(quad);
@@ -390,6 +416,11 @@ export class Clouds {
     sq.frustumCulled = false;
     this.shadowScene.add(sq);
     shared.uCloudShadowTex.value = this.shadowRT.texture;
+  }
+
+  /** Compile the currently selected live cloud environment variant before gameplay starts. */
+  async compileEnvironmentVariant(renderer: THREE.WebGLRenderer): Promise<void> {
+    await renderer.compileAsync(this.scene, this.cam);
   }
 
   /** top-down cloud shadow map around the camera (snapped to its texels so shadows don't swim) */
@@ -456,17 +487,27 @@ export class Clouds {
     this.shadowDirty = true;
   }
 
-  /** advance weather & lighting inputs (call every frame, also when not rendering) */
-  step(dt: number, windX: number, windZ: number, sunColor: THREE.Color, ambTop: THREE.Color, ambBottom: THREE.Color, camPos: THREE.Vector3) {
+  /** Advance cloud weather displacement (call every frame, also when not rendering). */
+  advanceWeather(dt: number, windX: number, windZ: number) {
     this.shadowElapsed += Math.max(0, Math.min(dt, 0.1));
     // upper-level wind carries the clouds ~1.6x the surface wind
     this.wind.x -= windX * 1.6 * dt;
     this.wind.y -= windZ * 1.6 * dt;
+  }
+
+  /** Apply the finalized lighting and sampling origin without advancing cloud state. */
+  applyLighting(sunColor: THREE.Color, ambTop: THREE.Color, ambBottom: THREE.Color, camPos: THREE.Vector3) {
     this.uniforms.uCloudCoverage.value = this.coverage;
     (this.uniforms.uCloudSunColor.value as THREE.Color).copy(sunColor);
     (this.uniforms.uCloudAmbTop.value as THREE.Color).copy(ambTop);
     (this.uniforms.uCloudAmbBottom.value as THREE.Color).copy(ambBottom);
     (this.uniforms.uCloudOrigin.value as THREE.Vector3).copy(camPos);
+  }
+
+  /** Backwards-compatible combined update for callers that have not split frame ordering yet. */
+  step(dt: number, windX: number, windZ: number, sunColor: THREE.Color, ambTop: THREE.Color, ambBottom: THREE.Color, camPos: THREE.Vector3) {
+    this.advanceWeather(dt, windX, windZ);
+    this.applyLighting(sunColor, ambTop, ambBottom, camPos);
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera, sceneDepth?: THREE.Texture, reversedDepth = false) {

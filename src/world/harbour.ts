@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { Sites, WorldGenResult } from './worldgenTypes';
+import type { HarbourSite, Sites, WorldGenResult } from './worldgenTypes';
 import type { Terrain } from './terrain';
 import type { Solid, BoxSolid } from './walkable';
+import { rng } from '../core/util';
 
 /**
  * Harbour layout derived on the main thread from the generated pier site: berths alongside the
@@ -9,7 +10,10 @@ import type { Solid, BoxSolid } from './walkable';
  * CONTRACT (lead-owned shape): implementers fill in buildHarbour(), not the types.
  */
 export interface Berth {
+  /** global berth id: harbour k owns 2k and 2k+1 */
   id: number;
+  /** the harbour (site id) this berth belongs to */
+  port: number;
   /** e.g. "Mole, east side" */
   name: string;
   /** where the ship's CoG sits when berthed (world xz) */
@@ -25,11 +29,16 @@ export interface Berth {
   length: number;
   /** quay top height (world y) */
   top: number;
+  /** distance from (cx, cz) back to the quay face along -n (m); each ship docks off the face by her own beam */
+  face: number;
   /** bollards on the quay top (world) */
   bollards: THREE.Vector3[];
 }
 
 export interface HarbourLayout {
+  /** harbour id (0 = main) and island name */
+  id: number;
+  name: string;
   /** pier root on the shore, unit direction (shore → sea), length, width, top (world y) */
   root: THREE.Vector2;
   dir: THREE.Vector2;
@@ -45,6 +54,8 @@ export interface HarbourLayout {
   shipColliders: BoxSolid[];
   /** quay steps for swimmers, world position of the bottom tread (for UI/minimap) */
   steps: THREE.Vector3;
+  /** the trade stall's interaction point: the merchant figure's quay point and facing (§8) */
+  stall: StallSite;
 }
 
 /** Quay dimensions: shared by the solids here and the pier visuals in props.ts. */
@@ -128,9 +139,97 @@ export function houseFootprint(area: number): [number, number] {
   return area < 22 ? [4, 4] : area < 38 ? [5, 6] : [6, 8];
 }
 
-export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayout {
+/** A harbour as the layout builders see it: the per-port fields of HarbourSite (the legacy site when absent). */
+export type PortSite = Pick<HarbourSite, 'id' | 'name' | 'harbour' | 'shore' | 'pier' | 'houses'>;
+
+/** every harbour of the world; a generator without `harbours` gives the single legacy site as harbour 0 */
+export function portSites(gen: WorldGenResult): PortSite[] {
+  const s = gen.sites;
+  if (s.harbours && s.harbours.length) return s.harbours;
+  return [{ id: 0, name: 'Harbour', harbour: s.harbour, shore: s.shore, pier: s.pier, houses: s.houses }];
+}
+
+/** the trade stall of one harbour (§8): the merchant figure's quay point and facing, and the mole side it is on */
+export interface StallSite {
+  x: number;
+  y: number;
+  z: number;
+  /** figure yaw (the figure faces across the mole) */
+  yaw: number;
+  /** the side of the mole (dock life's figure side) */
+  side: 1 | -1;
+}
+
+export interface StallGeometry {
+  site: StallSite;
+  /** awning centre (kit awning: 3 m along the pier, 2.24 m across) and yaw */
+  awning: { x: number; z: number; yaw: number };
+  /** bench centre and yaw (long axis along the pier) */
+  bench: { x: number; z: number; yaw: number };
+  /** three amphorae in a row beside the bench */
+  amphorae: { x: number; z: number; yaw: number }[];
+  /** the awning's four posts (cylinders of radius STALL_POST_R, height STALL_POST_H) */
+  posts: { x: number; z: number }[];
+}
+
+/** footprint of the stall that dock life treats as pre-placed (m) */
+export const STALL_RADIUS = 1.0;
+export const STALL_POST_R = 0.045;
+export const STALL_POST_H = 2.3;
+export const STALL_BENCH = { hx: 0.8, hz: 0.2, h: 0.45 };
+
+/** dock life's figure side for harbour k: the first draw of its RNG (rng(41 + 7k)), as in buildDockLife */
+export function dockFigureSide(k: number): 1 | -1 {
+  return rng(41 + 7 * k)() < 0.5 ? 1 : -1;
+}
+
+/**
+ * Trade stall geometry for harbour k (spec §8). Along the pier a = clamp(berthStart − 10, 6, max(6, berthStart − 4));
+ * the figure stands at lateral fs·(hw − 1.1) facing across the mole. The awning centre is at lateral fs·1.8 so its
+ * posts (±1.12 across) stay on the mole; the bench is outboard at fs·2.5; the amphorae run along it at the same lateral.
+ */
+export function stallGeometry(f: PierFrame, k: number): StallGeometry {
+  const fs = dockFigureSide(k);
+  const hw = f.width / 2;
+  const a = Math.min(Math.max(f.berthStart - 10, 6), Math.max(6, f.berthStart - 4));
+  const at = (al: number, lat: number) => ({ x: f.x0 + f.ux * al + f.lx * lat, z: f.z0 + f.uz * al + f.lz * lat });
+  // yaw that points a model's -z (its facing) along (dx, dz), as in props.ts
+  const face = (dx: number, dz: number) => Math.atan2(-dx, -dz);
+  // kit objects are built with local x along the pier and local z across it: the pier-box rotation
+  const along = Math.atan2(-f.uz, f.ux);
+  const P = at(a, fs * (hw - 1.1));
+  const awning = at(a, fs * 1.8);
+  const bench = at(a - 0.9, fs * 2.5);
+  const amphorae = [0.3, 0.9, 1.5].map((d) => ({ ...at(a + d, fs * 2.5), yaw: 0 }));
+  const posts: { x: number; z: number }[] = [];
+  for (const ax of [-1.42, 1.42]) for (const lz of [-1.12, 1.12]) posts.push(at(a + ax, fs * 1.8 + lz));
+  return {
+    site: { x: P.x, y: f.top, z: P.z, yaw: face(-fs * f.lx, -fs * f.lz), side: fs },
+    awning: { x: awning.x, z: awning.z, yaw: along },
+    bench: { x: bench.x, z: bench.z, yaw: along },
+    amphorae,
+    posts,
+  };
+}
+
+/** the stall's interaction point for harbour k (the figure on the quay top) */
+export function stallSite(f: PierFrame, k: number): StallSite {
+  return stallGeometry(f, k).site;
+}
+
+export function buildHarbours(gen: WorldGenResult, terrain: Terrain): HarbourLayout[] {
   void terrain; // the dredging is already in the heightmap
-  const f = pierFrame(gen.sites.pier);
+  return portSites(gen).map((site) => buildLayout(gen, site));
+}
+
+/** the main harbour's layout (harbour 0), as before the multi-harbour change */
+export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayout {
+  return buildHarbours(gen, terrain)[0];
+}
+
+function buildLayout(gen: WorldGenResult, site: PortSite): HarbourLayout {
+  const k = site.id;
+  const f = pierFrame(site.pier);
   const hw = f.width / 2,
     top = f.top,
     bottom = QUAY.bottom,
@@ -159,9 +258,9 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
   // mole body is walkable up to the head; the head is notched by the stairs down the middle
   solids.push(pierBox(0, head, -hw, hw, bottom, top, true));
   solids.push(pierBox(head, f.length, sw, hw, bottom, top, true), pierBox(head, f.length, -hw, -sw, bottom, top, true));
-  for (let k = 0; k < f.stairs; k++) {
-    const a = head + k * QUAY.tread;
-    solids.push(pierBox(a, a + QUAY.tread, -sw, sw, bottom, top - QUAY.riser * (k + 1), true));
+  for (let i = 0; i < f.stairs; i++) {
+    const a = head + i * QUAY.tread;
+    solids.push(pierBox(a, a + QUAY.tread, -sw, sw, bottom, top - QUAY.riser * (i + 1), true));
   }
   const shipColliders: BoxSolid[] = [pierBox(0, f.length, -hw, hw, bottom, top, false)];
 
@@ -173,7 +272,8 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
     for (const v of bollards)
       solids.push({ kind: 'cyl', cx: v.x, cz: v.z, r: QUAY.bollardR, y0: top, y1: top + QUAY.bollardH, surface: 'stone', walkTop: false });
     berths.push({
-      id: berths.length,
+      id: 2 * k + berths.length,
+      port: k,
       name: `Mole, ${compassName(nx, nz)} side`,
       cx: f.x0 + f.ux * f.mid + nx * QUAY.shipOffset,
       cz: f.z0 + f.uz * f.mid + nz * QUAY.shipOffset,
@@ -183,12 +283,18 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
       nz,
       length: f.length - f.berthStart,
       top,
+      face: QUAY.shipOffset - f.width / 2,
       bollards,
     });
   }
 
-  // village houses: blocking boxes (rot follows the same yaw as the rendered house)
-  for (const h of gen.sites.houses) {
+  // trade stall (§8): the bench and the awning posts block; the figure and the amphorae are props (props.ts)
+  const stall = stallGeometry(f, k);
+  solids.push({ kind: 'box', cx: stall.bench.x, cz: stall.bench.z, hx: STALL_BENCH.hx, hz: STALL_BENCH.hz, rot: stall.bench.yaw, y0: top, y1: top + STALL_BENCH.h, surface: 'wood', walkTop: false });
+  for (const p of stall.posts) solids.push({ kind: 'cyl', cx: p.x, cz: p.z, r: STALL_POST_R, y0: top, y1: top + STALL_POST_H, surface: 'wood', walkTop: false });
+
+  // village houses of this harbour: blocking boxes (rot follows the same yaw as the rendered house)
+  for (const h of site.houses) {
     // match the rendered house: the variant's footprint scaled within 0.8-1.25 (props.ts buildVillage)
     const [vw, vl] = houseFootprint(h.w * h.l);
     const w = vw * Math.min(1.25, Math.max(0.8, h.w / vw)),
@@ -196,30 +302,34 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
     solids.push({ kind: 'box', cx: h.x, cz: h.z, hx: w / 2, hz: l / 2, rot: h.rot, y0: h.y - 1.5, y1: h.maxY + h.hgt, surface: 'stone', walkTop: false });
   }
 
-  // temple: three-tier krepidoma (walkable), cella walls and the peristyle, as in props.ts buildTemple
-  const t = gen.sites.temple;
-  const TW = 14,
-    TL = 31,
-    rot = Math.PI / 2; // long axis east-west; local x maps to world z
-  for (let s = 0; s < 3; s++)
-    solids.push({ kind: 'box', cx: t.x, cz: t.z, hx: (TW + (3 - s) * 1.2) / 2, hz: (TL + (3 - s) * 1.2) / 2, rot, y0: t.y - 2, y1: t.y + 0.1 + 0.5 * s, surface: 'stone', walkTop: true });
-  solids.push({ kind: 'box', cx: t.x, cz: t.z, hx: (TW - 5) / 2, hz: (TL - 9) / 2, rot, y0: t.y + 1.1, y1: t.y + 7.7, surface: 'stone', walkTop: false });
-  const nxC = 6,
-    nzC = 13,
-    sxC = (TW - 1.6) / (nxC - 1),
-    szC = (TL - 1.6) / (nzC - 1);
-  for (let i = 0; i < nxC; i++)
-    for (let j = 0; j < nzC; j++) {
-      if (i !== 0 && i !== nxC - 1 && j !== 0 && j !== nzC - 1) continue;
-      const xl = -TW / 2 + 0.8 + i * sxC,
-        zl = -TL / 2 + 0.8 + j * szC;
-      // rotation.y = pi/2 maps local (x, z) to world (z, -x)
-      solids.push({ kind: 'cyl', cx: t.x + zl, cz: t.z - xl, r: 0.6, y0: t.y + 1.1, y1: t.y + 8.2, surface: 'stone', walkTop: false });
-    }
+  // temple: three-tier krepidoma (walkable), cella walls and the peristyle, as in props.ts buildTemple (harbour 0 only)
+  if (k === 0) {
+    const t = gen.sites.temple;
+    const TW = 14,
+      TL = 31,
+      rot = Math.PI / 2; // long axis east-west; local x maps to world z
+    for (let s = 0; s < 3; s++)
+      solids.push({ kind: 'box', cx: t.x, cz: t.z, hx: (TW + (3 - s) * 1.2) / 2, hz: (TL + (3 - s) * 1.2) / 2, rot, y0: t.y - 2, y1: t.y + 0.1 + 0.5 * s, surface: 'stone', walkTop: true });
+    solids.push({ kind: 'box', cx: t.x, cz: t.z, hx: (TW - 5) / 2, hz: (TL - 9) / 2, rot, y0: t.y + 1.1, y1: t.y + 7.7, surface: 'stone', walkTop: false });
+    const nxC = 6,
+      nzC = 13,
+      sxC = (TW - 1.6) / (nxC - 1),
+      szC = (TL - 1.6) / (nzC - 1);
+    for (let i = 0; i < nxC; i++)
+      for (let j = 0; j < nzC; j++) {
+        if (i !== 0 && i !== nxC - 1 && j !== 0 && j !== nzC - 1) continue;
+        const xl = -TW / 2 + 0.8 + i * sxC,
+          zl = -TL / 2 + 0.8 + j * szC;
+        // rotation.y = pi/2 maps local (x, z) to world (z, -x)
+        solids.push({ kind: 'cyl', cx: t.x + zl, cz: t.z - xl, r: 0.6, y0: t.y + 1.1, y1: t.y + 8.2, surface: 'stone', walkTop: false });
+      }
+  }
 
   const bottomTread = top - QUAY.riser * f.stairs;
   const stepAlong = head + (f.stairs - 0.5) * QUAY.tread;
   return {
+    id: k,
+    name: site.name,
     root: new THREE.Vector2(f.x0, f.z0),
     dir: new THREE.Vector2(f.ux, f.uz),
     length: f.length,
@@ -230,5 +340,6 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
     solids,
     shipColliders,
     steps: new THREE.Vector3(f.x0 + f.ux * stepAlong, bottomTread, f.z0 + f.uz * stepAlong),
+    stall: stall.site,
   };
 }

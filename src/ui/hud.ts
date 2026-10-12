@@ -1,8 +1,10 @@
-import { ORDERS } from '../ship/crew';
-import { KNOTS } from '../core/util';
+import { KNOTS, clamp } from '../core/util';
 import { Astrolabe } from './astrolabe';
+import { SailDial, Telegraph, mountMaterials, addBezel } from './gauges';
 import type { Game } from '../game';
 import * as THREE from 'three';
+// the draft and freeboard readout's style is in ledger.css (loaded here so the HUD never shows it unstyled)
+import './ledger.css';
 
 const el = (tag: string, cls = '', html = '') => {
   const e = document.createElement(tag);
@@ -20,9 +22,9 @@ const TAPE_H = 34;
 const PX_PER_DEG = 3;
 
 /**
- * Sailing HUD: ship state bottom left (speed, stroke-order ladder, stamina, sail), heading tape top
- * centre, helm bottom centre, astrolabe bottom right; prompts, toasts and arrival moments centre.
- * In minimal density, readouts that have stopped changing step back until they change again.
+ * Sailing HUD: the sail dial bottom left and the oar telegraph bottom right (gauges.ts), speed and helm
+ * bottom centre, heading tape top centre, sky dial top left; prompts, toasts and arrival moments centre.
+ * Instruments show while they matter; in minimal density, steady readouts step back until they change.
  */
 export class Hud {
   root = el('div', 'hud');
@@ -38,57 +40,54 @@ export class Hud {
     <path d="M4.6 13.4c0 4.1 3.3 7.3 7.4 7.3s7.4-3.2 7.4-7.3"/>
     <path d="M4.6 13.4l-1.4 1.5M4.6 13.4l2 .5M19.4 13.4l1.4 1.5M19.4 13.4l-2 .5"/>
   </svg>`);
-  private ladder = el('div', 'ladder');
-  private orderRow = el('div', 'order-row');
-  private order = el('span', 'order');
-  private orderKeys = el('span', 'order-keys', `${key('W')}${key('S')}`);
-  private stamina = el('div', 'stamina', '<i></i>');
-  private sail = el('div', 'sail-state');
+  private telegraph = new Telegraph();
+  private sailDial: SailDial | null = null;
+  private lastSpeed = NaN;
+  private accel = 0;
   private tape = el('div', 'tape');
   private tapeCanvas = document.createElement('canvas');
   private hdg = el('div', 'hdg');
-  private helm = el('div', 'helm', `<div class="track"><div class="needle"></div></div><div class="ends"><span class="label">${key('A')} Port</span><span class="label">Stbd ${key('D')}</span></div>`);
+  private helm = el('div', 'helm', `<div class="turn"><i></i></div><div class="track"><div class="oar"></div><div class="needle"></div></div>`);
   private prompt = el('div', 'prompt');
   private debug = el('div', 'debug');
-  private helpHint = el('div', 'help-hint', `${key('?')} Controls`);
+  private helpHint = el('div', 'help-hint', key('?'));
   private card = el('div', 'controls-card glass');
   private toast = el('div', 'toast');
   private note = el('div', 'note');
   private astroSlot = el('div', 'astro-slot');
   private astro = new Astrolabe();
-  private rungs: HTMLElement[] = [];
   private noteT = 0;
   private toastT = 0;
+  private toastText = '';
+  private toastQ: string[] = [];
   private debugOn = false;
-  private lastOrder = -1;
-  private orderAge = 99;
-  private sailText = '';
-  private sailAge = 99;
-  private leewayAge = 0;
   private locName = '';
   private locT = 0;
   private hintT = 12;
   private lookAge = 0;
   private lastHdg = NaN;
+  private yawRate = 0;
   private cache = new Map<string, string>();
   private fwd = new THREE.Vector3();
+  // ui-text:begin
+  /** draft and freeboard beside the speed (full density, merchant only) */
+  private hullRead = el('div', 'hull-read', '<span></span><span></span>');
+  private hullL = new THREE.Vector3();
+  private hullW = new THREE.Vector3();
+  private hullDraft = NaN;
+  private hullFree = NaN;
+  // ui-text:end
 
   constructor() {
     const ui = document.getElementById('ui')!;
-    for (let i = 0; i < ORDERS.length; i++) {
-      const r = el('i');
-      if (i === ORDERS.length - 1) r.classList.add('ram');
-      this.ladder.appendChild(r);
-      this.rungs.push(r);
-    }
-    this.orderRow.append(this.order, this.orderKeys);
-    this.speedRow.append(this.speed, this.anchor);
+    this.speedRow.append(this.speed, this.hullRead, this.anchor);
     this.anchor.setAttribute('role', 'img');
-    this.ship.append(this.speedRow, this.ladder, this.orderRow, this.stamina, this.sail);
+    this.ship.append(this.speedRow);
     this.tapeCanvas.width = TAPE_W * 2;
     this.tapeCanvas.height = TAPE_H * 2;
     this.tape.append(this.tapeCanvas, this.hdg);
     this.astroSlot.append(this.astro.root);
+    addBezel(this.astro.root.querySelector('.astro-dial') as HTMLElement, 128);
     this.card.innerHTML = `
       <div class="card-title">Controls</div>
       <div><h4 class="label">At the helm</h4>
@@ -111,13 +110,15 @@ export class Hud {
         <div>${key('C')} Chase camera · ${key('Q')} Eagle view</div></div>
       <div><h4 class="label">World</h4>
         <div>${key('M')} Map</div>
+        <div>${key('I')} Hold book</div>
         <div>${key('[')}${key(']')} Time speed</div>
         <div>${key('T')} Skip to dawn, noon, dusk, night</div>
         <div>${key('H')} Interface: full, minimal, off</div>
         <div>${key('N')} Mute</div>
         <div>${key('Esc')} Pause and settings</div></div>`;
-    for (const n of [this.ship, this.tape, this.helm, this.sail, this.ladder, this.orderRow, this.stamina]) n.dataset.p = '';
-    this.root.append(this.location, this.ship, this.tape, this.astroSlot, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast, this.note);
+    for (const n of [this.ship, this.tape, this.helm]) n.dataset.p = '';
+    this.root.append(this.location, this.telegraph.root, this.ship, this.tape, this.astroSlot, this.helm, this.prompt, this.debug, this.helpHint, this.card, this.toast, this.note);
+    mountMaterials(this.root);
     ui.appendChild(this.root);
     try {
       const d = localStorage.getItem('trieres.hud') as HudDensity | null;
@@ -128,10 +129,9 @@ export class Hud {
     this.applyDensity();
   }
 
-  /** add a widget that shows/hides with the HUD */
-  /** hide order rungs this crew can't be given (e.g. no ramming speed on a merchant ship) */
+  /** orders this crew can't be given (e.g. no ramming speed on a merchant ship) leave the telegraph */
   setMaxOrder(maxOrder: number) {
-    this.rungs.forEach((r, i) => { r.style.display = i > maxOrder ? 'none' : ''; });
+    this.telegraph.setMaxOrder(maxOrder);
   }
 
   mount(node: HTMLElement) {
@@ -173,10 +173,23 @@ export class Hud {
     this.noteT = seconds;
   }
 
+  /**
+   * One toast line for 3 s. While a line shows, the next lines queue (at most 3); a line equal to the one
+   * showing is dropped. Queued lines show in turn, each for its own 3 s.
+   */
   showToast(text: string) {
+    if (this.toastT > 0) {
+      if (text !== this.toastText && this.toastQ.length < 3) this.toastQ.push(text);
+      return;
+    }
+    this.showNow(text);
+  }
+
+  private showNow(text: string) {
+    this.toastText = text;
     this.toast.textContent = text;
     this.toast.classList.add('on');
-    this.toastT = 1.8;
+    this.toastT = 3;
   }
 
   private set(k: string, v: string, apply: (v: string) => void) {
@@ -196,8 +209,13 @@ export class Hud {
     const ashore = (p.mode === 'foot' || p.mode === 'build') && p.walker.frame === 'world';
     const kn = Math.abs(ship.speed * KNOTS);
 
-    // ship block
-    this.set('spd', kn.toFixed(1), (v) => (this.speed.innerHTML = `${v}<small>kn</small>`));
+    // speed with a trend caret: the quickest way to tell whether a change helped
+    const a = Number.isNaN(this.lastSpeed) ? 0 : (ship.speed - this.lastSpeed) / Math.max(dt, 1e-3);
+    this.lastSpeed = ship.speed;
+    this.accel += (a - this.accel) * (1 - Math.exp(-dt / 1));
+    const caret = this.accel > 0.02 ? 'up' : this.accel < -0.02 ? 'down' : '';
+    this.set('spd', `${kn.toFixed(1)}|${caret}`, () => (this.speed.innerHTML = `${kn.toFixed(1)}<small>kn</small><i class="caret ${caret}"></i>`));
+    this.updateHull(g, dt);
     const moor = g.ship.mooring;
     const phase = g.design.anchoringEnabled ? moor.anchorPhase : 'none';
     this.set('anc', phase, (v) => {
@@ -208,63 +226,42 @@ export class Hud {
     });
     const prog = phase === 'holding' ? 1 : phase === 'dropping' || phase === 'weighing' || phase === 'lifting' ? moor.anchorProgress : 0;
     this.set('ancp', prog.toFixed(3), (v) => this.anchor.style.setProperty('--p', v));
-    const o = g.crew.order;
-    this.set('ord', g.crew.holdWater ? 'Hold water' : o.name, (v) => (this.order.textContent = v));
-    if (g.crew.orderIndex !== this.lastOrder) {
-      if (this.lastOrder !== -1) this.showToast(o.name);
-      this.lastOrder = g.crew.orderIndex;
-      this.orderAge = 0;
-      this.rungs.forEach((r, i) => r.classList.toggle('on', i === g.crew.orderIndex));
-    }
-    this.orderAge = g.crew.holdWater ? 0 : this.orderAge + dt;
-    this.orderKeys.classList.toggle('on', commanding);
-    const stam = g.crew.stamina;
-    this.set('stam', (stam * 100).toFixed(1), (v) => ((this.stamina.firstChild as HTMLElement).style.width = `${v}%`));
-    this.stamina.classList.toggle('low', stam < 0.25);
-    const sailState = ship.sailing.current;
-    const sailStatus = ship.sailing.telemetry.status;
-    const areaIntent = ship.sailing.deploymentTarget > 0 ? ship.sailing.deploymentTarget : g.sailDeploymentSelection;
-    const halfSail = areaIntent > 0.01 && areaIntent < 0.75;
-    let sail = '';
-    if (sailStatus !== 'furled') {
-      const condition = sailStatus === 'setting'
-        ? (ship.sailing.deploymentTarget > sailState.deployment ? 'setting' : 'brailing')
-        : sailStatus;
-      const base = halfSail ? `Half sail · ${condition}` : `Sail ${condition}`;
-      const trim = ship.sailing.trimMode === 'manual' ? ' · manual trim' : (!halfSail && condition !== 'aback' ? ' · crew trim' : '');
-      sail = `${base}${trim}`;
-    }
-    const leewayOk = this.density === 'full' && ship.speed > 0.5 && Math.abs(ship.leeway) > (3 * Math.PI / 180);
-    this.leewayAge = leewayOk ? this.leewayAge + dt : 0;
-    const leeway = leewayOk && this.leewayAge >= 0.5
-      ? `<span class="leeway">leeway ${Math.round(Math.abs(ship.leeway) * 180 / Math.PI)}°</span>`
-      : '';
-    const sailLine = sail ? `${sail}${leeway ? ` <span class="leeway-sep">·</span> ${leeway}` : ''}` : leeway;
-    if (sail !== this.sailText) this.sailAge = 0;
-    this.sailText = sail;
-    this.sailAge += dt;
-    this.set('sail', sailLine, (v) => (this.sail.innerHTML = v));
     this.steady(this.ship, ashore);
-    this.steady(this.ladder, this.orderAge > 4);
-    this.steady(this.orderRow, this.orderAge > 4 && !commanding);
-    this.steady(this.stamina, stam > 0.995);
-    this.steady(this.sail, this.sailAge > 4);
+
+    // instruments: shown while commanding; the sail dial only with sail set
+    if (!this.sailDial) {
+      this.sailDial = new SailDial(g.design.kind === 'merchant' ? 'merchant' : 'trireme', g.design.rig.area);
+      this.root.insertBefore(this.sailDial.root, this.telegraph.root);
+    }
+    this.sailDial.update(g, dt, commanding);
+    this.telegraph.update(g, dt, commanding);
 
     // helm
     this.helm.classList.toggle('on', commanding);
     this.set('helm', (50 + ship.helm * 50).toFixed(1), (v) => ((this.helm.querySelector('.needle') as HTMLElement).style.left = `${v}%`));
+    // where the steering oars actually are: they swing toward the helm at a limited rate
+    const oar = -ship.rudderAngle / g.design.rudder.maxAngle;
+    this.set('oar', (50 + clamp(oar, -1, 1) * 50).toFixed(1), (v) => ((this.helm.querySelector('.oar') as HTMLElement).style.left = `${v}%`));
+    // rate of turn, starboard positive; smoothed over ~0.6 s so wave yaw doesn't hide the trend
+    const yawDeg = (-ship.angVel.y * 180) / Math.PI;
+    this.yawRate += (yawDeg - this.yawRate) * (1 - Math.exp(-dt / 0.6));
+    const rot = Math.abs(this.yawRate);
+    // square-root scale: the first fraction of a degree per second is visible, 8°/s fills the bar
+    const bar = Math.sign(this.yawRate) * Math.min(1, Math.sqrt(rot / 8));
+    this.set('rotbar', bar.toFixed(3), (v) => ((this.helm.querySelector('.turn i') as HTMLElement).style.transform = `scaleX(${v})`));
 
-    // heading tape: where the camera looks (the ship's bow at the helm)
+    // heading tape: the bow while commanding (a caret marks where you look), the view otherwise
     g.camera.getWorldDirection(this.fwd);
-    const hd = ((Math.atan2(this.fwd.x, -this.fwd.z) * 180) / Math.PI + 360) % 360;
+    const camHd = ((Math.atan2(this.fwd.x, -this.fwd.z) * 180) / Math.PI + 360) % 360;
+    const hd = commanding ? (((ship.heading * 180) / Math.PI) % 360 + 360) % 360 : camHd;
+    const look = commanding ? ((camHd - hd + 540) % 360) - 180 : 0;
     const turning = Number.isNaN(this.lastHdg) ? 0 : Math.abs(((hd - this.lastHdg + 540) % 360) - 180) / Math.max(dt, 1e-3);
     this.lastHdg = hd;
     this.lookAge = turning > 6 ? 0 : this.lookAge + dt;
-    const apparentFrom = ship.sailing.telemetry.apparentFrom;
-    const relativeWind = ship.heading + apparentFrom - (hd * Math.PI / 180);
+    const relativeWind = g.wind.from - (hd * Math.PI / 180);
     const windOffset = Math.atan2(Math.sin(relativeWind), Math.cos(relativeWind));
-    const windOn = ship.sailing.telemetry.apparentSpeed >= 0.3;
-    this.drawTape(hd, windOffset * 180 / Math.PI, windOn);
+    const windOn = g.wind.speed >= 0.3;
+    this.drawTape(hd, windOffset * 180 / Math.PI, windOn, Math.abs(look) > 10 ? look : NaN);
     this.set('hdg', Math.round(hd % 360).toString().padStart(3, '0'), (v) => (this.hdg.textContent = `${v}°`));
     this.steady(this.tape, !commanding && this.lookAge > 5 && !windOn);
 
@@ -273,15 +270,19 @@ export class Hud {
     // contextual prompt
     let prompt = '';
     if (p.prompt) prompt = p.prompt;
-    else if (p.mode === 'helm' && kn < 0.3 && g.crew.orderIndex === 1 && ship.sailTarget < 0.5 && g.ship.mooring.state === 'free') prompt = `${key('W')} Row`;
+    else if (p.mode === 'helm' && kn < 0.3 && g.crew.orderIndex === 1 && ship.sailTarget < 0.5 && !g.ship.mooring.onLines) prompt = `${key('W')} Row`;
     else if (p.mode === 'eagle') prompt = `${key('Q')} Back to ship · ${key('W')} Dive`;
     if (p.zoom > 0.5) prompt = '';
-    if (ship.grounding > 0.05) prompt = `<span class="warn">Aground</span> · ${key('S')} Back water`;
+    if (ship.grounding > 0.05) prompt = '<span class="warn">Aground</span>';
     if (g.crew.exhausted) prompt = '<span class="warn">Rowers exhausted</span>';
     this.set('prompt', prompt, (v) => (this.prompt.innerHTML = v));
 
     this.toastT -= dt;
-    if (this.toastT <= 0) this.toast.classList.remove('on');
+    if (this.toastT <= 0) {
+      const next = this.toastQ.shift();
+      if (next !== undefined) this.showNow(next);
+      else this.toast.classList.remove('on');
+    }
     this.noteT -= dt;
     if (this.noteT <= 0) this.note.classList.remove('on');
     this.hintT -= dt;
@@ -312,9 +313,41 @@ export class Hud {
     }
   }
 
+  // ui-text:begin
+  /**
+   * Draft (the keel's depth below the water, amidships) and freeboard (the lower sheer above it), from the
+   * physics each frame and smoothed over 2 s. Merchant only; the readout shows on the full HUD.
+   */
+  private updateHull(g: Game, dt: number) {
+    const merchant = g.design.kind === 'merchant';
+    if (this.hullRead.classList.contains('on') !== merchant) this.hullRead.classList.toggle('on', merchant);
+    if (!merchant || this.density !== 'full') return;
+    const ship = g.ship;
+    const hull = g.design.hull;
+    const waves = g.waves;
+    const t = ship.time;
+    const fmt = (v: number) => (v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + ' m';
+    const keel = ship.toWorld(this.hullL.set(0, -hull.keelDepth(0.5), hull.zOf(0.5)), this.hullW);
+    const draftNow = waves.heightAt(keel.x, keel.z, t) - keel.y;
+    const z = hull.zOf(0.5);
+    const hb = hull.halfBeam(0.5);
+    const sheer = hull.sheer(0.5);
+    let freeNow = Infinity;
+    for (const x of [-hb, hb]) {
+      const p = ship.toWorld(this.hullL.set(x, sheer, z), this.hullW);
+      freeNow = Math.min(freeNow, p.y - waves.heightAt(p.x, p.z, t));
+    }
+    const k = 1 - Math.exp(-dt / 2);
+    this.hullDraft = Number.isNaN(this.hullDraft) ? draftNow : this.hullDraft + (draftNow - this.hullDraft) * k;
+    this.hullFree = Number.isNaN(this.hullFree) ? freeNow : this.hullFree + (freeNow - this.hullFree) * k;
+    this.set('draft', fmt(this.hullDraft), (v) => (this.hullRead.children[0].textContent = 'Draft ' + v));
+    this.set('free', fmt(this.hullFree), (v) => (this.hullRead.children[1].textContent = 'Freeboard ' + v));
+  }
+  // ui-text:end
+
   /** ticks every 5°, taller every 15°, compass points every 45°; terracotta lubber mark */
-  private drawTape(hd: number, windOffset: number, windOn: boolean) {
-    const k = `${Math.round(hd * 10) / 10}:${windOn ? Math.round(windOffset * 10) / 10 : 'off'}`;
+  private drawTape(hd: number, windOffset: number, windOn: boolean, look: number) {
+    const k = `${Math.round(hd * 10) / 10}:${windOn ? Math.round(windOffset * 10) / 10 : 'off'}:${Number.isNaN(look) ? '' : Math.round(look)}`;
     if (this.cache.get('tape') === String(k)) return;
     this.cache.set('tape', String(k));
     const c = this.tapeCanvas.getContext('2d')!;
@@ -375,6 +408,18 @@ export class Hud {
           drawEdge(windOffset < 0 ? -1 : 1);
         }
       }
+    }
+    // where the camera looks, when it isn't along the bow: a hollow caret
+    if (!Number.isNaN(look) && Math.abs(look) <= span) {
+      const x = mid + look * PX_PER_DEG;
+      c.strokeStyle = 'rgba(243,238,228,0.8)';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(x - 4, TAPE_H);
+      c.lineTo(x, TAPE_H - 6);
+      c.lineTo(x + 4, TAPE_H);
+      c.closePath();
+      c.stroke();
     }
     c.shadowBlur = 0;
     c.fillStyle = '#d0693e';

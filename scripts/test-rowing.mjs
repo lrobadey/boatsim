@@ -11,6 +11,7 @@ const { WaveField, createFlowSample } = await import('../src/world/waves.ts');
 const { RowingSystem, createKinematics, evaluateOar, BladeClipper, bladeDrag, interpolateJoint } = await import('../src/ship/rowing.ts');
 const { buildOarGeometry } = await import('../src/ship/oarGeometry.ts');
 const { rng } = await import('../src/core/util.ts');
+const { TRIREME } = await import('../src/ship/design.ts');
 const dt = 1 / 120, kn = 1.943844;
 const report = { host: { platform: os.platform(), arch: os.arch(), cpu: os.cpus()[0]?.model, runtime: process.version }, tests: [], measured: {} };
 let failures = 0;
@@ -20,7 +21,10 @@ const near=(a,b,e=1e-9)=>assert.ok(Math.abs(a-b)<=e, `${a} != ${b} (tol ${e})`);
 function flat() { const w = new WaveField(new Wind(3)); w.waves.length = 0; return w; }
 function single(amp=0.5,q=0,phase=0,dir=1) { const w=flat(); w.waves.push({dx:0,dz:dir,k:2*Math.PI/11,omega:Math.sqrt(9.81*2*Math.PI/11),phase,amp,target:amp,q}); return w; }
 const terrain = { heightAt:()=>-100,normalAt:(x,z,out)=>out.set(0,1,0) };
-function vessel(water=flat()) { const crew=new Crew(), ship=new ShipPhysics(water,{vx:0,vz:0},terrain,crew); ship.place(0,0,0); for(let i=0;i<240;i++)ship.step(dt); ship.vel.set(0,0,0);ship.angVel.set(0,0,0); return ship; }
+// The trireme rows with the agent crew (docs/trireme-crew-plan.md); these tests are the acceptance suite of the
+// scripted RowingSystem, so their whole-ship runs select it explicitly.
+const BANKS = { ...TRIREME, oars: { ...TRIREME.oars, system: 'banks' } };
+function vessel(water=flat()) { const crew=new Crew(), ship=new ShipPhysics(water,{vx:0,vz:0},terrain,crew,BANKS); ship.place(0,0,0); for(let i=0;i<240;i++)ship.step(dt); ship.vel.set(0,0,0);ship.angVel.set(0,0,0); return ship; }
 function locked() { return {pos:new THREE.Vector3(0,.3,0),quat:new THREE.Quaternion(),vel:new THREE.Vector3(),angVel:new THREE.Vector3(),cg:new THREE.Vector3(0,.3,0)}; }
 function rowStep(row,body,water,t,h=dt,helm=0) { const f=new THREE.Vector3(),m=new THREE.Vector3();row.step(h,t,body,helm,water,f,m);return {f,m}; }
 function simulate(ship,seconds,h=dt,onStep=()=>{}) { const n=Math.round(seconds/h);let impulse=0,sum=0,meanN=0;for(let i=0;i<n;i++){onStep(i*h,ship);ship.step(h);impulse+=ship.oarThrust*h;if(i>=n-Math.round(Math.min(30,seconds/4)/h)){sum+=ship.speed;meanN++;}}return {meanKn:sum/meanN*kn,speedKn:ship.speed*kn,stamina:ship.crew.stamina,load:ship.rowing.telemetry.crewLoad,order:ship.crew.order.name,impulse}; }

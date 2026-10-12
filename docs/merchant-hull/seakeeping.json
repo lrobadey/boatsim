@@ -1,0 +1,60 @@
+{
+  "merchant": {
+    "rollRest10": {
+      "dampedPeriod": 2.6082,
+      "zeta10to5": 0.1377,
+      "zeta3to1": 0.101,
+      "zeta5to2": 0.1039,
+      "undampedPeriod": 2.5834,
+      "speedKn": -0.0005
+    },
+    "rollRest3": {
+      "dampedPeriod": 2.6018,
+      "zeta10to5": null,
+      "zeta3to1": 0.1012,
+      "zeta5to2": 0.102,
+      "undampedPeriod": 2.6018,
+      "speedKn": 0
+    },
+    "rollUnderway": {
+      "dampedPeriod": 2.6058,
+      "zeta10to5": null,
+      "zeta3to1": 0.1048,
+      "zeta5to2": 0.108,
+      "undampedPeriod": 2.6058,
+      "speedKn": 3.957
+    },
+    "heave": {
+      "dampedPeriod": 2.0839,
+      "zeta": 0.0737,
+      "undampedPeriod": 2.0782
+    },
+    "pitch": {
+      "dampedPeriod": 2.2642,
+      "zeta": 0.074,
+      "undampedPeriod": 2.2579
+    },
+    "beamWave": {
+      "ratio": 1.0115,
+      "sway": 0.2338,
+      "particle": 0.2311,
+      "driftPerSecond": -0.0003
+    },
+    "addedMass": {
+      "sway": 0.7234,
+      "heave": 1.0334,
+      "surge": 0.062
+    },
+    "addedInertia": {
+      "pitch": 0.5629,
+      "yaw": 0.4163,
+      "roll": 0.3129
+    }
+  },
+  "stress": {
+    "Hs": 1.7551,
+    "maxHeelDeg": 15.5335,
+    "maxPitchDeg": 17.7725,
+    "drift": 111.9949
+  }
+}

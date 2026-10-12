@@ -27,7 +27,7 @@
   --radius-s: 6px;
   --blur: blur(14px) saturate(1.15);
   --lift: 0 8px 28px rgba(0, 0, 0, 0.22);
-  --text-shadow: 0 1px 12px rgba(0, 0, 0, 0.38), 0 0 2px rgba(0, 0, 0, 0.25);
+  --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 0, 0, 0.35);
   --f-ui: 'Inter Tight', system-ui, -apple-system, sans-serif;
   --f-name: 'Cormorant Garamond', Georgia, serif;
   --f-mark: 'Marcellus', 'Cormorant Garamond', serif;
@@ -63,9 +63,12 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .hud.none > :not(.prompt):not(.chart):not(.controls-card) { opacity: 0 !important; pointer-events: none; }
 .hud.spy .ship, .hud.spy .tape, .hud.spy .helm, .hud.spy .help-hint { opacity: 0.12; }
 
-/* ship state, bottom left */
-.ship { position: absolute; left: var(--safe); bottom: var(--safe); }
-.speed { font: 300 46px/0.95 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+/* speed, bottom centre above the helm (the instruments live in gauges.css) */
+.ship { position: absolute; left: 50%; bottom: calc(var(--safe) + 40px); transform: translateX(-50%); }
+.speed { font: 300 52px/0.95 var(--f-ui); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; display: flex; align-items: baseline; }
+.speed .caret { width: 12px; margin-left: 6px; font-style: normal; font-size: 13px; }
+.speed .caret.up::before { content: '▲'; color: var(--fair); }
+.speed .caret.down::before { content: '▼'; color: var(--caution); }
 .speed small { font: 500 14px var(--f-ui); color: var(--t2); margin-left: 6px; letter-spacing: 0.04em; }
 .speed-row { display: flex; align-items: center; gap: 14px; }
 .anchor-badge { --p: 0; position: relative; width: 34px; height: 34px; flex: none; color: var(--t3); border-radius: 50%;
@@ -89,55 +92,46 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 @keyframes anchor-down { 0% { transform: translateY(-3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(3px); opacity: 0.35; } }
 @keyframes anchor-up { 0% { transform: translateY(3px); opacity: 0.35; } 60% { opacity: 1; } 100% { transform: translateY(-3px); opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .anchor-badge .icon { animation: none !important; } }
-.ladder { display: flex; gap: 3px; margin-top: 11px; }
-.ladder i { width: 22px; height: 3px; border-radius: 2px; background: var(--t4); transition: background 0.2s, box-shadow 0.2s; }
-.ladder i.on { background: var(--terra); box-shadow: 0 0 8px var(--terra-glow); }
-.ladder i.on.ram { background: var(--danger); box-shadow: 0 0 10px rgba(227, 106, 75, 0.85); }
-.order-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 22px; }
-.order { font: 600 12px var(--f-ui); letter-spacing: 0.16em; text-transform: uppercase; color: var(--t1); }
-.order-keys { opacity: 0; transition: opacity 0.24s; }
-.order-keys.on { opacity: 1; }
-.stamina { width: 148px; height: 2px; border-radius: 1px; background: rgba(243, 238, 228, 0.16); margin-top: 9px; }
-.stamina i { display: block; height: 100%; border-radius: inherit; background: var(--t2); transition: width 0.2s linear; }
-.stamina.low i { background: var(--danger); }
-.sail-state { font-size: 13px; color: var(--t2); margin-top: 7px; min-height: 1.2em; }
-.sail-state .leeway, .sail-state .leeway-sep { color: var(--t3); font-size: 12px; }
 
 /* heading tape, top centre */
 .tape { position: absolute; top: calc(var(--safe) - 4px); left: 50%; transform: translateX(-50%); width: 360px; height: 46px; }
 .tape canvas { display: block; width: 360px; height: 34px; }
 .tape .hdg { text-align: center; font: 500 12px var(--f-ui); color: var(--t2); letter-spacing: 0.08em; margin-top: -2px; font-variant-numeric: tabular-nums; }
 
-/* astrolabe, bottom right (instruments.css styles its insides) */
-.astro-slot { position: absolute; right: var(--safe); bottom: var(--safe); }
+/* sky dial, top left (instruments.css styles its insides) */
+.astro-slot { position: absolute; left: var(--safe); top: var(--safe); transform: scale(0.62); transform-origin: top left; }
 .hud.spy .astro-slot { opacity: 0.12; }
 
 /* helm, bottom centre */
-.helm { position: absolute; bottom: calc(var(--safe) + 10px); left: 50%; transform: translateX(-50%); width: 240px; opacity: 0; }
+.helm { position: absolute; bottom: calc(var(--safe) + 12px); left: 50%; transform: translateX(-50%); width: 280px; opacity: 0; }
 .helm.on { opacity: 1; }
 .helm .track { position: relative; height: 1px; background: rgba(243, 238, 228, 0.32); }
 .helm .track::before { content: ''; position: absolute; left: 50%; top: -4px; width: 1px; height: 9px; background: rgba(243, 238, 228, 0.5); }
 .helm .needle { position: absolute; top: -6px; width: 3px; height: 13px; margin-left: -1.5px; border-radius: 2px; background: var(--bronze); box-shadow: 0 0 8px var(--bronze-glow); }
-.helm .ends { display: flex; justify-content: space-between; margin-top: 9px; }
+/* actual steering-oar angle: a hollow marker under the track that trails the helm needle */
+.helm .oar { position: absolute; top: 4px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-top: 0; border-bottom: 6px solid var(--t2); }
+/* rate of turn: grows from the centre toward the side she is turning */
+.helm .turn { position: relative; height: 2px; margin-bottom: 10px; background: rgba(243, 238, 228, 0.1); border-radius: 1px; }
+.helm .turn i { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; border-radius: 1px; transform-origin: left center; transform: scaleX(0); background: var(--terra); box-shadow: 0 0 6px var(--terra-glow); }
 
 /* centre: prompt, toast, note */
 .prompt { position: absolute; top: 61%; left: 50%; transform: translateX(-50%); font: 500 16px var(--f-ui); white-space: nowrap; color: var(--t1); }
 .prompt .warn { color: var(--danger); }
-.toast { position: absolute; bottom: calc(var(--safe) + 64px); left: 50%; transform: translate(-50%, 4px); font: 600 12px var(--f-ui); letter-spacing: 0.2em; text-transform: uppercase; white-space: nowrap; opacity: 0;
+.toast { position: absolute; bottom: calc(var(--safe) + 124px); left: 50%; transform: translate(-50%, 4px); font: 500 22px var(--f-name); letter-spacing: 0.01em; white-space: nowrap; opacity: 0;
   transition: opacity 0.24s, transform 0.24s var(--ease-out); color: var(--t1); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .note { position: absolute; bottom: calc(var(--safe) + 92px); left: 50%; transform: translateX(-50%); width: min(480px, 80vw); text-align: center; font-size: 15px; color: var(--t2); opacity: 0; transition: opacity 0.6s; }
 .note.on { opacity: 1; }
 
 /* arrival moment */
-.location { position: absolute; top: 15%; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity 0.9s ease, transform 0.9s var(--ease-out); }
+.location { position: absolute; top: 27%; left: 0; right: 0; text-align: center; opacity: 0; transform: translateY(6px); transition: opacity 0.9s ease, transform 0.9s var(--ease-out); }
 .location.on { opacity: 1; transform: none; transition-duration: 0.6s; }
 .loc-name { font: 500 44px/1 var(--f-name); letter-spacing: 0.03em; }
 .loc-rule { width: 84px; height: 1px; margin: 14px auto 11px; background: linear-gradient(90deg, transparent, var(--bronze), transparent); }
 .loc-sub { font: 600 11px var(--f-ui); letter-spacing: 0.24em; text-transform: uppercase; color: var(--t2); }
 
 /* help: a quiet hint at first, then the card */
-.help-hint { position: absolute; top: var(--safe); left: var(--safe); font-size: 13px; color: var(--t2); transition: opacity 1.2s; }
+.help-hint { position: absolute; top: calc(var(--safe) + 30px); left: calc(var(--safe) + 92px); font-size: 13px; color: var(--t2); transition: opacity 1.2s; }
 .help-hint.dim { opacity: 0.32; }
 .hud.minimal .help-hint.dim { opacity: 0; }
 .controls-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -48%); display: grid; grid-template-columns: repeat(3, minmax(190px, auto)); gap: 4px 40px; padding: 26px 32px 28px;

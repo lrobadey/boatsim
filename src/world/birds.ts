@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { patchMaterial, shared } from '../gfx/shared';
 import { rng } from '../core/util';
 import type { WorldGenResult } from './worldgenTypes';
+import { portSites } from './harbour';
 
 /** Gulls wheeling over headlands and the harbour; wings flap in the vertex shader. */
 export class Birds {
@@ -14,7 +15,8 @@ export class Birds {
   constructor(gen: WorldGenResult) {
     const r = rng(12);
     const anchors: { x: number; z: number; y: number }[] = [];
-    anchors.push({ x: gen.sites.harbour.x, z: gen.sites.harbour.z, y: 25 });
+    // one anchor per harbour, the temple, then the largest islands
+    for (const p of portSites(gen)) anchors.push({ x: p.harbour.x, z: p.harbour.z, y: 25 });
     anchors.push({ x: gen.sites.temple.x, z: gen.sites.temple.z, y: gen.sites.temple.y + 30 });
     for (const isl of gen.islands.slice(0, 6)) anchors.push({ x: isl.cx, z: isl.cz, y: Math.max(40, isl.peak * 0.6) });
     for (const a of anchors)

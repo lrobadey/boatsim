@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { LIGHTING_PROFILE } from '../world/lightingState';
+import { registerEnvironmentMaterial } from './environmentMaterials';
 
 /**
  * Uniforms shared by every material in the world (atmosphere, fog, time, wind, terrain lighting).
@@ -9,6 +11,10 @@ export const shared = {
   uSunDir: { value: new THREE.Vector3(0, 1, 0) },
   uSunColor: { value: new THREE.Color(1, 1, 1) }, // radiance of direct light (sun or moon)
   uFogEnv: { value: null as THREE.CubeTexture | null },
+  uFogEnvNext: { value: null as THREE.CubeTexture | null },
+  uEnvBlend: { value: 0 },
+  uPbrEnvNext: { value: null as THREE.Texture | null },
+  uSkyShadowCoupling: { value: LIGHTING_PROFILE.skySpecularShadowCoupling as number },
   uFogDensity: { value: 0.000045 },
   uFogHeight: { value: 650 },
   uFogEnvScale: { value: 1 },
@@ -27,12 +33,28 @@ export const shared = {
 
 /** GLSL: aerial perspective using the sky environment cube along the view ray, with height falloff. */
 export const FOG_PARS_GLSL = /* glsl */ `
+#ifndef SKY_ENV_BLEND
+#define SKY_ENV_BLEND 0
+#endif
 uniform samplerCube uFogEnv;
+#if SKY_ENV_BLEND
+uniform samplerCube uFogEnvNext;
+uniform float uEnvBlend;
+#endif
 uniform float uFogDensity;
 uniform float uFogHeight;
 uniform float uFogEnvScale;
 uniform vec3 uSunDir;
 uniform vec3 uSunColor;
+vec3 sampleSkyEnv(vec3 rd, float lod) {
+  vec3 currentRadiance = textureLod(uFogEnv, rd, lod).rgb;
+#if SKY_ENV_BLEND
+  vec3 nextEnv = textureLod(uFogEnvNext, rd, lod).rgb;
+  return mix(currentRadiance, nextEnv, clamp(uEnvBlend, 0.0, 1.0));
+#else
+  return currentRadiance;
+#endif
+}
 vec3 applyAerial(vec3 col, vec3 worldPos) {
   vec3 v = worldPos - cameraPosition;
   float dist = length(v);
@@ -42,7 +64,7 @@ vec3 applyAerial(vec3 col, vec3 worldPos) {
   hInt *= exp(-max(cameraPosition.y, 0.0) / uFogHeight);
   float amt = 1.0 - exp(-uFogDensity * dist * hInt);
   vec3 fdir = normalize(vec3(dir.x, max(dir.y, 0.015), dir.z));
-  vec3 fogCol = textureLod(uFogEnv, fdir, 4.0).rgb * uFogEnvScale;
+  vec3 fogCol = sampleSkyEnv(fdir, 4.0) * uFogEnvScale;
   // forward-scattered sunlight in the haze (warm glow toward the sun)
   float mu = max(dot(dir, uSunDir), 0.0);
   fogCol += uSunColor * (pow(mu, 12.0) * 0.025 + pow(mu, 64.0) * 0.06);
@@ -63,6 +85,7 @@ uniform float uTerrainMax;
 uniform sampler2D uSunShadowTex;
 uniform sampler2D uCloudShadowTex;
 uniform vec4 uCloudShadowParams;
+uniform float uSkyShadowCoupling;
 float cloudShadow(vec3 wp) {
   if (uCloudShadowParams.w < 0.5) return 1.0;
   vec2 uv = (wp.xz - uCloudShadowParams.xy) / uCloudShadowParams.z + 0.5;
@@ -100,6 +123,9 @@ export function patchMaterial<T extends THREE.Material>(
   extra?: (shader: THREE.WebGLProgramParametersWithUniforms) => void,
   key = '',
 ): T {
+  if (!(mat instanceof THREE.MeshStandardMaterial)) {
+    throw new Error(`patchMaterial expected MeshStandardMaterial-compatible input; received ${mat.type}`);
+  }
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, shared);
     shader.vertexShader = shader.vertexShader
@@ -122,7 +148,44 @@ export function patchMaterial<T extends THREE.Material>(
       'getDirectionalLightInfo( directionalLight, directLight );',
       'getDirectionalLightInfo( directionalLight, directLight );\n\t\tdirectLight.color *= gTerrainShadow;',
     );
-    shader.fragmentShader = shader.fragmentShader
+    const injectOnce = (source: string, needle: string, replacement: string, label: string): string => {
+      const first = source.indexOf(needle);
+      if (first < 0 || source.indexOf(needle, first + needle.length) >= 0) {
+        throw new Error(`patchMaterial shader hook missing or ambiguous: ${label}`);
+      }
+      return source.slice(0, first) + replacement + source.slice(first + needle.length);
+    };
+    let envmapPhysical = THREE.ShaderChunk.envmap_physical_pars_fragment;
+    envmapPhysical = injectOnce(envmapPhysical, '#ifdef USE_ENVMAP', `#ifdef USE_ENVMAP
+	#if defined(ENVMAP_TYPE_CUBE_UV)
+#if SKY_ENV_BLEND
+        uniform sampler2D uPbrEnvNext;
+#endif
+		vec3 samplePbrEnv( const in vec3 direction, const in float roughness ) {
+			vec3 currentRadiance = textureCubeUV( envMap, direction, roughness ).rgb;
+#if SKY_ENV_BLEND
+			vec3 nextEnv = textureCubeUV( uPbrEnvNext, direction, roughness ).rgb;
+			return mix( currentRadiance, nextEnv, clamp( uEnvBlend, 0.0, 1.0 ) );
+#else
+			return currentRadiance;
+#endif
+		}
+	#endif`, 'PBR environment helper anchor');
+    envmapPhysical = injectOnce(envmapPhysical,
+      'vec4 envMapColor = textureCubeUV( envMap, envMapRotation * worldNormal, 1.0 );',
+      'vec4 envMapColor = vec4( samplePbrEnv( envMapRotation * worldNormal, 1.0 ), 1.0 );',
+      'IBL irradiance function');
+    envmapPhysical = injectOnce(envmapPhysical,
+      'vec4 envMapColor = textureCubeUV( envMap, envMapRotation * reflectVec, roughness );',
+      'vec4 envMapColor = vec4( samplePbrEnv( envMapRotation * reflectVec, roughness ), 1.0 );',
+      'IBL radiance function');
+    envmapPhysical = injectOnce(envmapPhysical,
+      'vec4 envMapColor = textureCubeUV( envMap, envMapRotation * retroVec, roughness );',
+      'vec4 envMapColor = vec4( samplePbrEnv( envMapRotation * retroVec, roughness ), 1.0 );',
+      'IBL retroreflection function');
+    let fragment = shader.fragmentShader;
+    fragment = injectOnce(fragment, '#include <envmap_physical_pars_fragment>', envmapPhysical, 'physical environment include');
+    shader.fragmentShader = fragment
       .replace('#include <common>', '#include <common>\nvarying vec3 vAerialPos;\n' + FOG_PARS_GLSL + TERRAIN_LIGHT_GLSL)
       .replace('#include <lights_fragment_begin>', 'float gTerrainShadow = terrainShadow(vAerialPos, normalize(uSunDir));\n' + lightsBegin)
       .replace(
@@ -130,13 +193,14 @@ export function patchMaterial<T extends THREE.Material>(
         `{
            float tao = terrainAO(vAerialPos);
            reflectedLight.indirectDiffuse *= tao;
-           reflectedLight.indirectSpecular *= mix(1.0, tao, 0.7) * mix(0.35, 1.0, gTerrainShadow);
+           reflectedLight.indirectSpecular *= mix(1.0, tao, 0.7) * mix(1.0, mix(0.35, 1.0, gTerrainShadow), uSkyShadowCoupling);
          }
          #include <aomap_fragment>`,
       )
       .replace('#include <fog_fragment>', 'gl_FragColor.rgb = applyAerial(gl_FragColor.rgb, vAerialPos);');
     extra?.(shader);
   };
-  mat.customProgramCacheKey = () => 'aerial2' + key;
+  mat.customProgramCacheKey = () => 'aerial3' + key;
+  registerEnvironmentMaterial(mat);
   return mat;
 }

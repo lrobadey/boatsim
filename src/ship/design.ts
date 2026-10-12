@@ -2,6 +2,7 @@ import { HULL_LENGTH, RAM_LENGTH, deckY as triremeDeckY, halfBeam as triremeHalf
 import { TRIREME_HULL, type HullShape } from './hullShape';
 import { MERCHANT_HULL } from './merchantHull';
 import { oarSlots, type OarSlot } from './oarLayout';
+import { MERCHANT_CREW, TRIREME_CREW, crewSlots, type CrewRowingParams } from './crew/params';
 
 /**
  * A playable ship: pure data plus hull functions. Every ship-dependent system takes a design in its
@@ -61,6 +62,43 @@ export interface SailAero {
   trimSlewPenalty: number;
 }
 
+/** Docking alongside a quay (Mooring): lines, hauling in, the docked hold and the gangplank. */
+export interface DockingDesign {
+  enabled: boolean;
+  /** cleat stations: bow line, forward spring, aft spring, stern line */
+  cleats: [number, number, number, number];
+  /** gangplank opening station, and how far the plank reaches out from the rail toward the quay (m) */
+  plankS: number;
+  plankReach: number;
+  /** clearance between the hull's widest point and the quay face when docked (fenders implied, m) */
+  gap: number;
+  /**
+   * capture window for throwing the lines. lateral is measured from the docked pose, + = out from the
+   * quay; along is the offset along the quay; head is the largest heading error (rad); sog in m/s
+   */
+  capture: { along: number; latMin: number; latMax: number; head: number; sog: number };
+  /** hands on the lines (about 350 N each) times the tackle's mechanical advantage cap the haul */
+  crew: number;
+  tackle: number;
+  /** most the belayed lines hold together (N); beyond it the crew eases them */
+  lineStrength: number;
+  /** natural period of the docked hold (s) */
+  holdPeriod: number;
+}
+
+/** Cargo hold of a ship that carries trade cargo (cargo-trade spec §5.3, §6.1). Only the merchant has one. */
+export interface CargoDesign {
+  /** the 3 t of amphorae baked into the design load, removed as one block when the hold takes over */
+  reference: { mass: number; local: [number, number, number] };
+  /** hold extent (stations, z along the keel), layers above the keel floor and below the deck, cell size, margin to the hull, mast clearance (m) */
+  hold: { sFrom: number; sTo: number; floorAboveKeel: number; ceilingBelowDeck: number; cell: [number, number, number]; margin: number; mastClear: number };
+  /** deck hatches, stations s0..s1 (fore-aft), each half-width hatchHalfWidth */
+  hatches: { s0: number; s1: number }[];
+  hatchHalfWidth: number;
+  /** coaming lip height (m) */
+  lip: number;
+}
+
 export interface ShipDesign {
   kind: ShipKind;
   /** plain name for UI text */
@@ -90,6 +128,14 @@ export interface ShipDesign {
     /** roll damping torque about the fore-aft axis = -lin p - quad p|p| */
     rollDampLin: number;
     rollDampQuad: number;
+    /**
+     * Response to the water (merchant plan §4.3); absent = the trireme's original model. Enables wave
+     * excitation (Froude–Krylov plus diffraction), implicit added mass with the Kirchhoff/Munk terms,
+     * payload inertia, and column heave damping on the centre line (so it no longer damps roll).
+     * ca: added-mass coefficients per submerged column as fractions of its displaced mass rho V, along
+     * the hull axes [sway (x), heave (y), surge (z)].
+     */
+    response?: { ca: [number, number, number] };
   };
   /** hull and rig windage: F = 0.5 rho_air Cd A v|v| per axis, acting at `point` (ship local) */
   windage: { lateralCd: number; lateralArea: number; frontalCd: number; frontalArea: number; point: [number, number, number] };
@@ -116,6 +162,8 @@ export interface ShipDesign {
   /** stations of the side points that meet a quay face (at outerHalfWidth(s), sheer(s)) */
   quayStations: number[];
   oars: {
+    /** 'banks': RowingSystem (scripted strokes); 'crew': CrewRowing (agent crew, docs/merchant-crew-spec.md) */
+    system: 'banks' | 'crew';
     slots(): OarSlot[];
     /** number of oar banks (visual instancing groups); slot.bank < bankCount */
     bankCount: number;
@@ -134,11 +182,12 @@ export interface ShipDesign {
     rateMax: number;
     /** keleustes' drum on the catch */
     drum: boolean;
+    /** the agent crew's parameters (system 'crew' only) */
+    crew?: CrewRowingParams;
   };
   rig: SailRig;
   aero: SailAero;
-  /** docking: capture, warping in, gangplank (Mooring) */
-  dockingEnabled: boolean;
+  docking: DockingDesign;
   /** dropping and weighing the anchor (Mooring) */
   anchoringEnabled: boolean;
   /** ground tackle: station of the bow fairlead the rode runs from, rode stiffness relative to the trireme's */
@@ -148,6 +197,8 @@ export interface ShipDesign {
   camera: { helmS: number; chaseDist: number; chasePivotUp: number; dockingDist: number; titleDist: number; titleLift: number };
   /** deck crew figures from the model kit: [model name, x, station s, yaw]; model -z faces forward */
   crewSpots: [string, number, number, number][];
+  /** cargo hold (merchant only); absent = no trade */
+  cargo?: CargoDesign;
 }
 
 const smooth = (a: number, b: number, x: number) => {
@@ -207,7 +258,11 @@ export const TRIREME: ShipDesign = {
   ],
   quayStations: triremeQuayStations,
   oars: {
+    // 170 seated rowers as an agent crew (docs/trireme-crew-plan.md); 'banks' selects the old scripted
+    // RowingSystem, whose fields below the crew are kept for it
+    system: 'crew',
     slots: oarSlots,
+    crew: TRIREME_CREW,
     bankCount: 3,
     meanPower: [90, 20, 70, 120, 190, 320],
     maxOrder: 5,
@@ -236,7 +291,20 @@ export const TRIREME: ShipDesign = {
     yardZ: TRIREME_HULL.zOf(0.42),
   }),
   aero: TRIREME_AERO,
-  dockingEnabled: true,
+  docking: {
+    enabled: true,
+    cleats: [0.12, 0.4, 0.6, 0.86],
+    plankS: 0.62,
+    plankReach: 1.6,
+    // the outrigger is widest at 2.65 m: 0.35 m off a quay face 3 m from the berth centre
+    gap: 0.35,
+    capture: { along: 8, latMin: -0.8, latMax: 4, head: (15 * Math.PI) / 180, sog: 1.3 },
+    // deck crew and marines on the lines, with tackle: about 21 kN
+    crew: 20,
+    tackle: 3,
+    lineStrength: 150e3,
+    holdPeriod: 1.75,
+  },
   anchoringEnabled: true,
   anchor: { s: 0.12, stiffnessScale: 1 },
   buildingEnabled: true,
@@ -274,32 +342,6 @@ const MERCHANT_DECK: ShipDeck = {
  */
 const MERCHANT_MAST_S = 0.44;
 
-/** four sweeps worked standing: one each side on the foredeck (s 0.2) and on the afterdeck (s 0.78) */
-function merchantSweeps(): OarSlot[] {
-  const slots: OarSlot[] = [];
-  const length = 5.6, inboard = 1.5, bladeLength = 0.9;
-  for (const s of [0.2, 0.78]) {
-    for (const side of [-1, 1] as const) {
-      slots.push({
-        id: slots.length,
-        length,
-        inboard,
-        bladeLength,
-        bladeWidth: 0.2,
-        bladeThickness: 0.03,
-        bladeRadius: length - inboard - bladeLength / 2,
-        bank: 0,
-        side,
-        x: side * (MH.halfBeam(s) + 0.02),
-        y: MH.sheer(s) + 0.12,
-        z: MH.zOf(s),
-        jitter: 0,
-      });
-    }
-  }
-  return slots;
-}
-
 const merchantQuayStations: number[] = [];
 for (let i = 0; i <= 8; i++) merchantQuayStations.push(0.1 + i * 0.1);
 
@@ -321,13 +363,17 @@ export const MERCHANT: ShipDesign = {
     // submerged plan area x 1.256 = Denny-Mumford wetted area (41.6 m2 at 18 t)
     wettedFactor: 1.256,
     lateralFromProfile: true,
-    // the column heave damper also damps roll (plan §2.1), so it is kept light: a 10 degree roll
-    // release decays with zeta about 0.16 (0.13 at small angles), period 2.3 s
+    // column heave damping acts on the centre line (response below), so roll damping is all here:
+    // bilge eddy-making and skin friction. Measured (test:seakeeping) at rest: zeta 0.14 for 10->5 deg,
+    // 0.10 for 3->1 deg, undamped roll period 2.6 s with added inertia.
     heaveDampQuad: 0.9,
     heaveDampLin: 400,
     angularDamp: 0.6,
-    rollDampLin: 2000,
-    rollDampQuad: 4000,
+    rollDampLin: 12000,
+    rollDampQuad: 8000,
+    // added mass per column as a fraction of rho V: sway about pi T / (2 beta B) for her sections with a
+    // 3D end correction, heave about pi B / (8 beta T) likewise, surge small for L/B 3.4
+    response: { ca: [0.7, 1.0, 0.06] },
   },
   // beam windage about 1.4 kN and headwind about 0.45 kN at 12 m/s (plan §4.5)
   windage: { lateralCd: 1.0, lateralArea: 16, frontalCd: 0.6, frontalArea: 8.5, point: [0, 1.3, 0.5] },
@@ -338,15 +384,18 @@ export const MERCHANT: ShipDesign = {
   ],
   quayStations: merchantQuayStations,
   oars: {
-    slots: merchantSweeps,
+    // six standing sweeps worked by an agent crew (docs/merchant-crew-spec.md); the fields below
+    // `slots` belong to the trireme's scripted RowingSystem and are not used by the crew
+    system: 'crew',
+    slots: () => crewSlots(MH, MERCHANT_CREW),
+    crew: MERCHANT_CREW,
     bankCount: 1,
-    // four standing sweep hands: Full gives about 1.9 kn after a few minutes (Kyrenia II: typically 1.8 kn)
-    meanPower: [80, 20, 60, 105, 150, 150],
+    meanPower: [80, 20, 45, 80, 115, 115],
     maxOrder: 4,
     slotEnergy: 900,
-    sweepFwd: 0.72,
-    sweepBack: -0.58,
-    rateScale: 0.7,
+    sweepFwd: MERCHANT_CREW.catchMax,
+    sweepBack: MERCHANT_CREW.finishMin,
+    rateScale: 1,
     rateMin: 12,
     rateMax: 30,
     drum: false,
@@ -369,19 +418,47 @@ export const MERCHANT: ShipDesign = {
   }),
   // milestone 1 uses the trireme's calibration; the merchant gets its own in phase 5
   aero: Object.freeze({ ...TRIREME_AERO }),
-  dockingEnabled: false,
+  docking: {
+    enabled: true,
+    cleats: [0.1, 0.38, 0.62, 0.88],
+    plankS: 0.55,
+    // her deck lies about a metre below the quay top: a longer reach keeps the plank walkable
+    plankReach: 2.2,
+    gap: 0.25,
+    // a line's throw (about 7 m) from her side to the quay face; the along range scales with her length
+    capture: { along: 4, latMin: -0.3, latMax: 7, head: (25 * Math.PI) / 180, sog: 1.0 },
+    // four hands with tackle: about 4.2 kN, three times her beam windage at 12 m/s
+    crew: 4,
+    tackle: 3,
+    lineStrength: 60e3,
+    holdPeriod: 1.75,
+  },
   anchoringEnabled: true,
   // a third of the trireme's mass, so a third of the rode stiffness and damping (same natural period)
   anchor: { s: 0.08, stiffnessScale: 0.33 },
+  // cargo-trade spec §5.3 rev. 2. The reference sits 0.8 m above the keel bottom; z = cgZ is a convention
+  // (the design only says the stowage is trimmed level), so the design CG is unchanged.
+  cargo: {
+    reference: { mass: 3000, local: [0, -0.485, -0.205] },
+    hold: { sFrom: 0.28, sTo: 0.72, floorAboveKeel: 0.4, ceilingBelowDeck: 0.1, cell: [0.25, 0.2, 0.5], margin: 0.06, mastClear: 0.3 },
+    hatches: [{ s0: 0.31, s1: 0.41 }, { s0: 0.47, s1: 0.555 }],
+    hatchHalfWidth: 0.7,
+    lip: 0.03,
+  },
   buildingEnabled: false,
   camera: { helmS: 0.86, chaseDist: 24, chasePivotUp: 2.5, dockingDist: 30, titleDist: 30, titleLift: 7 },
-  // the four sweep hands, standing inboard of their sweeps and facing aft; the after pair stands
-  // forward of the helm and out by the rails so they don't block the helmsman's view
+  // static stand-ins for the six rowers at their stances (src/ship/crew/stance.ts, spec §2.2 measured deviation):
+  // on each oar's own side, 0.36 to 0.91 m off the centreline, 0.6 m forward of the pin, facing aft. [x, s] with
+  // s the station whose z is the stance's z (literal: stance.ts imports rowing, which imports this module).
+  // The two reliefs at their waiting spots.
   crewSpots: [
-    ['fig_sailor_idle', 0.85, 0.2, Math.PI],
-    ['fig_sailor_idle', -0.85, 0.2, Math.PI],
-    ['fig_sailor_idle', 1.2, 0.7, Math.PI],
-    ['fig_sailor_idle', -1.2, 0.7, Math.PI],
+    ['fig_sailor_idle', -0.355, 0.1265, Math.PI],
+    ['fig_sailor_idle', 0.651, 0.2065, Math.PI],
+    ['fig_sailor_idle', -0.846, 0.2865, Math.PI],
+    ['fig_sailor_idle', 0.905, 0.5765, Math.PI],
+    ['fig_sailor_idle', -0.708, 0.6565, Math.PI],
+    ['fig_sailor_idle', 0.407, 0.7365, Math.PI],
+    ...MERCHANT_CREW.reliefSpots.map(([x, s]): [string, number, number, number] => ['fig_sailor_idle', x, s, x > 0 ? -Math.PI / 2 : Math.PI / 2]),
   ],
 };
 

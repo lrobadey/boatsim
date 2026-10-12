@@ -37,6 +37,30 @@ export class PlanarReflection {
     this.target.setSize(Math.max(1, Math.floor(w * this.scale)), Math.max(1, Math.floor(h * this.scale)));
   }
 
+  /** Precompile the reflection's HDR, clipped scene variant before the first render. */
+  async compileEnvironmentVariant(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    cam: THREE.PerspectiveCamera,
+  ): Promise<void> {
+    if (!this.enabled) return;
+    const cameraLayerMask = this.camera.layers.mask;
+    const renderTarget = renderer.getRenderTarget();
+    const activeCubeFace = renderer.getActiveCubeFace();
+    const activeMipmapLevel = renderer.getActiveMipmapLevel();
+    const clippingPlanes = renderer.clippingPlanes;
+    try {
+      this.camera.layers.mask = cam.layers.mask & ~(1 << LAYER_NOREFLECT);
+      renderer.clippingPlanes = this.clip;
+      renderer.setRenderTarget(this.target);
+      await renderer.compileAsync(scene, this.camera);
+    } finally {
+      this.camera.layers.mask = cameraLayerMask;
+      renderer.clippingPlanes = clippingPlanes;
+      renderer.setRenderTarget(renderTarget, activeCubeFace, activeMipmapLevel);
+    }
+  }
+
   /** hide: objects that must not appear in the reflection (the sea itself, the sky dome, stars) */
   render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, cam: THREE.PerspectiveCamera, hide: THREE.Object3D[]) {
     if (!this.enabled) return;

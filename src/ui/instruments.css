@@ -4,15 +4,17 @@
 
 /* ---------- sky dial ---------- */
 .astrolabe { width: 128px; display: flex; flex-direction: column; align-items: center; }
-.astro-dial { position: relative; width: 128px; height: 128px; border-radius: 50%; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: var(--lift); }
+.astro-dial { position: relative; width: 128px; height: 128px; border-radius: 50%; background: #0c0b0a; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); }
+/* time and wind live elsewhere now: the dial alone tells the hour by its sky */
+.astro-time, .astro-sub, .astro-dial .wind { display: none; }
 .astro-dial svg { position: absolute; inset: 0; width: 128px; height: 128px; overflow: visible; display: block; }
 .astro-time { margin-top: 10px; font: 300 22px/1 var(--f-ui); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--t1); white-space: nowrap; }
 .astro-time small { font: 500 11px/1 var(--f-ui); color: var(--t2); margin-left: 4px; letter-spacing: 0.02em; }
 .astro-sub { margin-top: 6px; font: 500 12px/1.2 var(--f-ui); color: var(--t2); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity 0.24s ease, transform 0.24s var(--ease-out); }
 
 /* ---------- minimap, top right ---------- */
-.minimap { position: absolute; top: var(--safe); right: var(--safe); width: 132px; height: 132px; border-radius: 50%; overflow: hidden; background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); box-shadow: var(--lift); transition: opacity 0.3s ease; }
-.minimap canvas { display: block; width: 132px; height: 132px; }
+.minimap { position: absolute; top: calc(var(--safe) + 4px); right: calc(var(--safe) + 4px); width: 132px; height: 132px; border-radius: 50%; background: rgba(8, 14, 20, 0.82); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45); transition: opacity 0.3s ease; }
+.minimap canvas { display: block; width: 132px; height: 132px; border-radius: 50%; }
 .hud.spy .minimap { opacity: 0.12; }
 
 /* ---------- map screen (M) ---------- */

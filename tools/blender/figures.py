@@ -184,7 +184,7 @@ def fig_sailor_idle():
 
 def fig_marine():
     P = pose_std()
-    # left arm (x>0 is the figure's left in glTF, shield side) braces the shield forward
+    # left arm (x<0 is the figure's left, anatomical: +x is the figure's right) braces the shield forward
     P['elL'] = (0.24, 1.12, -0.14)
     P['wrL'] = (0.14, 1.07, -0.3)
     P['hdL'] = (0.08, 1.05, -0.36)

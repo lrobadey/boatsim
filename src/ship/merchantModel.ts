@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { patchMaterial } from '../gfx/shared';
 import { LAYER_REFRACT } from '../core/pipeline';
 import { makeSailTexture } from '../gfx/textures';
@@ -10,12 +11,17 @@ import type { Crew } from './crew';
 import type { ModelKit } from '../gfx/models';
 import type { ShipPhysics } from './physics';
 import type { ShipVisual } from './shipVisual';
+import { WindTells } from './windTells';
 import type { ShipDesign } from './design';
 
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
+
+/** a grating swings up 80 degrees in 1.5 s when the hatches open */
+const HATCH_ANGLE = (80 * Math.PI) / 180;
+const HATCH_TIME = 1.5;
 
 const mat = (p: THREE.MeshStandardMaterialParameters, key = '') => patchMaterial(new THREE.MeshStandardMaterial(p), undefined, key);
 
@@ -46,10 +52,17 @@ export class MerchantModel implements ShipVisual {
   private oarFx: THREE.InstancedBufferAttribute[] = [];
   private lastTime = 0;
   readonly mastTop = new THREE.Vector3();
+  private windTells: WindTells;
   /** 0 run out .. 1 shipped (drawn inboard), per side [port, starboard]; animated toward oarStowTarget */
   readonly oarStow = [0, 0];
   readonly oarStowTarget = [0, 0];
   private stowJoint = { sweep: 0, dip: 0, feather: 0, dSweep: 0, dDip: 0, dFeather: 0 };
+  /** hatch openings, ship local (merchant with a cargo hold only) */
+  readonly hatchRects: { s0: number; s1: number; halfWidth: number; z0: number; z1: number; deckY: number }[] = [];
+  /** one pivot per grating, on its starboard edge; rotation.z swings it up */
+  private hatchPivots: THREE.Group[] = [];
+  private hatchT = 0;
+  private hatchTarget = 0;
 
   /** Read-back of the actual rendered rig for opt-in browser acceptance scenes. */
   sailingVisualState() {
@@ -234,6 +247,7 @@ export class MerchantModel implements ShipVisual {
     this.sailMesh.castShadow = true;
     this.sailMesh.frustumCulled = false;
     this.yard.add(this.sailMesh);
+    this.windTells = new WindTells(g, this.mastTop, this.sailMesh, rig.width, rig.height);
 
     // ---------- rigging ----------
     const top = new THREE.Vector3(0, mastBase + mastH - 0.2, mastZ);
@@ -289,36 +303,13 @@ export class MerchantModel implements ShipVisual {
     this.lantern.position.copy(lanternPos);
     g.add(this.lantern);
 
-    // ---------- cargo ----------
-    // amphorae stowed in pairs and triples either side of the mast step
-    const clay = mat({ color: 0xa8603a, roughness: 0.85 }, 'clay');
-    const amph = new THREE.LatheGeometry(
-      [
-        [0.0, 0],
-        [0.06, 0.02],
-        [0.17, 0.2],
-        [0.2, 0.45],
-        [0.16, 0.65],
-        [0.07, 0.75],
-        [0.06, 0.9],
-        [0.08, 0.93],
-      ].map(([x, y]) => new THREE.Vector2(x, y)),
-      10,
-    );
-    const inst = new THREE.InstancedMesh(amph, clay, 6);
-    const M = new THREE.Matrix4();
-    for (let i = 0; i < 6; i++) {
-      const s = [0.47, 0.5, 0.53][i % 3];
-      const x = (i < 3 ? -1 : 1) * 0.6;
-      M.makeRotationY(i * 1.3).setPosition(x, deck.deckY(s), hull.zOf(s));
-      inst.setMatrixAt(i, M);
-    }
-    inst.castShadow = true;
-    g.add(inst);
+    // ---------- cargo hold: hatches, gratings, hold floor (cargo-trade spec §7.1) ----------
+    if (design.cargo) this.buildHatchesAndHold(g, planks, woodDark);
 
     // ---------- crew ----------
     // (model -z is facing, so yaw -pi/2 faces +x (starboard) and +pi/2 faces -x (port))
-    for (const [name, x, s, yaw] of design.crewSpots) {
+    // crew ships: the animated rowers (CrewAnimator, owned by game.ts) replace these static stand-ins
+    for (const [name, x, s, yaw] of design.oars.system === 'crew' ? [] : design.crewSpots) {
       const fig = models.get(name);
       fig.position.set(x, deck.deckY(s), hull.zOf(s));
       fig.rotation.y = yaw;
@@ -424,16 +415,116 @@ export class MerchantModel implements ShipVisual {
     return g;
   }
 
+  /**
+   * Deck planking: per station row three bands across the beam (outboard of the hatch edge, the centre
+   * band, and outboard on the other side), station rows inserted at each hatch's s0 and s1, and the centre
+   * band left out between them. Without hatches it is the plain deck.
+   */
   private deckGeometry() {
-    const hull = this.design.hull, deck = this.design.deck;
-    const NS = 60,
-      NX = 8;
+    const hull = this.design.hull, deck = this.design.deck, cargo = this.design.cargo;
+    const hatches = cargo?.hatches ?? [];
+    const HW = cargo?.hatchHalfWidth ?? 0;
+    const NS = 60;
+    const stations: number[] = [];
+    for (let i = 0; i <= NS; i++) stations.push(deck.s0 + ((deck.s1 - deck.s0) * i) / NS);
+    for (const h of hatches) stations.push(h.s0, h.s1);
+    stations.sort((x, y) => x - y);
+    const rows = stations.filter((v, i) => i === 0 || v - stations[i - 1] > 1e-9);
     const pos: number[] = [],
       uv: number[] = [],
       idx: number[] = [];
-    for (let i = 0; i <= NS; i++) {
-      const s = deck.s0 + ((deck.s1 - deck.s0) * i) / NS;
+    // four x positions per row: -w, -xb, xb, w, with xb the hatch edge (or the beam where the hull is narrower)
+    for (const s of rows) {
       const y = deck.deckY(s);
+      const w = hull.halfWidthAt(s, y);
+      const z = hull.zOf(s);
+      const xb = Math.min(HW, w);
+      for (const x of [-w, -xb, xb, w]) {
+        pos.push(x, y, z);
+        uv.push(x / 3, z / 3);
+      }
+    }
+    for (let i = 0; i < rows.length - 1; i++) {
+      const a0 = rows[i], a1 = rows[i + 1];
+      const inHatch = hatches.some((h) => a0 >= h.s0 - 1e-9 && a1 <= h.s1 + 1e-9);
+      const bands = inHatch ? [0, 2] : [0, 1, 2];
+      for (const k of bands) {
+        const A = i * 4 + k, B = A + 1, C = A + 4, D = C + 1;
+        idx.push(A, C, B, B, C, D);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+
+  /**
+   * Coaming lips inside each hatch rectangle, the gratings (one mesh each, 0.05 m bars at 0.16 m pitch,
+   * top flush with the deck) on pivots at their starboard edge, and the hold's floor of ceiling planks.
+   */
+  private buildHatchesAndHold(g: THREE.Group, planks: SurfaceMaps, woodDark: THREE.Material) {
+    const hull = this.design.hull, deck = this.design.deck, cargo = this.design.cargo!;
+    const HW = cargo.hatchHalfWidth, LIP_H = cargo.lip, LIP_W = 0.06, SEG = 10;
+    const box = (w: number, h: number, d: number, x: number, y: number, z: number) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
+    const lips: THREE.BufferGeometry[] = [];
+    for (const h of cargo.hatches) {
+      const zA = hull.zOf(h.s0), zB = hull.zOf(h.s1), dir = Math.sign(zB - zA);
+      for (const sx of [-1, 1]) {
+        for (let i = 0; i < SEG; i++) {
+          const sa = h.s0 + ((h.s1 - h.s0) * i) / SEG, sb = h.s0 + ((h.s1 - h.s0) * (i + 1)) / SEG;
+          const za = hull.zOf(sa), zb = hull.zOf(sb);
+          lips.push(box(LIP_W, LIP_H, Math.abs(zb - za), sx * (HW - LIP_W / 2), deck.deckY((sa + sb) / 2) + LIP_H / 2, (za + zb) / 2));
+        }
+      }
+      // end lips sit inside the rectangle, at s0 and s1
+      lips.push(box(2 * (HW - LIP_W), LIP_H, LIP_W, 0, deck.deckY(h.s0) + LIP_H / 2, zA + (dir * LIP_W) / 2));
+      lips.push(box(2 * (HW - LIP_W), LIP_H, LIP_W, 0, deck.deckY(h.s1) + LIP_H / 2, zB - (dir * LIP_W) / 2));
+    }
+    const lipMesh = new THREE.Mesh(mergeGeometries(lips, false), woodDark);
+    lipMesh.castShadow = true;
+    g.add(lipMesh);
+
+    for (const h of cargo.hatches) {
+      const zA = hull.zOf(h.s0), zB = hull.zOf(h.s1);
+      const zLo = Math.min(zA, zB), zHi = Math.max(zA, zB), zMid = (zLo + zHi) / 2, L = zHi - zLo;
+      const sMid = (h.s0 + h.s1) / 2;
+      const yPivot = deck.deckY(sMid);
+      // local to the pivot (x = 0 at the starboard edge, the grating lies inboard, along -x)
+      const bars: THREE.BufferGeometry[] = [];
+      const nAcross = Math.max(1, Math.round(L / 0.16));
+      for (let k = 0; k < nAcross; k++) {
+        const z = zLo + ((k + 0.5) * L) / nAcross;
+        bars.push(box(2 * HW, 0.05, 0.05, -HW, deck.deckY(hull.sOf(z)) - 0.025 - yPivot, z - zMid));
+      }
+      const nAlong = Math.max(1, Math.round((2 * HW) / 0.16));
+      for (let j = 0; j < nAlong; j++) {
+        const x = -HW + ((j + 0.5) * 2 * HW) / nAlong;
+        bars.push(box(0.05, 0.05, L, x - HW, deck.deckY(sMid) - 0.025 - yPivot, 0));
+      }
+      const grating = new THREE.Mesh(mergeGeometries(bars, false), woodDark);
+      grating.castShadow = true;
+      const pivot = new THREE.Group();
+      pivot.position.set(HW, yPivot, zMid);
+      pivot.add(grating);
+      g.add(pivot);
+      this.hatchPivots.push(pivot);
+      this.hatchRects.push({ s0: h.s0, s1: h.s1, halfWidth: HW, z0: zLo, z1: zHi, deckY: yPivot });
+    }
+
+    // hold floor: ceiling planks at floorY(s) across the hold's width, the deck planks darkened to 0.55
+    const holdMat = mat(
+      { map: planks.color, normalMap: planks.normal, roughnessMap: planks.roughness, normalScale: new THREE.Vector2(0.45, 0.45), roughness: 1, color: new THREE.Color().setRGB(1.25, 1.14, 1.02).multiplyScalar(0.55) },
+      'deck_hold',
+    );
+    const NS = 16, NX = 4;
+    const pos: number[] = [], uv: number[] = [], idx: number[] = [];
+    const h = cargo.hold;
+    for (let i = 0; i <= NS; i++) {
+      const s = h.sFrom + ((h.sTo - h.sFrom) * i) / NS;
+      const y = -hull.keelDepth(s) + h.floorAboveKeel;
       const w = hull.halfWidthAt(s, y);
       const z = hull.zOf(s);
       for (let k = 0; k <= NX; k++) {
@@ -444,18 +535,22 @@ export class MerchantModel implements ShipVisual {
     }
     for (let i = 0; i < NS; i++)
       for (let k = 0; k < NX; k++) {
-        const a = i * (NX + 1) + k,
-          b = a + 1,
-          c = a + NX + 1,
-          d = c + 1;
-        idx.push(a, c, b, b, c, d);
+        const A = i * (NX + 1) + k, B = A + 1, C = A + NX + 1, D = C + 1;
+        idx.push(A, C, B, B, C, D);
       }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    return g;
+    const floorGeo = new THREE.BufferGeometry();
+    floorGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    floorGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    floorGeo.setIndex(idx);
+    floorGeo.computeVertexNormals();
+    const floor = new THREE.Mesh(floorGeo, holdMat);
+    floor.receiveShadow = true;
+    g.add(floor);
+  }
+
+  /** gratings: true swings them up to stand against the outboard side of their coamings, false lays them back */
+  setHatchesOpen(open: boolean) {
+    this.hatchTarget = open ? 1 : 0;
   }
 
   private curvedPiece(pts: number[][], r0: number, r1: number, m: THREE.Material) {
@@ -490,7 +585,8 @@ export class MerchantModel implements ShipVisual {
     const L = this.design.hull.length;
     for (const slot of this.slots) {
       physics.rowing.renderPose(slot.id, alpha, this.oarPose);
-      const st = this.oarStow[slot.side < 0 ? 0 : 1];
+      // a crew system ships its oars physically (the rowers hold them); only scripted banks stow here
+      const st = this.design.oars.system === 'crew' ? 0 : this.oarStow[slot.side < 0 ? 0 : 1];
       if (st > 0) {
         // boated: from the rest pose each oar swings aft and levels off, lying fore-and-aft along
         // the outrigger, clear of a quay alongside
@@ -530,11 +626,19 @@ export class MerchantModel implements ShipVisual {
     su.uBillow.value = lerp(sail.previous.pressure, sail.current.pressure, alpha);
     su.uFlutter.value = lerp(sail.previous.flutter, sail.current.flutter, alpha);
     this.yard.rotation.y = lerp(sail.previous.yardAngle, sail.current.yardAngle, alpha);
+    this.windTells.update(physics, time, deployment, su.uBillow.value, su.uFlutter.value);
 
     // steering oars twist with the rudder angle
     for (const s of this.steer) {
       const base = (s as any).baseQuat as THREE.Quaternion;
       s.quaternion.copy(base).multiply(this.tmpQ.setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.rudderAngle));
+    }
+
+    // hatch gratings swing over HATCH_TIME
+    if (this.hatchPivots.length) {
+      const step = dtv / HATCH_TIME;
+      this.hatchT += Math.max(-step, Math.min(step, this.hatchTarget - this.hatchT));
+      for (const p of this.hatchPivots) p.rotation.z = -HATCH_ANGLE * smooth(0, 1, this.hatchT);
     }
 
     // lantern
