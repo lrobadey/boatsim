@@ -308,7 +308,9 @@ export class Hud {
       this.debug.innerHTML = `${(1000 / avg).toFixed(0)} fps · ${avg.toFixed(1)} ms<br>scale ${g.pipeline.renderScale.toFixed(2)} · ${g.pipeline.refreshRate.toFixed(0)} Hz · gpu ${g.pipeline.gpuMs.toFixed(1)} ms<br>tris ${(info.render.triangles / 1e6).toFixed(2)}M<br>
         displ ${(ship.displacement / 1000).toFixed(1)} t · heel ${((ship.heel * 180) / Math.PI).toFixed(1)}° · pitch ${((ship.pitch * 180) / Math.PI).toFixed(1)}°<br>
         oar thrust ${(ship.oarThrust / 1000).toFixed(1)} kN · ${g.crew.rate.toFixed(0)} spm<br>
-        sail load ${(ship.sailing.telemetry.load / 1000).toFixed(1)} kN · fill ${ship.sailing.current.fill.toFixed(2)} · yard ${((ship.sailing.current.yardAngle * 180) / Math.PI).toFixed(0)}°<br>
+        sail ${(ship.sailing.current.deployment*100).toFixed(0)}% → ${(ship.sailing.deploymentTarget*100).toFixed(0)}% · ${ship.sailing.telemetry.status} · ${ship.sailing.trimMode}<br>
+        sail drive ${ship.sailing.telemetry.forwardForce.toFixed(0)} N · load ${ship.sailing.telemetry.load.toFixed(0)} N · apparent ${ship.sailing.telemetry.apparentSpeed.toFixed(2)} m/s<br>
+        fill ${ship.sailing.current.fill.toFixed(2)} · yard ${((ship.sailing.current.yardAngle * 180) / Math.PI).toFixed(0)}°<br>
         Hs ${g.waves.hs.toFixed(2)} m · λp ${g.waves.peakLambda.toFixed(0)} m`;
     }
   }

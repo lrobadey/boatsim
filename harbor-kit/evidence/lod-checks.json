@@ -1,0 +1,33 @@
+{
+  "build": "production",
+  "assets": [
+    {
+      "id": "olive-a",
+      "errors": "[]"
+    },
+    {
+      "id": "olive-b",
+      "errors": "[]"
+    },
+    {
+      "id": "coastal-shrub",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-a",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-b",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-boulder",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-rubble",
+      "errors": "[]"
+    }
+  ]
+}

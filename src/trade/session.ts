@@ -4,7 +4,7 @@
 import type { Economy } from './economy';
 import { GOOD_IDS, goodById, type GoodId } from './goods';
 import { applyWages, noteOpened as writeNotebook, porterFeePerUnit, type VoyageState } from './voyage';
-import { addOrder, newJob, pendingUnits as countPending, stepJob, type Units } from './job';
+import { addOrder, newJob, pendingUnits as countPending, restoreJob, stepJob, type Units } from './job';
 
 /** Signed units per good: + buy, − sell. */
 export type Orders = Partial<Record<GoodId, number>>;
@@ -33,36 +33,53 @@ export class TradeSession {
   readonly holdCapacity: number;
   /** session clock: the economy's time at the last tick, or its start */
   private lastT: number;
-  /** when the quay is cleared and the job ends, if pending is empty; null otherwise */
-  private cartAt: number | null = null;
-  /** hatches are open while a job exists, and until this hour after one ends */
-  private hatchUntil = -Infinity;
 
   constructor(o: { economy: Economy; voyage: VoyageState; holdCapacity: number }) {
     this.economy = o.economy;
     this.voyage = o.voyage;
     this.holdCapacity = o.holdCapacity;
     this.lastT = o.economy.now;
-    // A restored job whose units are all moved still has to be cleared (the save holds no timer).
-    const j = o.voyage.job;
-    if (j && countPending(j) === 0) this.cartAt = this.lastT + CART_AFTER_JOB;
+    if (o.voyage.job) {
+      o.voyage.job = restoreJob(o.voyage.job, this.lastT);
+      for (const id of GOOD_IDS) {
+        if ((o.voyage.job.incoming[id] ?? 0) > (o.voyage.job.quay[id] ?? 0)) throw new RangeError(`incoming ${id} exceeds quay cargo`);
+        if ((o.voyage.job.outgoing[id] ?? 0) > (o.voyage.manifest[id] ?? 0)) throw new RangeError(`outgoing ${id} exceeds physical cargo`);
+      }
+      const active = o.voyage.job.active;
+      if (active?.direction === 'load') {
+        const occupied = this.physicalHoldUse().volume + goodById(active.good).stow;
+        if (occupied > this.holdCapacity + 1e-9) throw new RangeError('active load exceeds physical hold capacity');
+      }
+    }
+    if (o.voyage.hatchUntil === undefined) o.voyage.hatchUntil = null;
+    else if (o.voyage.hatchUntil !== null && !Number.isFinite(o.voyage.hatchUntil)) throw new RangeError('malformed hatch time');
   }
 
   /** manifest + pending incoming − pending outgoing (units) */
   aboard(good: GoodId): number {
-    return (this.voyage.manifest[good] ?? 0) + (this.voyage.job?.pending[good] ?? 0);
+    return (this.voyage.manifest[good] ?? 0) + (this.voyage.job?.incoming[good] ?? 0) - (this.voyage.job?.outgoing[good] ?? 0);
   }
 
-  /**
-   * Volume (m³) and mass (t) of what is aboard, counted as aboard(good) per good (the same net figure
-   * the ledger shows as Aboard).
-   */
+  /** Volume and mass of committed cargo: physical manifest plus incoming less outgoing. */
   holdUse(): { volume: number; tonnes: number } {
     let volume = 0;
     let kg = 0;
     for (const id of GOOD_IDS) {
       const n = this.aboard(id);
       if (n === 0) continue;
+      const g = goodById(id);
+      volume += n * g.stow;
+      kg += n * g.mass;
+    }
+    return { volume, tonnes: kg / 1000 };
+  }
+
+  /** Physical manifest volume and mass, independent of confirmed obligations. */
+  physicalHoldUse(): { volume: number; tonnes: number } {
+    let volume = 0;
+    let kg = 0;
+    for (const id of GOOD_IDS) {
+      const n = this.voyage.manifest[id] ?? 0;
       const g = goodById(id);
       volume += n * g.stow;
       kg += n * g.mass;
@@ -150,7 +167,9 @@ export class TradeSession {
    */
   confirm(port: number, berth: number, orders: Orders): { sold: Line[]; bought: Line[] } {
     const job = this.voyage.job;
-    if (job && job.port !== port) throw new Error(`cargo job is at port ${job.port}, not ${port}`);
+    if (job && (job.port !== port || job.berth !== berth)) {
+      throw new RangeError(`cargo job is at port ${job.port}, berth ${job.berth}, not port ${port}, berth ${berth}`);
+    }
     let before = 0;
     let after = 0;
     for (const id of GOOD_IDS) {
@@ -192,7 +211,7 @@ export class TradeSession {
         this.voyage.job = j;
       }
       addOrder(j, soldUnits, boughtUnits);
-      this.cartAt = countPending(j) === 0 ? this.lastT + CART_AFTER_JOB : null;
+      // addOrder clears a stale cart timer when more work is committed.
     }
     return { sold, bought };
   }
@@ -203,10 +222,10 @@ export class TradeSession {
   }
 
   /**
-   * Advances the economy to T, pays wages, moves cargo at LOAD_RATE over the elapsed game hours and
+   * Advances the economy to T, pays wages, moves cargo by mass over elapsed game hours and
    * ends the job when the quay is cleared. Returns the events for the caller.
    */
-  tick(T: number): SessionEvent[] {
+  tick(T: number, handlingAllowed = true): SessionEvent[] {
     const events: SessionEvent[] = [];
     this.economy.advanceTo(T);
     const raw = this.economy.drainEvents();
@@ -222,18 +241,19 @@ export class TradeSession {
     let t = this.lastT;
     for (;;) {
       const job = this.voyage.job;
-      if (job && this.cartAt !== null && t >= this.cartAt && countPending(job) === 0) this.endJob(t);
+      const cartAt = job?.cartAt ?? null;
+      if (job && cartAt !== null && t >= cartAt && countPending(job) === 0) this.endJob(cartAt);
       if (t >= T) break;
       // sub-steps end at whole game hours, the session's end, and the cart time
       let next = Math.min(T, Math.floor(t) + 1);
-      if (this.cartAt !== null && this.cartAt > t && this.cartAt < next) next = this.cartAt;
+      if (cartAt !== null && cartAt > t && cartAt < next) next = cartAt;
       const j = this.voyage.job;
-      if (j && countPending(j) > 0) {
+      if (handlingAllowed && j && countPending(j) > 0) {
         const r = stepJob(j, this.voyage, next - t);
         for (const m of r.moved) delta[m.good] = (delta[m.good] ?? 0) + m.delta;
         if (r.done) {
           events.push({ type: 'job-done', kind: r.done });
-          this.cartAt = t + r.usedHours + CART_AFTER_JOB;
+          j.cartAt = t + r.usedHours + CART_AFTER_JOB;
         }
       }
       t = next;
@@ -253,25 +273,23 @@ export class TradeSession {
 
   /** True while a job runs and for 1 game hour after it ends. */
   hatchesOpen(T: number): boolean {
-    return this.voyage.job !== null || T < this.hatchUntil;
+    return this.voyage.job !== null || (this.voyage.hatchUntil !== null && this.voyage.hatchUntil !== undefined && T < this.voyage.hatchUntil);
   }
 
   /** Cast off: closes the hatches at once. Refused (throws) while units are pending. */
   castOff(): void {
     if (this.pendingUnits > 0) throw new Error(`cargo still moving: ${this.pendingUnits} left`);
     this.voyage.job = null;
-    this.cartAt = null;
-    this.hatchUntil = -Infinity;
+    this.voyage.hatchUntil = null;
   }
 
   private endJob(t: number): void {
     this.voyage.job = null;
-    this.cartAt = null;
-    this.hatchUntil = t + HATCH_AFTER_JOB;
+    this.voyage.hatchUntil = t + HATCH_AFTER_JOB;
   }
 
   private sellable(good: GoodId): number {
-    const pendingOut = Math.max(0, -(this.voyage.job?.pending[good] ?? 0));
+    const pendingOut = this.voyage.job?.outgoing[good] ?? 0;
     return Math.max(0, (this.voyage.manifest[good] ?? 0) - pendingOut);
   }
 
@@ -294,6 +312,6 @@ export class TradeSession {
   }
 
   private checkInt(v: number): void {
-    if (!Number.isInteger(v)) throw new RangeError(`order must be whole units: ${v}`);
+    if (!Number.isSafeInteger(v)) throw new RangeError(`order must be a safe whole number of units: ${v}`);
   }
 }

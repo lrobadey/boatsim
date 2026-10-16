@@ -1,0 +1,17 @@
+{
+  "result": "pass",
+  "hullVertices": 23400,
+  "deckTriangles": 3458,
+  "maxHullErrorMetres": 9.261050791806262e-7,
+  "maxDeckErrorMetres": 1.2234483603990043e-7,
+  "checks": [
+    "current game source hashes",
+    "outer hull matches game offsets within 0.1 mm",
+    "deck height within 0.1 mm",
+    "upward deck winding",
+    "no degenerate deck triangles",
+    "open hatch rectangles",
+    "boarding plank length and width match the live mooring model"
+  ],
+  "scope": "geometry compatibility; full in-game navigation acceptance remains separate"
+}

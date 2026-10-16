@@ -8,6 +8,20 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+On this Mac, double-click **Play Trieres.app** in this folder (or the **Trieres.app** Desktop shortcut)
+to play in its own window.
+It starts its local server automatically; closing the window or pressing **⌘Q** stops the server.
+Use **⌃⌘F** for fullscreen and **⌘R** to reload. Saves and settings persist in the app's own
+WebKit storage, separate from browser saves. The launcher remembers its first available local port
+so saved games keep the same origin. Keep the project folder and its installed `node_modules` on
+this Mac: the launcher runs the current source, including later changes.
+
+To rebuild the native launcher and icon, run `npm run launcher:build` on macOS (requires Apple's
+Command Line Tools). `npm run test:launcher` checks the server lifecycle without a browser;
+`./Trieres.app/Contents/MacOS/Trieres --check` verifies the packaged launcher's startup and shutdown
+without opening the game window. If startup fails, the app offers its log at
+`~/Library/Application Support/Trieres/launcher.log`.
+
 `?dev` skips the title screen (`?dev&hud=1` keeps the HUD); `window.game` is exposed for debugging.
 Quality presets (low / medium / high / ultra) are on the title screen; render resolution adapts to
 hold the display's refresh rate.
@@ -75,6 +89,14 @@ Run `npm run test:sailing-tuning` for the combined, favorable-wind 8 kn engineer
 fresh 12 m/s 10 m reference breeze, then the wind field varies it over time and location. In 8–18°
 heel, crew trim chooses yard angles that reduce sail loading; manual yard control remains in the
 player's hands, and half sail is useful when reducing load.
+
+Cargo handling now takes physical time at 400 kg per game hour. The review fixture at
+`/cargo-review.html` uses the real economy, trade session, ledger and merchant hold; its controls
+compare confirmed cargo commitments with the physical manifest as packages cross the quay; the
+ledger shows this as **Aboard** and **After handling**. Heavy goods take longer to move. In play,
+**I** opens the merchant Hold book, and trade is available at a quay stall. Run
+`npm run test:cargo-handling` for cargo movement, timing and save checks. The manifest changes only
+when handling completes, and the merchant hold's physical load follows that manifest.
 
 Opt-in sailing review scenes accept `?dev&hud=1&sailingReview=combined&sailingWind=14&sailingPrime=90`;
 choose `wind`, `row`, `combined`, `beam`, `headwind`, or `calm`. The wind query is clamped to 0–20 m/s

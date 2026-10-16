@@ -30,6 +30,7 @@ export class HarbourRig {
   private ropes: THREE.InstancedMesh;
   private plank: THREE.Object3D;
   private plankLen = 3;
+  private rigidPlank=false;
   private anchor: THREE.Object3D | null = null;
   /** height of the anchor model's ring end above its origin (model is built shank-up along +y) */
   private anchorTop = 1;
@@ -71,10 +72,11 @@ export class HarbourRig {
   }
 
   /** swap in a modelled gangplank (origin at the ship end, extends along -z, top at y = 0) */
-  setPlankModel(obj: THREE.Object3D, length: number) {
+  setPlankModel(obj: THREE.Object3D, length: number, rigid=false) {
     this.group.remove(this.plank);
     this.plank = obj;
     this.plankLen = length;
+    this.rigidPlank=rigid;
     this.plank.visible = false;
     this.group.add(obj);
   }
@@ -160,11 +162,11 @@ export class HarbourRig {
       // the board runs from its foot on deck (riding with the ship) to its far end, which the mooring solves
       // each step: swinging down from upright while it deploys, then resting on the quay edge or quay top
       _a.copy(pl.deckLocal).applyMatrix4(ship.matrixWorld);
-      _b.copy(pl.shoreWorld);
+      _b.copy(this.rigidPlank && pl.resting && pl.restWorld ? pl.restWorld : pl.shoreWorld);
       _m.lookAt(_a, _b, UP); // -z (forward) points from the ship end toward the shore
       this.plank.position.copy(_a);
       this.plank.quaternion.setFromRotationMatrix(_m);
-      this.plank.scale.set(1, 1, _a.distanceTo(_b) / this.plankLen);
+      this.plank.scale.set(1, 1, this.rigidPlank ? 1 : _a.distanceTo(_b) / this.plankLen);
     }
   }
 }

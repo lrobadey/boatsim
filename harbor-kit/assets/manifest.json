@@ -1,0 +1,3161 @@
+{
+  "schemaVersion": 1,
+  "kit": "ormos",
+  "version": "1.0.0",
+  "units": "metres",
+  "up": [
+    0,
+    1,
+    0
+  ],
+  "frontConvention": "-Z except explicitly declared vessel axes",
+  "assetRoot": "./",
+  "materialPolicy": "preserve-glTF-PBR",
+  "provenance": "Original local procedural authoring; no third-party model or texture downloads.",
+  "assets": [
+    {
+      "id": "amphora-large",
+      "family": "cargo",
+      "description": "Closed export with a recessed mouth, rounded handles and continuous pottery profile.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/amphora-large.blend",
+        "collection": "amphora-large",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.30543380975723267,
+          0,
+          -0.2705468535423279
+        ],
+        "max": [
+          0.30543380975723267,
+          1.1893749237060547,
+          0.2705468535423279
+        ]
+      },
+      "footprint": [
+        0.62,
+        0.62
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "vessel",
+          "center": [
+            0,
+            0.59,
+            0
+          ],
+          "radius": 0.31,
+          "height": 1.18,
+          "surface": "clay",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/amphora-large.glb",
+          "distance": 0,
+          "bytes": 70236,
+          "sha256": "03c0f5a77fa2d1241096caba2aa5d9b3b62a5241098c8538a016989113eb47de"
+        }
+      ],
+      "materials": [
+        "tile"
+      ],
+      "triangles": 4684
+    },
+    {
+      "id": "amphora-small",
+      "family": "cargo",
+      "description": "Closed export with a recessed mouth, rounded handles and continuous pottery profile.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/amphora-small.blend",
+        "collection": "amphora-small",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.2199123501777649,
+          0,
+          -0.1947937309741974
+        ],
+        "max": [
+          0.2199123501777649,
+          0.8563499450683594,
+          0.1947937309741974
+        ]
+      },
+      "footprint": [
+        0.44639999999999996,
+        0.44639999999999996
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "vessel",
+          "center": [
+            0,
+            0.42479999999999996,
+            0
+          ],
+          "radius": 0.22319999999999998,
+          "height": 0.8495999999999999,
+          "surface": "clay",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/amphora-small.glb",
+          "distance": 0,
+          "bytes": 70428,
+          "sha256": "ceca6aa45e094bbf5c47a307bd105dc4df00b0f2d00913ebf1414869dd17b18f"
+        }
+      ],
+      "materials": [
+        "tile"
+      ],
+      "triangles": 4684
+    },
+    {
+      "id": "cargo-boat",
+      "family": "vessels",
+      "description": "The separate scenic boat the user liked. Forward is -X. Not a physics hull or drop-in playable ship.",
+      "tags": [
+        "scenic",
+        "preserve-silhouette"
+      ],
+      "source": {
+        "blend": "blender/sources/cargo-boat.blend",
+        "collection": "cargo-boat",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "scenic waterline",
+      "front": [
+        -1,
+        0,
+        0
+      ],
+      "bounds": {
+        "min": [
+          -8.819785118103027,
+          -1.2400000095367432,
+          -3.200000047683716
+        ],
+        "max": [
+          8.819785118103027,
+          7.699999809265137,
+          3.200000047683716
+        ]
+      },
+      "footprint": [
+        17.6,
+        5.6
+      ],
+      "anchors": [
+        {
+          "name": "bow-line",
+          "position": [
+            -6,
+            1.62,
+            1.75
+          ],
+          "kind": "mooring"
+        },
+        {
+          "name": "stern-line",
+          "position": [
+            6,
+            1.62,
+            1.75
+          ],
+          "kind": "mooring"
+        },
+        {
+          "name": "gangplank",
+          "position": [
+            4.7,
+            1.8,
+            1.8
+          ],
+          "kind": "contact"
+        },
+        {
+          "name": "gangplank-opposite",
+          "position": [
+            4.7,
+            1.8,
+            -1.8
+          ],
+          "kind": "contact"
+        },
+        {
+          "name": "mast",
+          "position": [
+            -1,
+            0.95,
+            0
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/cargo-boat.glb",
+          "distance": 0,
+          "bytes": 2273392,
+          "sha256": "879e119df338d3129a632feccfa383bac6c73f35eb542bc0a81ec7b1a9b848e6"
+        }
+      ],
+      "materials": [
+        "cloth",
+        "darkwood",
+        "rope",
+        "tile",
+        "wood"
+      ],
+      "triangles": 120688
+    },
+    {
+      "id": "coastal-shrub",
+      "family": "vegetation",
+      "description": "Low coastal shrub for rock feet and soil transitions. Decorative only.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/coastal-shrub.blend",
+        "collection": "coastal-shrub",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.5523433089256287,
+          -0.005215098615735769,
+          -0.5615711212158203
+        ],
+        "max": [
+          0.5635588765144348,
+          0.6203242540359497,
+          0.5701664090156555
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "anchors": [],
+      "collision": [],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/coastal-shrub.glb",
+          "distance": 0,
+          "bytes": 350556,
+          "sha256": "42c2beff97ccf0fb1880525da77d4514c3f1e19028397aad376a73e4ccb60e0e"
+        },
+        {
+          "level": 1,
+          "file": "models/coastal-shrub-lod1.glb",
+          "distance": 50,
+          "bytes": 172040,
+          "sha256": "d7ed534247a9b8b8274737fdcf866b4937f4afcea454b6666dea42f31bb9eed7"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "leaf"
+      ],
+      "triangles": 5236
+    },
+    {
+      "id": "gangplank",
+      "family": "fixtures",
+      "description": "Rigid 3.6 m plank; place between contact anchors without nonuniform stretching.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/gangplank.blend",
+        "collection": "gangplank",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "walking surface midpoint",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.6275001168251038,
+          -0.12999999523162842,
+          -1.7999999523162842
+        ],
+        "max": [
+          0.6275001168251038,
+          1.0950000286102295,
+          1.7999999523162842
+        ]
+      },
+      "footprint": [
+        1.23,
+        3.6
+      ],
+      "anchors": [
+        {
+          "name": "ship-end",
+          "position": [
+            0,
+            0,
+            -1.8
+          ],
+          "kind": "contact",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "land-end",
+          "position": [
+            0,
+            0,
+            1.8
+          ],
+          "kind": "contact",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -0.065,
+            0
+          ],
+          "size": [
+            1.23,
+            0.13,
+            3.6
+          ],
+          "walkableTop": true,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/gangplank.glb",
+          "distance": 0,
+          "bytes": 31864,
+          "sha256": "72ab2581553dadf3beace895707fb778440ff077ef08df3081828eae66ad8b65"
+        }
+      ],
+      "materials": [
+        "rope",
+        "wood"
+      ],
+      "triangles": 704
+    },
+    {
+      "id": "house-courtyard",
+      "family": "buildings",
+      "description": "Authored shell, recesses, thresholds and roof. Footing extends below ground.",
+      "tags": [
+        "architecture",
+        "shell"
+      ],
+      "source": {
+        "blend": "blender/sources/house-courtyard.blend",
+        "collection": "house-courtyard",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -5.12999963760376,
+          -0.2758471369743347,
+          -4.691067695617676
+        ],
+        "max": [
+          5.130000591278076,
+          5.492562294006348,
+          4.210000514984131
+        ]
+      },
+      "footprint": [
+        10,
+        8
+      ],
+      "anchors": [
+        {
+          "name": "door",
+          "position": [
+            0,
+            0,
+            -4
+          ],
+          "kind": "entry",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "roof",
+          "position": [
+            0,
+            4.5,
+            0
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "porch",
+          "position": [
+            0,
+            0,
+            -5.9
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "back-wall",
+          "center": [
+            0,
+            2.25,
+            4
+          ],
+          "size": [
+            10,
+            4.5,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "left-wall",
+          "center": [
+            5,
+            2.25,
+            0
+          ],
+          "size": [
+            0.55,
+            4.5,
+            8
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "right-wall",
+          "center": [
+            -5,
+            2.25,
+            0
+          ],
+          "size": [
+            0.55,
+            4.5,
+            8
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-left",
+          "center": [
+            3.025,
+            2.25,
+            -4
+          ],
+          "size": [
+            3.95,
+            4.5,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-right",
+          "center": [
+            -3.025,
+            2.25,
+            -4
+          ],
+          "size": [
+            3.95,
+            4.5,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "floor",
+          "center": [
+            0,
+            -0.1,
+            0
+          ],
+          "size": [
+            10,
+            0.2,
+            8
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/house-courtyard.glb",
+          "distance": 0,
+          "bytes": 330024,
+          "sha256": "8285df55f182886d0709072f52d5b06add444b619944522a20603a3cb6074913"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paint",
+        "paving",
+        "plaster",
+        "shadow",
+        "tile",
+        "wood"
+      ],
+      "triangles": 13756
+    },
+    {
+      "id": "house-tower",
+      "family": "buildings",
+      "description": "Authored shell, recesses, thresholds and roof. Footing extends below ground.",
+      "tags": [
+        "architecture",
+        "shell"
+      ],
+      "source": {
+        "blend": "blender/sources/house-tower.blend",
+        "collection": "house-tower",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.129999876022339,
+          -0.27579379081726074,
+          -4.193793773651123
+        ],
+        "max": [
+          3.130000352859497,
+          7.992562294006348,
+          3.7100002765655518
+        ]
+      },
+      "footprint": [
+        6,
+        7
+      ],
+      "anchors": [
+        {
+          "name": "door",
+          "position": [
+            0,
+            0,
+            -3.5
+          ],
+          "kind": "entry",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "roof",
+          "position": [
+            0,
+            7,
+            0
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "porch",
+          "position": [
+            0,
+            0,
+            -5.4
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "back-wall",
+          "center": [
+            0,
+            3.5,
+            3.5
+          ],
+          "size": [
+            6,
+            7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "left-wall",
+          "center": [
+            3,
+            3.5,
+            0
+          ],
+          "size": [
+            0.55,
+            7,
+            7
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "right-wall",
+          "center": [
+            -3,
+            3.5,
+            0
+          ],
+          "size": [
+            0.55,
+            7,
+            7
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-left",
+          "center": [
+            2.025,
+            3.5,
+            -3.5
+          ],
+          "size": [
+            1.95,
+            7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-right",
+          "center": [
+            -2.025,
+            3.5,
+            -3.5
+          ],
+          "size": [
+            1.95,
+            7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "floor",
+          "center": [
+            0,
+            -0.1,
+            0
+          ],
+          "size": [
+            6,
+            0.2,
+            7
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/house-tower.glb",
+          "distance": 0,
+          "bytes": 305316,
+          "sha256": "2e9771443eafc7fbeb102d61719a0a4fadd92cb6b1313dd95a92b30a4f9c0752"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paint",
+        "paving",
+        "plaster",
+        "shadow",
+        "tile",
+        "wood"
+      ],
+      "triangles": 13228
+    },
+    {
+      "id": "house-workshop",
+      "family": "buildings",
+      "description": "Authored shell, recesses, thresholds and roof. Footing extends below ground.",
+      "tags": [
+        "architecture",
+        "shell"
+      ],
+      "source": {
+        "blend": "blender/sources/house-workshop.blend",
+        "collection": "house-workshop",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.9200005531311035,
+          -0.27588823437690735,
+          -4.691067695617676
+        ],
+        "max": [
+          3.9200005531311035,
+          5.424999713897705,
+          4.4200005531311035
+        ]
+      },
+      "footprint": [
+        7,
+        8
+      ],
+      "anchors": [
+        {
+          "name": "door",
+          "position": [
+            0,
+            0,
+            -4
+          ],
+          "kind": "entry",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "roof",
+          "position": [
+            0,
+            3.7,
+            0
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "porch",
+          "position": [
+            0,
+            0,
+            -5.9
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "back-wall",
+          "center": [
+            0,
+            1.85,
+            4
+          ],
+          "size": [
+            7,
+            3.7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "left-wall",
+          "center": [
+            3.5,
+            1.85,
+            0
+          ],
+          "size": [
+            0.55,
+            3.7,
+            8
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "right-wall",
+          "center": [
+            -3.5,
+            1.85,
+            0
+          ],
+          "size": [
+            0.55,
+            3.7,
+            8
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-left",
+          "center": [
+            2.275,
+            1.85,
+            -4
+          ],
+          "size": [
+            2.45,
+            3.7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-right",
+          "center": [
+            -2.275,
+            1.85,
+            -4
+          ],
+          "size": [
+            2.45,
+            3.7,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "floor",
+          "center": [
+            0,
+            -0.1,
+            0
+          ],
+          "size": [
+            7,
+            0.2,
+            8
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/house-workshop.glb",
+          "distance": 0,
+          "bytes": 573232,
+          "sha256": "f94d9ce91c8c5d411d2365fe6b0bd10b16fc51a0f0dfce71d3c8a4d6a0c09bfb"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paint",
+        "paving",
+        "plaster",
+        "shadow",
+        "tile",
+        "wood"
+      ],
+      "triangles": 17668
+    },
+    {
+      "id": "linen-canopy",
+      "family": "architecture",
+      "description": "Six-metre shaded loading porch. Two front posts; rear edge attaches to a facade.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/linen-canopy.blend",
+        "collection": "linen-canopy",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.2298619747161865,
+          -0.004999855998903513,
+          -1.850000262260437
+        ],
+        "max": [
+          3.2300000190734863,
+          3.43855619430542,
+          1.850000262260437
+        ]
+      },
+      "footprint": [
+        6.3,
+        3.8
+      ],
+      "anchors": [
+        {
+          "name": "wall-right",
+          "position": [
+            3,
+            3.4,
+            1.8
+          ],
+          "kind": "attach",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "wall-left",
+          "position": [
+            -3,
+            3.4,
+            1.8
+          ],
+          "kind": "attach",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "post--3",
+          "center": [
+            3,
+            1.67,
+            -1.6
+          ],
+          "size": [
+            0.28,
+            3.34,
+            0.3
+          ],
+          "walkableTop": false,
+          "surface": "wood"
+        },
+        {
+          "type": "box",
+          "name": "post-3",
+          "center": [
+            -3,
+            1.67,
+            -1.6
+          ],
+          "size": [
+            0.28,
+            3.34,
+            0.3
+          ],
+          "walkableTop": false,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/linen-canopy.glb",
+          "distance": 0,
+          "bytes": 74748,
+          "sha256": "a1bfac0384b1aaeade0a74cf0afec7a45d6a1aeda63c851f368c49f409ac1c72"
+        }
+      ],
+      "materials": [
+        "cloth",
+        "darkwood",
+        "limestone",
+        "rope",
+        "wood"
+      ],
+      "triangles": 2018
+    },
+    {
+      "id": "merchant-gangplank",
+      "family": "fixtures",
+      "description": "Merchant boarding plank: the game dimensions, 3.1 m long and 0.7 m walkable width. Rigid, with explicit contact anchors.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/merchant-gangplank.blend",
+        "collection": "merchant-gangplank",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "walking surface midpoint",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.37750011682510376,
+          -0.07999999821186066,
+          -1.5499999523162842
+        ],
+        "max": [
+          0.37750011682510376,
+          0.9599999785423279,
+          1.5499999523162842
+        ]
+      },
+      "footprint": [
+        0.7,
+        3.1
+      ],
+      "anchors": [
+        {
+          "name": "ship-end",
+          "position": [
+            0,
+            0,
+            -1.55
+          ],
+          "kind": "contact",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "land-end",
+          "position": [
+            0,
+            0,
+            1.55
+          ],
+          "kind": "contact",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -0.04,
+            0
+          ],
+          "size": [
+            0.7,
+            0.08,
+            3.1
+          ],
+          "walkableTop": true,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/merchant-gangplank.glb",
+          "distance": 0,
+          "bytes": 29984,
+          "sha256": "e8a16e44f733631702bb67ce50fb6f0ba43ce5a6ffae6d008f227f2e65907264"
+        }
+      ],
+      "materials": [
+        "rope",
+        "wood"
+      ],
+      "triangles": 660
+    },
+    {
+      "id": "merchant-shell",
+      "family": "vessels",
+      "description": "Kyrenia shell authored directly from the game hull offsets. Retains exact deck height and open cargo hatches. Use the game rig, oars, hatch gratings and physics.",
+      "tags": [
+        "game-compatible",
+        "merchant",
+        "static-shell"
+      ],
+      "source": {
+        "blend": "blender/sources/merchant-shell.blend",
+        "collection": "merchant-shell",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "game design waterline; longitudinal centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -2.152967929840088,
+          -1.2835999727249146,
+          -7.265295505523682
+        ],
+        "max": [
+          2.152967929840088,
+          3.7792727947235107,
+          7.218326568603516
+        ]
+      },
+      "footprint": [
+        4.216,
+        13.7787
+      ],
+      "anchors": [
+        {
+          "name": "mast",
+          "position": [
+            0,
+            0.5622881780250348,
+            -0.8267220000000002
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "bow-waterline",
+          "position": [
+            0,
+            0,
+            -6.88935
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "stern-waterline",
+          "position": [
+            0,
+            0,
+            6.88935
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/merchant-shell.glb",
+          "distance": 0,
+          "bytes": 1866648,
+          "sha256": "598bb9d504cbb36ce648c1017960f902c4007b358467fb641fce515d8a5e4ee5"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "wood"
+      ],
+      "triangles": 79824
+    },
+    {
+      "id": "mooring-stone",
+      "family": "fixtures",
+      "description": "Mooring fixture with a named line attachment; not an inferred mooring force.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/mooring-stone.blend",
+        "collection": "mooring-stone",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.3400000035762787,
+          0,
+          -0.3400000035762787
+        ],
+        "max": [
+          0.3400000035762787,
+          0.9399999976158142,
+          0.3400000035762787
+        ]
+      },
+      "footprint": [
+        0.68,
+        0.68
+      ],
+      "anchors": [
+        {
+          "name": "line",
+          "position": [
+            0,
+            0.72,
+            0
+          ],
+          "kind": "mooring"
+        }
+      ],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "body",
+          "center": [
+            0,
+            0.47,
+            0
+          ],
+          "radius": 0.34,
+          "height": 0.94,
+          "surface": "stone",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/mooring-stone.glb",
+          "distance": 0,
+          "bytes": 21680,
+          "sha256": "4b5ba215e1c3576a7f28f35e592cbac1cd2aef9d9a65f13e334b113678885145"
+        }
+      ],
+      "materials": [
+        "limestone"
+      ],
+      "triangles": 1036
+    },
+    {
+      "id": "olive-a",
+      "family": "vegetation",
+      "description": "Rooted branching olive with narrow leaf geometry. Instance this asset; do not rebake each tree.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/olive-a.blend",
+        "collection": "olive-a",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -2.8150510787963867,
+          -0.13069073855876923,
+          -2.529705286026001
+        ],
+        "max": [
+          2.8549625873565674,
+          5.380370140075684,
+          2.3598759174346924
+        ]
+      },
+      "footprint": [
+        6,
+        6
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "trunk",
+          "center": [
+            0,
+            1.4,
+            0
+          ],
+          "radius": 0.35,
+          "height": 2.8,
+          "surface": "wood",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/olive-a.glb",
+          "distance": 0,
+          "bytes": 1380072,
+          "sha256": "adeabc827bc98d8b5292d3299bdf6d09ce115775820db1f35a4e597d5268da3f"
+        },
+        {
+          "level": 1,
+          "file": "models/olive-a-lod1.glb",
+          "distance": 50,
+          "bytes": 971272,
+          "sha256": "c43d6914c1a579480e0e79a28175deac4f8980001b09b7ab2e9d3ef0f02201d2"
+        }
+      ],
+      "materials": [
+        "olive_leaf",
+        "wood"
+      ],
+      "triangles": 30116
+    },
+    {
+      "id": "olive-b",
+      "family": "vegetation",
+      "description": "Rooted branching olive with narrow leaf geometry. Instance this asset; do not rebake each tree.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/olive-b.blend",
+        "collection": "olive-b",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.2953927516937256,
+          -0.1472841501235962,
+          -2.9586181640625
+        ],
+        "max": [
+          3.1718297004699707,
+          6.056537628173828,
+          3.551521062850952
+        ]
+      },
+      "footprint": [
+        7.08,
+        7.08
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "trunk",
+          "center": [
+            0,
+            1.652,
+            0
+          ],
+          "radius": 0.413,
+          "height": 3.304,
+          "surface": "wood",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/olive-b.glb",
+          "distance": 0,
+          "bytes": 1377220,
+          "sha256": "d246c92d70bf027a71d5c5bb8fda169b58da58ff9327e6c5c57d9436eafda68e"
+        },
+        {
+          "level": 1,
+          "file": "models/olive-b-lod1.glb",
+          "distance": 50,
+          "bytes": 968604,
+          "sha256": "cc1f941fef5b0a4747f53c1540c557bbea4c69c52766730bdd6bef03398670c9"
+        }
+      ],
+      "materials": [
+        "olive_leaf",
+        "wood"
+      ],
+      "triangles": 30116
+    },
+    {
+      "id": "packing-rack",
+      "family": "cargo",
+      "description": "Empty packing rack; instantiate reusable cargo assets on its shelf anchors.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/packing-rack.blend",
+        "collection": "packing-rack",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -1.600000023841858,
+          0,
+          -0.6250001192092896
+        ],
+        "max": [
+          1.600000023841858,
+          1.159999966621399,
+          0.6250001192092896
+        ]
+      },
+      "footprint": [
+        3.2,
+        1.25
+      ],
+      "anchors": [
+        {
+          "name": "lower-shelf",
+          "position": [
+            0,
+            0.29,
+            0
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "upper-shelf",
+          "position": [
+            0,
+            1.07,
+            0
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            0.58,
+            0
+          ],
+          "size": [
+            3.2,
+            1.16,
+            1.25
+          ],
+          "walkableTop": false,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/packing-rack.glb",
+          "distance": 0,
+          "bytes": 40372,
+          "sha256": "befb612766f8fbcfac6bd35cb80b5599f08b362c7ce1b799780dfabea727b963"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "wood"
+      ],
+      "triangles": 968
+    },
+    {
+      "id": "quay-corner",
+      "family": "quay",
+      "description": "Six-metre corner landing with two finished stone faces.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/quay-corner.blend",
+        "collection": "quay-corner",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "front edge at walking height",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.000000476837158,
+          -4.199999809265137,
+          -0.35000017285346985
+        ],
+        "max": [
+          3.0079989433288574,
+          0.006009298376739025,
+          6.000000476837158
+        ]
+      },
+      "footprint": [
+        6,
+        6
+      ],
+      "anchors": [
+        {
+          "name": "join-left",
+          "position": [
+            -3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "join-back",
+          "position": [
+            3,
+            0,
+            6
+          ],
+          "kind": "snap",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -2.1,
+            3
+          ],
+          "size": [
+            6,
+            4.2,
+            6
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/quay-corner.glb",
+          "distance": 0,
+          "bytes": 268072,
+          "sha256": "b78f554d91bfee562db43bf42276dcdca0a923289147ceda08dad25c8c8943e2"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paving",
+        "wood"
+      ],
+      "triangles": 5412
+    },
+    {
+      "id": "quay-straight-a",
+      "family": "quay",
+      "description": "Six-metre quay run. Front is the sea-facing -Z edge; top is Y=0.",
+      "tags": [
+        "modular",
+        "berth"
+      ],
+      "source": {
+        "blend": "blender/sources/quay-straight-a.blend",
+        "collection": "quay-straight-a",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "front edge at walking height",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.000000238418579,
+          -4.199999809265137,
+          -0.35000017285346985
+        ],
+        "max": [
+          3,
+          0.006009298376739025,
+          4.000000476837158
+        ]
+      },
+      "footprint": [
+        6,
+        4
+      ],
+      "anchors": [
+        {
+          "name": "join-right",
+          "position": [
+            3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "join-left",
+          "position": [
+            -3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "berth-face",
+          "position": [
+            0,
+            0,
+            0.05
+          ],
+          "kind": "berth",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "ground",
+          "position": [
+            0,
+            0,
+            2
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -2.1,
+            2
+          ],
+          "size": [
+            6,
+            4.2,
+            4
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/quay-straight-a.glb",
+          "distance": 0,
+          "bytes": 152964,
+          "sha256": "8d2818c97bb05c6a3448bee51b887e7a2a721097a04a2e7b475f05dad82def09"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paving",
+        "wood"
+      ],
+      "triangles": 2948
+    },
+    {
+      "id": "quay-straight-b",
+      "family": "quay",
+      "description": "Six-metre quay run. Front is the sea-facing -Z edge; top is Y=0.",
+      "tags": [
+        "modular",
+        "berth"
+      ],
+      "source": {
+        "blend": "blender/sources/quay-straight-b.blend",
+        "collection": "quay-straight-b",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "front edge at walking height",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.000000238418579,
+          -4.199999809265137,
+          -0.35000017285346985
+        ],
+        "max": [
+          3,
+          0.006009298376739025,
+          4.000000476837158
+        ]
+      },
+      "footprint": [
+        6,
+        4
+      ],
+      "anchors": [
+        {
+          "name": "join-right",
+          "position": [
+            3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "join-left",
+          "position": [
+            -3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "berth-face",
+          "position": [
+            0,
+            0,
+            0.05
+          ],
+          "kind": "berth",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "ground",
+          "position": [
+            0,
+            0,
+            2
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -2.1,
+            2
+          ],
+          "size": [
+            6,
+            4.2,
+            4
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/quay-straight-b.glb",
+          "distance": 0,
+          "bytes": 163852,
+          "sha256": "0d97e75b9e95c81565689b5d7781362d002eff75cbd44f97b9065821ac676981"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "limestone",
+        "paving",
+        "wood"
+      ],
+      "triangles": 3168
+    },
+    {
+      "id": "quay-straight-c",
+      "family": "quay",
+      "description": "Six-metre quay run. Front is the sea-facing -Z edge; top is Y=0.",
+      "tags": [
+        "modular",
+        "berth"
+      ],
+      "source": {
+        "blend": "blender/sources/quay-straight-c.blend",
+        "collection": "quay-straight-c",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "front edge at walking height",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.000000238418579,
+          -4.199999809265137,
+          -0.21647822856903076
+        ],
+        "max": [
+          3,
+          0.006009298376739025,
+          4.000000476837158
+        ]
+      },
+      "footprint": [
+        6,
+        4
+      ],
+      "anchors": [
+        {
+          "name": "join-right",
+          "position": [
+            3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "join-left",
+          "position": [
+            -3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "berth-face",
+          "position": [
+            0,
+            0,
+            0.05
+          ],
+          "kind": "berth",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "ground",
+          "position": [
+            0,
+            0,
+            2
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -2.1,
+            2
+          ],
+          "size": [
+            6,
+            4.2,
+            4
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/quay-straight-c.glb",
+          "distance": 0,
+          "bytes": 155336,
+          "sha256": "91e0990f317381e44ad7367cf54e9f92b98d0b30dce1db0a0540f2465c86651e"
+        }
+      ],
+      "materials": [
+        "limestone",
+        "paving"
+      ],
+      "triangles": 3036
+    },
+    {
+      "id": "retaining-wall",
+      "family": "architecture",
+      "description": "Six-metre limestone garden/terrace wall.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/retaining-wall.blend",
+        "collection": "retaining-wall",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -2.995872735977173,
+          0.005227305460721254,
+          -0.30689892172813416
+        ],
+        "max": [
+          2.9958877563476562,
+          1.4948928356170654,
+          0.3068998456001282
+        ]
+      },
+      "footprint": [
+        6,
+        0.6
+      ],
+      "anchors": [
+        {
+          "name": "join-right",
+          "position": [
+            3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "join-left",
+          "position": [
+            -3,
+            0,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            0.75,
+            0
+          ],
+          "size": [
+            6,
+            1.5,
+            0.6
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/retaining-wall.glb",
+          "distance": 0,
+          "bytes": 57076,
+          "sha256": "124c3fe16b1c12720ee0b89a19dc47c8e9e11a9586f1a6fad30137f6269ebe06"
+        }
+      ],
+      "materials": [
+        "limestone"
+      ],
+      "triangles": 1100
+    },
+    {
+      "id": "rock-boulder",
+      "family": "geology",
+      "description": "Partly buried limestone with coherent fracture planes. Use simplified collision mesh.",
+      "tags": [
+        "terrain-blend"
+      ],
+      "source": {
+        "blend": "blender/sources/rock-boulder.blend",
+        "collection": "rock-boulder",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -1.0728976726531982,
+          -0.7184264063835144,
+          -0.8605760931968689
+        ],
+        "max": [
+          1.1503995656967163,
+          1.2302331924438477,
+          0.8508699536323547
+        ]
+      },
+      "footprint": [
+        2.2,
+        1.8
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "mesh",
+          "name": "rock-proxy",
+          "file": "models/rock-boulder-collision.glb",
+          "surface": "stone",
+          "walkableTop": true
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rock-boulder.glb",
+          "distance": 0,
+          "bytes": 74532,
+          "sha256": "1fd22b0695cf266897a8b428a9960381dcb5bd95e2938cb35442f6ffcf1cde7a"
+        },
+        {
+          "level": 1,
+          "file": "models/rock-boulder-lod1.glb",
+          "distance": 35,
+          "bytes": 27460,
+          "sha256": "1bd9cbedf74878d3f796590e7ff083c861fffb78068b70224abae5e464415e31"
+        }
+      ],
+      "materials": [
+        "rock"
+      ],
+      "triangles": 4235
+    },
+    {
+      "id": "rock-ledge-a",
+      "family": "geology",
+      "description": "Partly buried limestone with coherent fracture planes. Use simplified collision mesh.",
+      "tags": [
+        "terrain-blend"
+      ],
+      "source": {
+        "blend": "blender/sources/rock-ledge-a.blend",
+        "collection": "rock-ledge-a",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -4.415363788604736,
+          -1.3013924360275269,
+          -2.729935884475708
+        ],
+        "max": [
+          4.552199840545654,
+          2.152219533920288,
+          3.0375537872314453
+        ]
+      },
+      "footprint": [
+        8.4,
+        6.2
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "mesh",
+          "name": "rock-proxy",
+          "file": "models/rock-ledge-a-collision.glb",
+          "surface": "stone",
+          "walkableTop": true
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rock-ledge-a.glb",
+          "distance": 0,
+          "bytes": 351404,
+          "sha256": "f3614f6baba62bf09a5d1cb0f2408721840126e55cfb49a9b46c81b1af0cb303"
+        },
+        {
+          "level": 1,
+          "file": "models/rock-ledge-a-lod1.glb",
+          "distance": 35,
+          "bytes": 124608,
+          "sha256": "fdb850dce11b03b951089f4435da46d81bde3a941e26243d0445460847d47606"
+        }
+      ],
+      "materials": [
+        "rock"
+      ],
+      "triangles": 22352
+    },
+    {
+      "id": "rock-ledge-b",
+      "family": "geology",
+      "description": "Partly buried limestone with coherent fracture planes. Use simplified collision mesh.",
+      "tags": [
+        "terrain-blend"
+      ],
+      "source": {
+        "blend": "blender/sources/rock-ledge-b.blend",
+        "collection": "rock-ledge-b",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -3.187795877456665,
+          -1.6121487617492676,
+          -2.6845853328704834
+        ],
+        "max": [
+          3.640491008758545,
+          2.6885018348693848,
+          2.5846405029296875
+        ]
+      },
+      "footprint": [
+        7.2,
+        5.4
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "mesh",
+          "name": "rock-proxy",
+          "file": "models/rock-ledge-b-collision.glb",
+          "surface": "stone",
+          "walkableTop": true
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rock-ledge-b.glb",
+          "distance": 0,
+          "bytes": 356636,
+          "sha256": "ce0f45c77de903ac485a927e3ceb34c11e8b9b096240aad76dd77852cdb7482d"
+        },
+        {
+          "level": 1,
+          "file": "models/rock-ledge-b-lod1.glb",
+          "distance": 35,
+          "bytes": 124860,
+          "sha256": "b4fcf2592ad0882c71badff1e448f4f963303e0ae6435c4d0053ee0b06e367ac"
+        }
+      ],
+      "materials": [
+        "rock"
+      ],
+      "triangles": 22352
+    },
+    {
+      "id": "rock-rubble",
+      "family": "geology",
+      "description": "Partly buried limestone with coherent fracture planes. Use simplified collision mesh.",
+      "tags": [
+        "terrain-blend"
+      ],
+      "source": {
+        "blend": "blender/sources/rock-rubble.blend",
+        "collection": "rock-rubble",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.3863316476345062,
+          -0.27055594325065613,
+          -0.43619266152381897
+        ],
+        "max": [
+          0.48151686787605286,
+          0.46653956174850464,
+          0.3633486330509186
+        ]
+      },
+      "footprint": [
+        0.9,
+        0.8
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "mesh",
+          "name": "rock-proxy",
+          "file": "models/rock-rubble-collision.glb",
+          "surface": "stone",
+          "walkableTop": true
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rock-rubble.glb",
+          "distance": 0,
+          "bytes": 17852,
+          "sha256": "03da68d8edaea90494cd5b9f7502db530673d7a793c4531f91587b878d529e12"
+        },
+        {
+          "level": 1,
+          "file": "models/rock-rubble-lod1.glb",
+          "distance": 35,
+          "bytes": 8840,
+          "sha256": "531345ee64dcc815aa30e80580815ab0304eeda920e27e2f04165a3822e7c50a"
+        }
+      ],
+      "materials": [
+        "rock"
+      ],
+      "triangles": 759
+    },
+    {
+      "id": "rope-coil",
+      "family": "cargo",
+      "description": "Four turns of laid rope; decorative, no collision needed.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/rope-coil.blend",
+        "collection": "rope-coil",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.4209340214729309,
+          0.000947875902056694,
+          -0.40511009097099304
+        ],
+        "max": [
+          0.3889148235321045,
+          0.06544086337089539,
+          0.3724640905857086
+        ]
+      },
+      "footprint": [
+        0.85,
+        0.85
+      ],
+      "anchors": [],
+      "collision": [],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rope-coil.glb",
+          "distance": 0,
+          "bytes": 42696,
+          "sha256": "774df7ad945e46523a193646f658dd0ef230441fc6a622f33bce1d01ac8e9890"
+        }
+      ],
+      "materials": [
+        "rope"
+      ],
+      "triangles": 2156
+    },
+    {
+      "id": "rope-fender",
+      "family": "fixtures",
+      "description": "One plaited hanging rope fender; collider is a conservative contact proxy.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/rope-fender.blend",
+        "collection": "rope-fender",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "top suspension point",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.24490368366241455,
+          -1.2411737442016602,
+          -0.2449999898672104
+        ],
+        "max": [
+          0.2449999898672104,
+          0.019798990339040756,
+          0.2449999898672104
+        ]
+      },
+      "footprint": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "hang",
+          "position": [
+            0,
+            0,
+            0.12
+          ],
+          "kind": "attach"
+        },
+        {
+          "name": "contact",
+          "position": [
+            0,
+            -0.65,
+            -0.25
+          ],
+          "kind": "contact",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            -0.68,
+            0
+          ],
+          "size": [
+            0.5,
+            1.08,
+            0.5
+          ],
+          "walkableTop": false,
+          "surface": "rope"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/rope-fender.glb",
+          "distance": 0,
+          "bytes": 166124,
+          "sha256": "b0441f77c55ce9071fe4b517220d79b1ac370b23e08ce0889b0927d3f1b1ad03"
+        }
+      ],
+      "materials": [
+        "rope"
+      ],
+      "triangles": 9512
+    },
+    {
+      "id": "sea-stairs",
+      "family": "quay",
+      "description": "Ten 230 mm risers and 430 mm treads; lower endpoint is 2.07 m below origin.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/sea-stairs.blend",
+        "collection": "sea-stairs",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "upper tread centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -1.5073626041412354,
+          -2.577956438064575,
+          -4.107996940612793
+        ],
+        "max": [
+          1.5079957246780396,
+          0.007983867079019547,
+          0.2363622486591339
+        ]
+      },
+      "footprint": [
+        3,
+        4.3
+      ],
+      "anchors": [
+        {
+          "name": "upper-landing",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "kind": "walk",
+          "normal": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "lower-landing",
+          "position": [
+            0,
+            -2.07,
+            -3.87
+          ],
+          "kind": "walk",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "tread-0",
+          "center": [
+            0,
+            -0.25,
+            0
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-1",
+          "center": [
+            0,
+            -0.48,
+            -0.43
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-2",
+          "center": [
+            0,
+            -0.71,
+            -0.86
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-3",
+          "center": [
+            0,
+            -0.9400000000000001,
+            -1.29
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-4",
+          "center": [
+            0,
+            -1.17,
+            -1.72
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-5",
+          "center": [
+            0,
+            -1.4000000000000001,
+            -2.15
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-6",
+          "center": [
+            0,
+            -1.6300000000000001,
+            -2.58
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-7",
+          "center": [
+            0,
+            -1.86,
+            -3.01
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-8",
+          "center": [
+            0,
+            -2.09,
+            -3.44
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "tread-9",
+          "center": [
+            0,
+            -2.3200000000000003,
+            -3.87
+          ],
+          "size": [
+            3,
+            0.5,
+            0.46
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/sea-stairs.glb",
+          "distance": 0,
+          "bytes": 26340,
+          "sha256": "568e815891c3306d4312092bb1f84963504d18a78606e944ef60d51e96ac1397"
+        }
+      ],
+      "materials": [
+        "paving"
+      ],
+      "triangles": 440
+    },
+    {
+      "id": "timber-beam",
+      "family": "architecture",
+      "description": "Three-metre structural timber with longitudinal grain.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/timber-beam.blend",
+        "collection": "timber-beam",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -0.12000012397766113
+        ],
+        "max": [
+          1.5,
+          0.23999999463558197,
+          0.12000012397766113
+        ]
+      },
+      "footprint": [
+        3,
+        0.24
+      ],
+      "anchors": [
+        {
+          "name": "end-right",
+          "position": [
+            1.5,
+            0.12,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "end-left",
+          "position": [
+            -1.5,
+            0.12,
+            0
+          ],
+          "kind": "snap",
+          "normal": [
+            -1,
+            0,
+            0
+          ]
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            0.12,
+            0
+          ],
+          "size": [
+            3,
+            0.24,
+            0.24
+          ],
+          "walkableTop": true,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/timber-beam.glb",
+          "distance": 0,
+          "bytes": 5340,
+          "sha256": "0c80d79a39dd8d117bbc85c2222d53ef864fd0baea86feea7a1bff9508c625bf"
+        }
+      ],
+      "materials": [
+        "wood"
+      ],
+      "triangles": 44
+    },
+    {
+      "id": "timber-bench",
+      "family": "props",
+      "description": "Weathered timber bench.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/timber-bench.blend",
+        "collection": "timber-bench",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.800000011920929,
+          0,
+          -0.2670000493526459
+        ],
+        "max": [
+          0.800000011920929,
+          0.6359999775886536,
+          0.2670000493526459
+        ]
+      },
+      "footprint": [
+        1.6,
+        0.52
+      ],
+      "anchors": [
+        {
+          "name": "seat",
+          "position": [
+            0,
+            0.63,
+            0
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "body",
+          "center": [
+            0,
+            0.315,
+            0
+          ],
+          "size": [
+            1.6,
+            0.63,
+            0.52
+          ],
+          "walkableTop": false,
+          "surface": "wood"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/timber-bench.glb",
+          "distance": 0,
+          "bytes": 21696,
+          "sha256": "0bbf3a6004f23bcc383d767fb663ea206fe1cb2eae8e4f7be6381cbf252c505f"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "wood"
+      ],
+      "triangles": 452
+    },
+    {
+      "id": "warehouse",
+      "family": "buildings",
+      "description": "Authored shell, recesses, thresholds and roof. Footing extends below ground.",
+      "tags": [
+        "architecture",
+        "interior"
+      ],
+      "source": {
+        "blend": "blender/sources/warehouse.blend",
+        "collection": "warehouse",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -8.920001029968262,
+          -0.2758999764919281,
+          -6.194282054901123
+        ],
+        "max": [
+          8.920001029968262,
+          6.625,
+          6.039999961853027
+        ]
+      },
+      "footprint": [
+        17,
+        11
+      ],
+      "anchors": [
+        {
+          "name": "door",
+          "position": [
+            0,
+            0,
+            -5.5
+          ],
+          "kind": "entry",
+          "normal": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "roof",
+          "position": [
+            0,
+            4.9,
+            0
+          ],
+          "kind": "placement"
+        },
+        {
+          "name": "porch",
+          "position": [
+            0,
+            0,
+            -7.4
+          ],
+          "kind": "placement"
+        }
+      ],
+      "collision": [
+        {
+          "type": "box",
+          "name": "back-wall",
+          "center": [
+            0,
+            2.45,
+            5.5
+          ],
+          "size": [
+            17,
+            4.9,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "left-wall",
+          "center": [
+            8.5,
+            2.45,
+            0
+          ],
+          "size": [
+            0.55,
+            4.9,
+            11
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "right-wall",
+          "center": [
+            -8.5,
+            2.45,
+            0
+          ],
+          "size": [
+            0.55,
+            4.9,
+            11
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-left",
+          "center": [
+            5.2,
+            2.45,
+            -5.5
+          ],
+          "size": [
+            6.6,
+            4.9,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "front-right",
+          "center": [
+            -5.2,
+            2.45,
+            -5.5
+          ],
+          "size": [
+            6.6,
+            4.9,
+            0.55
+          ],
+          "walkableTop": false,
+          "surface": "stone"
+        },
+        {
+          "type": "box",
+          "name": "floor",
+          "center": [
+            0,
+            -0.1,
+            0
+          ],
+          "size": [
+            17,
+            0.2,
+            11
+          ],
+          "walkableTop": true,
+          "surface": "stone"
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/warehouse.glb",
+          "distance": 0,
+          "bytes": 3500244,
+          "sha256": "4cfeda76959334cb4a68f90ee358e210552a5ece1cf5f9d6add834f919452aca"
+        }
+      ],
+      "materials": [
+        "darkwood",
+        "limestone",
+        "paving",
+        "plaster",
+        "shadow",
+        "tile",
+        "wood"
+      ],
+      "triangles": 201336
+    },
+    {
+      "id": "wicker-basket",
+      "family": "cargo",
+      "description": "Woven storage basket with modeled uprights and rings.",
+      "tags": [],
+      "source": {
+        "blend": "blender/sources/wicker-basket.blend",
+        "collection": "wicker-basket",
+        "recipe": "blender/build_kit.py"
+      },
+      "origin": "ground centre",
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "bounds": {
+        "min": [
+          -0.4327796697616577,
+          -0.01141268014907837,
+          -0.4014008939266205
+        ],
+        "max": [
+          0.4327796697616577,
+          0.6227796673774719,
+          0.4014008939266205
+        ]
+      },
+      "footprint": [
+        0.8,
+        0.8
+      ],
+      "anchors": [],
+      "collision": [
+        {
+          "type": "cylinder",
+          "name": "basket",
+          "center": [
+            0,
+            0.295,
+            0
+          ],
+          "radius": 0.4,
+          "height": 0.59,
+          "surface": "wood",
+          "walkableTop": false
+        }
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "file": "models/wicker-basket.glb",
+          "distance": 0,
+          "bytes": 234036,
+          "sha256": "9920489adc28e476107d3e1dfc200ae5e4d3b0f7fd8b393e7782362ca568cf21"
+        }
+      ],
+      "materials": [
+        "rope",
+        "wood"
+      ],
+      "triangles": 11550
+    }
+  ],
+  "runtime": {
+    "compression": "EXT_meshopt_compression",
+    "textures": "shared-external",
+    "copyTogether": [
+      "manifest.json",
+      "models/",
+      "textures/"
+    ]
+  }
+}

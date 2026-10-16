@@ -1,7 +1,13 @@
 import type * as THREE from 'three';
 import { QUALITY, QualityName } from './core/quality';
-import type { WorldGenResult } from './world/worldgenTypes';
+import type { WorldGenRequest, WorldGenResult } from './world/worldgenTypes';
+import { loadCachedWorld } from './core/worldCache';
+import { loadStartupTextures, type StartupTextures } from './gfx/startupTextures';
+import { worldRevision, textureUrl } from 'virtual:startup-assets';
 import { DEFAULT_WIND_SPEED, Wind } from './world/wind';
+import {installOrmosReview} from './world/ormosReview';
+import {installCargoGameReview} from './cargoGameReview';
+import {loadOrmosHarbour} from './world/ormosHarbour';
 import { Game } from './game';
 import { DESIGNS, chosenShipKind } from './ship/design';
 import { RowingSystem } from './ship/rowing';
@@ -57,7 +63,7 @@ const qualitySeg = (seedValue: number | string, current: string) =>
 /** ship segmented control: picks the ship for the next load and remembers it */
 const shipSeg = () => `<div class="seg ship-seg" role="group" aria-label="Ship">${(['trireme', 'merchant'] as const).map((k) => `<a href="?q=${quality.name}&seed=${seed}&ship=${k}" data-ship="${k}" class="${k === shipKind ? 'on' : ''}"${k === shipKind ? ' aria-current="true"' : ''}>${DESIGNS[k].name}</a>`).join('')}</div>`;
 
-function generate(): Promise<WorldGenResult> {
+function generateWorld(request: WorldGenRequest): Promise<WorldGenResult> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./world/worldgen.worker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = (e) => {
@@ -70,38 +76,58 @@ function generate(): Promise<WorldGenResult> {
         resolve(m.result);
       }
     };
-    worker.onerror = (e) => reject(e);
-    const wind = new Wind(3);
-    worker.postMessage({ seed, size: quality.heightmapSize, worldSize: 12000, windFrom: wind.baseFrom, vegetationDensity: quality.vegetationDensity });
+    worker.onerror = (e) => { worker.terminate(); reject(e); };
+    worker.postMessage(request);
   });
 }
 
-function textures(): Promise<{ noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }> {
+function generateTextures(): Promise<StartupTextures> {
   return new Promise((resolve, reject) => {
     const w = new Worker(new URL('./gfx/texgen.worker.ts', import.meta.url), { type: 'module' });
     w.onmessage = (e) => {
       w.terminate();
       resolve(e.data);
     };
-    w.onerror = reject;
+    w.onerror = (e) => { w.terminate(); reject(e); };
     w.postMessage(null);
   });
 }
 
+async function startupWorld(): Promise<WorldGenResult> {
+  const request: WorldGenRequest = { authoredHarbour: true, seed, size: quality.heightmapSize,
+    worldSize: 12000, windFrom: new Wind(3).baseFrom, vegetationDensity: quality.vegetationDensity };
+  const started = performance.now();
+  let source = 'generated';
+  const result = dev && params.get('startupCache') === 'off'
+    ? await generateWorld(request)
+    : await loadCachedWorld(request, worldRevision, () => generateWorld(request), { onStatus: status => { source = status; } });
+  if (source === 'hit') { fill.style.width = '85%'; label.textContent = 'Loading the islands'; }
+  if (dev) console.log('[startup] world', { source, ms: Math.round(performance.now() - started), revision: worldRevision });
+  return result;
+}
+
+async function startupTextures(): Promise<StartupTextures> {
+  const started = performance.now();
+  let source = 'generated';
+  const result = dev && params.get('startupCache') === 'off'
+    ? await generateTextures()
+    : await loadStartupTextures(`${import.meta.env.BASE_URL}${textureUrl.replace(/^\//, '')}`, generateTextures,
+      { onStatus: status => { source = status; } });
+  if (dev) console.log('[startup] textures', { source, ms: Math.round(performance.now() - started) });
+  return result;
+}
+
 async function boot() {
   if (dev) console.log('[boot] start', performance.now().toFixed(0));
-  const texP = textures();
-  const assetsP = loadVisualAssets();
-  const gen = await generate();
-  const [tex, assets] = await Promise.all([texP, assetsP]);
-  const models = await loadModels(assets);
+  const [gen, tex, assets] = await Promise.all([startupWorld(), startupTextures(), loadVisualAssets()]);
+  const [models,ormos] = await Promise.all([loadModels(assets),loadOrmosHarbour(gen)]);
   if (dev) console.log('[boot] gen done', performance.now().toFixed(0));
   label.textContent = 'Preparing the ship';
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
-  const game = new Game(canvas, quality, gen, tex, assets, models, design);
+  const game = new Game(canvas, quality, gen, tex, assets, models, design,ormos);
   // cargo and ports (merchant): continue this world's saved voyage, or a new one docked at the main harbour
-  const voyage = game.initTrade({ seed, heightmapSize: quality.heightmapSize });
+  const voyage = game.initTrade({ seed, heightmapSize: quality.heightmapSize },dev && ['ormosReview','sailingReview','rowingReview','cargoReview'].some(k=>params.has(k)));
   // every ship starts docked at the main harbour (the merchant's voyage has already placed her);
   // ?start=sea keeps the old start outside the harbour mouth
   if (!voyage && params.get('start') !== 'sea') game.startInHarbour();
@@ -134,7 +160,9 @@ async function boot() {
   }
   // dev: start 70 m off the first berth, bow toward it along the quay, for docking iteration
   if (dev && params.get('start') === 'berth') {
-    const b = game.harbourLayout.berths[Number(params.get('berth') ?? 0)] ?? game.harbourLayout.berths[0];
+    // berth ids are global (harbour k owns 2k and 2k+1)
+    const all = game.harbourLayouts.flatMap((l) => l.berths);
+    const b = all[Number(params.get('berth') ?? 0)] ?? all[0];
     const off = Number(params.get('off') ?? 70);
     const x = b.cx + b.ax * off + b.nx * 4, z = b.cz + b.az * off + b.nz * 4;
     game.ship.place(x, z, Math.atan2(-b.ax, b.az));
@@ -197,6 +225,10 @@ async function boot() {
         if (clear) { reviewX = x; reviewZ = z; foundWater = true; }
       }
     }
+    // A normal voyage begins tied up. Clear those lines through the real cast-off
+    // path before relocating the acceptance ship, or the dock hold silently
+    // overrides the sail and pulls an offshore review back toward its old berth.
+    if(game.ship.mooring.onLines){game.ship.mooring.castOff();for(let i=0;i<720;i++)game.ship.step(1/120);game.ship.mooring.drain();}
     game.ship.place(reviewX, reviewZ, heading);
     game.crew.setOrder(['row', 'combined', 'calm'].includes(sailingReview) ? 4 : 1);
     game.ship.sailTarget = sailingReview === 'row' ? 0 : 1;
@@ -225,15 +257,19 @@ async function boot() {
         hud: game.hud.density, playerMode: game.player.mode, zoom: game.player.zoom,
         gpuMs: game.pipeline.gpuMs, drawCalls: game.pipeline.renderer.info.render.calls,
         finite: [...s.pos.toArray(), ...s.vel.toArray(), ...s.angVel.toArray(), sail.telemetry.load].every(Number.isFinite) });
-      if (game.running) requestAnimationFrame(observeSailing);
+      if (game.running || loading.isConnected) requestAnimationFrame(observeSailing);
     };
     requestAnimationFrame(observeSailing);
   }
+  if(dev && params.has('ormosReview'))installOrmosReview(game,gen,ormos,params.get('ormosReview')??'overview');
   (window as any).game = game;
   if (dev) console.log('[boot] game built', performance.now().toFixed(0));
   fill.style.width = '100%';
   await game.prepareLightingShaders();
   game.start();
+  if (dev && params.get('cargoReview') === '1' && shipKind === 'merchant') installCargoGameReview(game);
+  // dev server only (the launcher runs one): F9 records a performance capture into profiles/
+  if (import.meta.env.DEV) void import('./core/frameProfiler').then((m) => m.installFrameProfiler(game));
   // warm up shaders a frame before revealing
   await new Promise((r) => setTimeout(r, 250));
   loading.remove();

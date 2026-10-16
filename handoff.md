@@ -1,3 +1,59 @@
+# Production harbor integration — 2026-10-13
+
+The toolkit is now integrated by default in the actual game, at starting port id 0 (Serrothos on seed 1729). `src/world/ormosLayout.ts` defines its local frame and a graded working court; the world generator reserves its footprint and grades it before AO / wave-shelter baking. `src/world/ormosHarbour.ts` loads the staged kit, batches stonework and fixtures, supplies building collision, and uses grove LODs with proper local origins. `Props` retains native art at the other ports and adds six restrained lamps and the actual trade figure at the authored market. The starting mole keeps its original width, berth positions, docking physics and stair geometry. Its physical shore landing now also supplies a ship collider.
+
+The playable Kyrenia merchant installs `merchant-shell`, quiet linen and the rigid 3.1 m, 0.7 m gangplank. Its original dimensions, moving rig, crew, cargo, and walking systems remain authoritative. An existing missing crew material slot was fixed to preserve the Blender vertex colors. Interior gables were rebuilt as real wall volumes; the warehouse is walkable, while the houses retain closed door returns. Editable master Blender files and packed assets were refreshed.
+
+Build / verify: `npm run assets:ormos`, `npm run typecheck`, `npm run test:ormos`, `npm run build`. Existing ports, hold, mooring and walker regressions pass. Detailed evidence and limitations are in `docs/environment-review/ormos-production/README.md`. Production preview: `http://127.0.0.1:5190/?ship=merchant&q=high&dev&ormosReview=overview&wind=3`. The dev review fixture leaves saved voyages untouched. It exposes real walking / helm controls and fixed views, rather than replacing the game simulation. Browser acceptance includes the live trade ledger, entering the loading hall, walking ship to quay and back, and inspection of nine compositions plus lighting variants. Normal game URL needs no review flag to load the assets.
+
+Earlier entries below are historical and describe work before production integration.
+
+---
+
+# Latest pass: clarified landscape and compatible merchant
+
+The user's latest instruction requires the boat to retain the proportions and function of the existing game boat, with the restrained toolkit style. The user-confirmed target is the Kyrenia merchant (13.7787 m hull, 4.216 m beam), not the separate 17 m scenic boat. See `harbor-kit/MERCHANT.md` from the repository root. A new Blender `merchant-shell` and `createMerchant(kit)` adapter are implemented. Default game appearance is unchanged; game physics definitions are untouched. The game model now exposes reversible static-shell and sail-surface hooks, and sail shadows follow the visible deformation. Geometry compatibility, typechecks, builds and the cargo/hold regression suite pass. Full game navigation/boarding acceptance remains outstanding.
+
+The study landscape now uses 182 kit placements in 55 spatial batches. Repeated giant rocks were replaced by subordinate outcrop groups, continuous terrain shoulders and a quiet upper orchard path. Olive crowns are fuller. Water no longer exposes the underwater terrain patch as a bright triangle. The scenic gangplank preserves its upward direction and rigid length when reversed. The current study bundle is about 46.5 MB of referenced models and textures.
+
+The 21-view desktop lighting audit is under `harbor-study/evidence/acceptance/`; late-light fill and canopy folds were subsequently refined. A 390 by 844 desktop viewport check found no horizontal page overflow and settings fit; this is not physical-phone performance evidence. Mobile hides the keyboard-only walk control and uses touch navigation hints. Walk geometry tests pass. Broad goal remains active until remaining visual and interaction acceptance is reconciled with the new merchant requirement.
+
+Older entries below describe earlier states; their instance counts and statements of no game-source changes are historical.
+
+---
+
+# Current direction — clarified minimalism
+
+The user explicitly likes the minimalism and wants less mess at close range, while retaining good textures. Read `harbor-kit/VISUAL-LANGUAGE.md` before further art edits. That pass is implemented and browser checked across all 29 kit assets: quieter material variation, consistent stone edges, properly separated roof overlaps, and correctly fitted inspection shadows. The kit remains the reusable deliverable.
+
+The standalone harbor now actually reuses the toolkit's boat, gangplank and 423 landscape placements in spatial LOD batches. It shares the reviewed primitives/palette and compressed texture bundle. Read the newest section of `harbor-study/HANDOFF.md` for exact build order and current evidence. The broader production goal remains active; terrain composition and full interaction/performance acceptance are still incomplete. Do not substitute extra grime or random geometry for the clarified style.
+
+---
+
+# Latest handoff: reusable harbor asset toolkit — 2026-10-13
+
+The user clarified that this work is **a reusable toolkit for agents to integrate into Boatsim**, not merely a finished study. They then explicitly requested an asset-by-asset visual audit, improvements, and rechecking. That pass is now implemented in **`harbor-kit/`**. Read [`harbor-kit/README.md`](harbor-kit/README.md), [`harbor-kit/INTEGRATION.md`](harbor-kit/INTEGRATION.md), and [`harbor-kit/ACCEPTANCE.md`](harbor-kit/ACCEPTANCE.md) first. The earlier study below is historical context.
+
+The kit contains 29 assets, 13 shared materials, 40 compressed GLBs, a machine-readable manifest, editable Blender sources and a PBR-preserving Three.js adapter with cloning/instancing/LOD/snap helpers. The subsequent visual pass improved trees, shrubs, pottery, baskets, rocks, roof/building details, bench and mooring stone. The user likes the scenic boat; preserve its silhouette. It is separately authored and is not the game's playable merchant.
+
+All 29 assets and seven distant variants were checked live from the production build; console clean. Offline validation, strict typecheck and build pass. Production inspector: `http://127.0.0.1:5188/`; development inspector: `http://127.0.0.1:5187/`. Visual review and evidence live in the kit. No game integration has occurred. Read the acceptance boundaries before claiming production/game readiness. Changes remain uncommitted.
+
+---
+
+# Latest handoff: standalone harbor study — 2026-10-13
+
+**Continuation:** the harbor and separate scenic boat now have a substantial Blender detail pass, corrected runtime sky lighting, and a seventh Boat inspection camera. The user likes this boat and explicitly asked to refine it; preserve that direction. Live browser inspection succeeded after selecting the existing tab. Final build passes and final boat view has no console errors/warnings. See the newest section of `harbor-study/HANDOFF.md` for exact changes, screenshots, asset sizes and remaining limitations. This is still an isolated study, not game integration or final production acceptance.
+
+The current environment-art task is isolated in **`harbor-study/`**. Read **[`harbor-study/HANDOFF.md`](harbor-study/HANDOFF.md)** before continuing. It records the user brief, Blender source, preview/build commands, browser authorization, verified behavior, visual shortcomings and next steps.
+
+The user approved implementation of the shoreline/berth/warehouse/buildings/material proposal as a standalone HTML scene, **before integration into the game**. They explicitly authorized browser testing of this standalone study. They then asked to wrap up because they had to leave and requested both this update and the dedicated handoff.
+
+Preview: `http://127.0.0.1:5186/`. Editable master: `harbor-study/blender/ormos-harbor.blend`. Production bundle: `harbor-study/dist/` (rebuildable, ignored). Build passes and scene renders; **the visual production-quality bar is not yet met**. The scene remains too pale/flat, and visual refinement plus systematic interaction checks are pending. Do not treat a passing build or the current screenshot as acceptance.
+
+No existing game source or production assets were changed. Changes are uncommitted. The older material below is historical and its planning-only instructions do not supersede the user's authorization for this standalone harbor study.
+
+---
+
 # Handoff: merchant ship and sea realism (planning phase)
 
 Last updated: 2026-10-09. Branch: `next-level`, with many uncommitted changes from earlier work (see

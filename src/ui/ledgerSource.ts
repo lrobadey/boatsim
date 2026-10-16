@@ -4,6 +4,8 @@
 
 import { GOODS, goodById, type GoodId } from '../trade/goods';
 import { formatDr } from '../trade/money';
+import { CARGO_WORK_KG_PER_HOUR, jobSummary } from '../trade/job';
+import { formatHandlingDuration, handlingStatus } from '../trade/handlingStatus';
 import type { Economy } from '../trade/economy';
 import type { VoyageState } from '../trade/voyage';
 import type { LedgerMode, LedgerRow, LedgerSource } from './ledger';
@@ -22,6 +24,10 @@ export interface TradeSessionLike {
   readonly pendingUnits: number;
   /** manifest + pending incoming − pending outgoing */
   aboard(good: GoodId): number;
+  /** physical manifest volume and mass */
+  physicalHoldUse(): { volume: number; tonnes: number };
+  /** committed manifest projection volume and mass */
+  holdUse(): { volume: number; tonnes: number };
   limits(port: number, orders: Orders, good: GoodId): { min: number; max: number; limitedBy: 'purse' | 'hold' | 'stock' | 'aboard' | null };
   quote(port: number, orders: Orders): { total: number; duty: number; porters: number };
   confirm(port: number, berth: number, orders: Orders): { sold: Line[]; bought: Line[] };
@@ -48,6 +54,13 @@ export interface TradeLedgerOptions {
   holdCapacity: number;
   /** names of every port in the notebook, by port id */
   portNames: Record<number, string>;
+  /** Whether the ship still occupies the exact berth required to trade here. */
+  canTrade?: () => boolean;
+  /** Current cargo-job connection context for shared paused/ready status. */
+  handlingContext?: () => { connected: boolean; portName?: string };
+  /** optional game clock multiplier and delegated speed callback */
+  timeScale?: () => number;
+  changeTimeSpeed?(factor: number): void;
 }
 
 /** The ledger's LedgerSource for one port over a trade session. */
@@ -64,7 +77,8 @@ export function tradeLedgerSource(o: TradeLedgerOptions): LedgerSource {
         stock: Math.floor(m.S),
         buy: m.ask(),
         sell: m.bid(),
-        aboard: s.aboard(g.id),
+        aboard: s.voyage.manifest[g.id] ?? 0,
+        committed: s.aboard(g.id),
         massKg: g.mass,
         stowM3: g.stow,
       };
@@ -73,7 +87,9 @@ export function tradeLedgerSource(o: TradeLedgerOptions): LedgerSource {
   const asOrders = (orders: Record<string, number>): Orders => orders as Orders;
 
   return {
-    mode: o.mode,
+    get mode() {
+      return o.mode === 'trade' && o.canTrade?.() === false ? 'read' : o.mode;
+    },
     portName: o.portName,
     get timeLabel() {
       const c = o.clock();
@@ -82,9 +98,14 @@ export function tradeLedgerSource(o: TradeLedgerOptions): LedgerSource {
       const mm = String(minutes % 60).padStart(2, '0');
       return `Day ${c.dayCount + 1} · ${hh}:${mm}`;
     },
-    // hold mode lists only the goods aboard
-    rows: () => (o.mode === 'hold' ? allRows().filter((r) => r.aboard > 0) : allRows()),
-    quote: (orders) => s.quote(o.port, asOrders(orders)),
+    get timeScale() { return o.timeScale?.(); },
+    ...(o.changeTimeSpeed ? { changeTimeSpeed: o.changeTimeSpeed } : {}),
+    // hold mode lists physically aboard goods and confirmed incoming cargo
+    rows: () => (o.mode === 'hold' ? allRows().filter((r) => r.aboard > 0 || (r.committed ?? 0) > 0) : allRows()),
+    quote: (orders) => ({
+      ...s.quote(o.port, asOrders(orders)),
+      handlingHours: GOODS.reduce((hours, g) => hours + Math.abs(orders[g.id] ?? 0) * g.mass / CARGO_WORK_KG_PER_HOUR, 0),
+    }),
     limits(orders, id) {
       // the row's own entry is left out, so only the other rows limit it
       const others: Record<string, number> = { ...orders };
@@ -97,23 +118,27 @@ export function tradeLedgerSource(o: TradeLedgerOptions): LedgerSource {
       return s.voyage.purse;
     },
     get hold() {
-      let used = 0;
-      let tonnes = 0;
-      for (const g of GOODS) {
-        const a = s.aboard(g.id);
-        used += a * g.stow;
-        tonnes += (a * g.mass) / 1000;
-      }
-      return { tonnes, used, capacity: o.holdCapacity };
+      const physical = s.physicalHoldUse();
+      return { tonnes: physical.tonnes, used: physical.volume, capacity: o.holdCapacity };
+    },
+    get committedHold() {
+      const committed = s.holdUse();
+      return { tonnes: committed.tonnes, used: committed.volume, capacity: o.holdCapacity };
     },
     wagesPerDay: o.wagesPerDay,
     get jobLine() {
       const job = s.voyage.job;
-      const n = s.pendingUnits;
-      if (!job || n <= 0) return null;
-      // unloading goes first, so any outgoing pending unit means the job is unloading now
-      const unloading = Object.values(job.pending).some((v) => (v ?? 0) < 0);
-      return `${unloading ? 'Unloading' : 'Loading'} · ${n} left`;
+      const context = o.handlingContext?.() ?? { connected: o.canTrade?.() ?? true, portName: o.portName };
+      const status = handlingStatus(job, o.T(), s.voyage.hatchUntil, context);
+      if (status.phase === 'idle') return null;
+      if (status.phase === 'paused' || status.phase === 'ready') return `${status.label} · ${status.detail}`;
+      if (!job || s.pendingUnits <= 0) return null;
+      const summary = jobSummary(job);
+      const duration = formatHandlingDuration(summary.hours);
+      const work = summary.remainingKg < 1000
+        ? `${Math.ceil(summary.remainingKg - 1e-10)} kg to handle`
+        : `${(summary.remainingKg / 1000).toFixed(1)} t to handle`;
+      return `${status.label} · ${summary.units} left · ${work} · ${duration}`;
     },
     notebook() {
       const ports = Object.keys(o.portNames)
@@ -128,12 +153,13 @@ export function tradeLedgerSource(o: TradeLedgerOptions): LedgerSource {
           name: g.name,
           cells: ports.map((p) => {
             const e = entries.find((x) => x.port === p && x.good === g.id);
-            return e ? { ask: e.ask, bid: e.bid, ageHours: Math.max(0, now - e.T) } : null;
+            return e ? { ask: e.ask, bid: e.bid, ageHours: Math.max(0, now - e.T), ...(e.heard ? { heard: true } : {}) } : null;
           }),
         })),
       };
     },
     confirm(orders) {
+      if (o.canTrade?.() === false) throw new RangeError('ship is no longer at this berth');
       const res = s.confirm(o.port, o.berth, asOrders(orders));
       const line = (verb: string, l: Line) =>
         `${verb} ${Math.abs(l.qty)} ${goodById(l.good).name.toLowerCase()} · ${formatDr(Math.abs(l.total))}`;

@@ -1,3 +1,4 @@
+import {harborMarket,harborWorld,harborYaw,planPier,planOf,type HarborPlan} from './ormosLayout';
 import * as THREE from 'three';
 import type { HarbourSite, Sites, WorldGenResult } from './worldgenTypes';
 import type { Terrain } from './terrain';
@@ -140,7 +141,7 @@ export function houseFootprint(area: number): [number, number] {
 }
 
 /** A harbour as the layout builders see it: the per-port fields of HarbourSite (the legacy site when absent). */
-export type PortSite = Pick<HarbourSite, 'id' | 'name' | 'harbour' | 'shore' | 'pier' | 'houses'>;
+export type PortSite = Pick<HarbourSite, 'id' | 'name' | 'harbour' | 'shore' | 'pier' | 'houses' | 'plan'>;
 
 /** every harbour of the world; a generator without `harbours` gives the single legacy site as harbour 0 */
 export function portSites(gen: WorldGenResult): PortSite[] {
@@ -217,9 +218,10 @@ export function stallSite(f: PierFrame, k: number): StallSite {
   return stallGeometry(f, k).site;
 }
 
-export function buildHarbours(gen: WorldGenResult, terrain: Terrain): HarbourLayout[] {
+/** `authored`: harbours the worker graded a plan into (HarbourSite.plan) use its landing and market (the kit scenery) */
+export function buildHarbours(gen: WorldGenResult, terrain: Terrain, authored=false): HarbourLayout[] {
   void terrain; // the dredging is already in the heightmap
-  return portSites(gen).map((site) => buildLayout(gen, site));
+  return portSites(gen).map((site) => buildLayout(gen, site, authored ? planOf(site) : undefined));
 }
 
 /** the main harbour's layout (harbour 0), as before the multi-harbour change */
@@ -227,7 +229,7 @@ export function buildHarbour(gen: WorldGenResult, terrain: Terrain): HarbourLayo
   return buildHarbours(gen, terrain)[0];
 }
 
-function buildLayout(gen: WorldGenResult, site: PortSite): HarbourLayout {
+function buildLayout(gen: WorldGenResult, site: PortSite, plan?: HarborPlan): HarbourLayout {
   const k = site.id;
   const f = pierFrame(site.pier);
   const hw = f.width / 2,
@@ -264,6 +266,7 @@ function buildLayout(gen: WorldGenResult, site: PortSite): HarbourLayout {
   }
   const shipColliders: BoxSolid[] = [pierBox(0, f.length, -hw, hw, bottom, top, false)];
 
+  if(plan){const L=plan.landing,q=planPier(site.pier,plan),v=harborWorld(q,L.x??0,L.z);shipColliders.push({kind:'box',cx:v.x,cz:v.z,hx:L.w/2,hz:L.d/2,rot:harborYaw(q),y0:QUAY.bottom,y1:top,surface:'stone',walkTop:false});}
   const berths: Berth[] = [];
   for (const side of [-1, 1] as const) {
     const nx = side * f.lx,
@@ -290,8 +293,8 @@ function buildLayout(gen: WorldGenResult, site: PortSite): HarbourLayout {
 
   // trade stall (§8): the bench and the awning posts block; the figure and the amphorae are props (props.ts)
   const stall = stallGeometry(f, k);
-  solids.push({ kind: 'box', cx: stall.bench.x, cz: stall.bench.z, hx: STALL_BENCH.hx, hz: STALL_BENCH.hz, rot: stall.bench.yaw, y0: top, y1: top + STALL_BENCH.h, surface: 'wood', walkTop: false });
-  for (const p of stall.posts) solids.push({ kind: 'cyl', cx: p.x, cz: p.z, r: STALL_POST_R, y0: top, y1: top + STALL_POST_H, surface: 'wood', walkTop: false });
+  if(!plan)solids.push({ kind: 'box', cx: stall.bench.x, cz: stall.bench.z, hx: STALL_BENCH.hx, hz: STALL_BENCH.hz, rot: stall.bench.yaw, y0: top, y1: top + STALL_BENCH.h, surface: 'wood', walkTop: false });
+  if(!plan)for (const p of stall.posts) solids.push({ kind: 'cyl', cx: p.x, cz: p.z, r: STALL_POST_R, y0: top, y1: top + STALL_POST_H, surface: 'wood', walkTop: false });
 
   // village houses of this harbour: blocking boxes (rot follows the same yaw as the rendered house)
   for (const h of site.houses) {
@@ -340,6 +343,6 @@ function buildLayout(gen: WorldGenResult, site: PortSite): HarbourLayout {
     solids,
     shipColliders,
     steps: new THREE.Vector3(f.x0 + f.ux * stepAlong, bottomTread, f.z0 + f.uz * stepAlong),
-    stall: stall.site,
+    stall: plan ? harborMarket(site.pier, plan) : stall.site,
   };
 }

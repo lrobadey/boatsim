@@ -1,0 +1,47 @@
+# Cloud marcher opportunities: independent source review
+
+2026-10-15. Read-only production review of `clouds.ts`, `cloudModel.ts`, and `cloudFlow.ts`; no browser experiments, implementation, or measured savings. The foreground shortcut remains rolled back. These proposals target density/light integration; temporal/composite policy is reviewed separately by the lead.
+
+## 1. Filter the nearby shadow samples according to the distance they represent
+
+**Plain-language objective:** steadier cloud shading without adding more samples.
+
+`cloudModel.ts:155–163` integrates three near-sun intervals: 4–20, 20–84 and 84–300 metres. Their widths are 16, 64 and 216 m, yet each calls `vcDensity(...,false)`, whose wrapper hardcodes shape LOD0 (`cloudModel.ts:109`). The base shape voxel spans 7200/128 = 56.25 m. Thus the last sample represents almost four voxels of distance while reading an unfiltered point. It may also fetch full detail erosion (`cloudModel.ts:99–103`), although this is a broad interval average. Far shadows already use explicit interval-based filtering (`cloudModel.ts:116–140`), and view samples use interval/cone filtering (`clouds.ts:108`). This is a specific inconsistency in quality allocation.
+
+**Bounded proposal:** supply the near-light interval footprint explicitly to the density evaluator, using the same half-interval footprint convention as view/far filtering. A 216 m interval implies shape LOD about log2(108/56.25)=0.94, rather than zero. Use explicit weather footprint as well, consistent with the prior sampling investigation. Keep all three positions, integration widths, local self-shadow, direct/multiple-scattering formulas and far-light integration unchanged initially.
+
+**Expected benefit and tradeoff:** same number of shape/weather reads; less point-sample sensitivity in broad shadow integration is plausible. This is not a predicted GPU speedup. Mip filtering followed by a nonlinear density threshold does not equal average extinction, so shadows can become weaker or lose structure; reduced shimmer is not sufficient acceptance if cloud volume becomes flat. The existing far-mean method explicitly acknowledges this nonlinear averaging problem (`cloudModel.ts:112–115`). Do not assume ordinary filtered density is an unbiased integral.
+
+**Proof plan:** compare current and filtered variants to a separately computed higher-sample near-light reference along fixed representative rays, measuring optical-depth error and direct/multiple radiance error. Include thin sunlit edges, dense interiors, low sun, upward/downward views and camera/wind motion. Then paired GPU timing of the march plus integrated frame pacing, actual final-display captures and temporal difference sequences. Accept as a quality improvement only if stability improves without material loss of shadow structure or budget regression. Keep the explicit-weather correctness change identifiable; do not hide it in a combined speed claim.
+
+## 2. Reuse only broad distant shadow information within short view cells
+
+**Plain-language objective:** stop repeatedly solving almost the same distant shadow while preserving nearby cloud detail.
+
+Every contributing fine view sample invokes `vcLightOpticalDepth` (`clouds.ts:109–122`). Each invocation can perform three detailed near samples and four expanding far-mean samples (`cloudModel.ts:145–177`), including a new shell intersection. At the 180 fine-sample ceiling (`clouds.ts:97–100`), the source permits up to 540 near plus 720 far density evaluations, before early exits. This is a work-count bound, not an observed count or GPU cost. The far samples are broad, filtered statistical estimates. The nominal cell-width target is 40 m (`clouds.ts:70–74`), but the maximum cell count can force much larger cells; no cell-population frequency was measured. No intra-cell light reuse currently exists.
+
+**Bounded proposal:** split local/near optical depth from distant optical depth. Retain local density and all near-light samples per occupied fine sample. Experiment with evaluating the distant component once per short coarse cell and reusing it for that cell's contributing samples. Initially restrict eligibility to genuinely short cells and a stable sun-shell exit, retaining current behavior for long grazing cells and near shell transitions. Use the existing direct and multiple-scattering attenuation formulas; cache optical depth, not final RGB light.
+
+**Expected benefit and tradeoff:** fewer far-density evaluations where several samples in a short cell contribute. No savings are established: branch divergence, registers, cache behavior and additional bookkeeping may erase the arithmetic reduction. Far shadows can change quickly across a distant cloud edge even if their integration intervals are broad. Reuse can produce shading steps, halos, or incorrect silver linings. The first far interval may be short near a shell exit, so unconditional reuse is not justified. Dense rays also terminate early and may contain few reusable samples.
+
+The guard must use actual world-space displacement, not simply “same coarse cell.” At the 26 km march cap, even 72 cells are about 361 m wide, and 60 cells are about 433 m wide. The composite fallback requests only 24 cells (`cloudPass.ts:103–104`), allowing about 1,083 m per cell at that cap. These are not short neighborhoods. Establish the permissible reuse distance from measured far-optical-depth variation against the unchanged per-sample reference, rather than assuming the cell index bounds lighting error.
+
+**Proof plan:** first instrument actual near/far-light call counts and number of contributing fine samples per cell for clear, broken and overcast skies, low/high sun and near-layer cameras. Compare per-fine reference far optical depths with the reused value before judging images. Test one-cell reuse against unchanged production on identical input state and against a higher-sample reference where production itself is approximate. Measure march GPU time and normal pacing separately, and inspect moving cloud edges plus interior tonal gradients through the full postprocessing path. Reject if the eligible population is small or quality loss exceeds the measured saving.
+
+## 3. Make empty-space probes reusable instead of paying for unrelated locations
+
+**Plain-language objective:** spend cloud texture reads on samples that can also contribute to the image.
+
+When refinement is inactive, `clouds.ts:89–95` evaluates one or two cheap density probes at approximately quarter/three-quarter cell positions. A successful first probe short-circuits the second. These calls still compute height-dependent flow, weather, shape and body profile; “cheap” skips only erosion (`cloudModel.ts:84–103`). An occupied cell then evaluates two or three different fine locations (`clouds.ts:99–109`), recomputing those inputs. Probe and fine positions, jitter shifts and LODs differ, so simply reusing existing values is incorrect.
+
+**Bounded proposal:** investigate a combined density evaluation that returns reusable un-eroded body and the parameters needed for final erosion. Align occupancy probes with selected actual fine-sample positions and use matching LODs, so an occupied probe can become a fine sample without repeating flow/weather/shape. Preserve per-sample density erosion and lighting. This is a sampling redesign, not a mechanical memoization patch. Begin with three-sample cells and keep the two-sample distribution above 60 cells unchanged until separately evaluated.
+
+**Expected benefit and tradeoff:** potentially removes duplicated body evaluations in newly occupied cells; long dense runs already bypass probes because `refining` persists (`clouds.ts:132`), so they benefit little. Clear rays may become more expensive if aligned probes use finer LOD. The current two-probe test is already a heuristic, not a conservative occupancy bound: narrow cloud can exist between probes. Moving probes can reveal some features and miss others, changing silhouettes. The proposed reuse must not be advertised as output-equivalent.
+
+**Proof plan:** count skipped, newly occupied and continuing occupied cells, short-circuited probes, and erosion/lighting calls. Use a high-sample density reference to measure false-empty cells and missed optical depth, especially thin wisps and long grazing intervals. Compare spatial silhouettes and temporal flicker under matched jitter sequences. Measure GPU timing only after shader behavior is controlled; changes to implicit weather LOD can otherwise masquerade as improvements. Proceed only if reduced duplicate work or better coverage is demonstrated at comparable final-image quality.
+
+## Suggested order and limits
+
+Investigate near-shadow filtering first if the objective is better appearance at roughly the same budget. Instrument far-shadow redundancy next if the objective is speed. Keep probe reuse third because it modifies visibility sampling and has a greater acceptance burden. All three are hypotheses grounded in concrete source behavior, not promised improvements.
+
+Do not prioritize manual hoisting of wind sines, coverage thresholds or constant phase terms without compiled-shader or timing evidence: the source repeats some invariant calculations, but the compiler may already eliminate them. Do not treat the nominal 180-sample ceiling as observed work; empty probes, low density, absent sunlight and transmittance termination all change the executed workload. Production edits and browser experiments remain outside this review.

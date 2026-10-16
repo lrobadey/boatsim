@@ -1,0 +1,1077 @@
+{
+  "kind": "rotating-gpu-stages",
+  "serialized": true,
+  "at": "2026-10-16T03:06:45.746Z",
+  "quality": "ultra",
+  "scale": 1.3,
+  "cap": 60,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+  "viewport": [
+    1512,
+    693
+  ],
+  "canvas": [
+    1965,
+    900
+  ],
+  "mode": "helm",
+  "paused": false,
+  "intervalMs": {
+    "mean": 36.23966480447135,
+    "median": 35.600000001490116,
+    "p95": 58.29999999888241
+  },
+  "sumStageMeansMs": 27.580120733333338,
+  "note": "Reflection includes directional shadows; stages rotate across different frames. Readback wall timings include CPU and synchronization. GPU query credibility must be checked against wall timings.",
+  "disjoints": 0,
+  "skipped": 0,
+  "frames": 180,
+  "rows": [
+    {
+      "stage": "main scene",
+      "mean": 17.816799533333334,
+      "median": 18.057499,
+      "p95": 19.669791,
+      "wallMs": {
+        "mean": 23.313333333283662,
+        "median": 23.5,
+        "p95": 25.5
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "volumetric clouds",
+      "mean": 3.2109634666666667,
+      "median": 3.17875,
+      "p95": 3.909041,
+      "wallMs": {
+        "mean": 3.893333333233992,
+        "median": 3.800000000745058,
+        "p95": 4.800000000745058
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "reflection scene",
+      "mean": 2.860521666666666,
+      "median": 2.709291,
+      "p95": 3.512541,
+      "wallMs": {
+        "mean": 7.9666666670391955,
+        "median": 7.900000000372529,
+        "p95": 9
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "refraction scene",
+      "mean": 2.0212772666666665,
+      "median": 1.899875,
+      "p95": 2.570958,
+      "wallMs": {
+        "mean": 5.306666666766008,
+        "median": 5.300000000745058,
+        "p95": 5.799999998882413
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "directional shadows",
+      "mean": 1.2723912000000002,
+      "median": 1.206124,
+      "p95": 1.889625,
+      "wallMs": {
+        "mean": 1.4200000002980233,
+        "median": 1.5,
+        "p95": 1.6000000014901161
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "bloom and grade",
+      "mean": 0.6180440666666667,
+      "median": 0.620458,
+      "p95": 0.792958,
+      "wallMs": {
+        "mean": 1.160000000273188,
+        "median": 1.199999999254942,
+        "p95": 1.400000000372529
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "FFT waves",
+      "mean": 0.5805469333333334,
+      "median": 0.563708,
+      "p95": 0.902291,
+      "wallMs": {
+        "mean": 0.7400000000993411,
+        "median": 0.6999999992549419,
+        "p95": 1.699999999254942
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "SMAA",
+      "mean": 0.4012438666666666,
+      "median": 0.353458,
+      "p95": 0.733625,
+      "wallMs": {
+        "mean": 0.9733333338052035,
+        "median": 0.900000000372529,
+        "p95": 1.5
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "oar water",
+      "mean": 0.03288286666666667,
+      "median": 0.033458,
+      "p95": 0.0345,
+      "wallMs": {
+        "mean": 0.12666666644314925,
+        "median": 0.09999999962747097,
+        "p95": 0.2000000011175871
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "foam",
+      "mean": 0.0294134,
+      "median": 0.029625,
+      "p95": 0.033,
+      "wallMs": {
+        "mean": 0.2,
+        "median": 0.19999999925494194,
+        "p95": 0.30000000074505806
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "cloud shadows",
+      "mean": 0.0070444,
+      "median": 0,
+      "p95": 0.105666,
+      "wallMs": {
+        "mean": 0.10666666639347872,
+        "median": 0.09999999962747097,
+        "p95": 0.19999999925494194
+      },
+      "activeFrames": 15
+    },
+    {
+      "stage": "sky environment",
+      "mean": 0.0013832666666666667,
+      "median": 0,
+      "p95": 0.020749,
+      "wallMs": {
+        "mean": 0.11999999992549419,
+        "median": 0.09999999962747097,
+        "p95": 0.30000000074505806
+      },
+      "activeFrames": 15
+    }
+  ],
+  "samples": [
+    {
+      "frame": 1,
+      "stage": "FFT waves",
+      "ms": 0.618666
+    },
+    {
+      "frame": 2,
+      "stage": "directional shadows",
+      "ms": 1.889625
+    },
+    {
+      "frame": 3,
+      "stage": "reflection scene",
+      "ms": 2.708083
+    },
+    {
+      "frame": 4,
+      "stage": "refraction scene",
+      "ms": 2.168166
+    },
+    {
+      "frame": 5,
+      "stage": "main scene",
+      "ms": 15.976125
+    },
+    {
+      "frame": 6,
+      "stage": "volumetric clouds",
+      "ms": 2.913374
+    },
+    {
+      "frame": 7,
+      "stage": "bloom and grade",
+      "ms": 0.547416
+    },
+    {
+      "frame": 8,
+      "stage": "SMAA",
+      "ms": 0.354
+    },
+    {
+      "frame": 9,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 10,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 11,
+      "stage": "foam",
+      "ms": 0.031125
+    },
+    {
+      "frame": 12,
+      "stage": "oar water",
+      "ms": 0.029708
+    },
+    {
+      "frame": 13,
+      "stage": "FFT waves",
+      "ms": 0.570958
+    },
+    {
+      "frame": 14,
+      "stage": "directional shadows",
+      "ms": 1.191375
+    },
+    {
+      "frame": 15,
+      "stage": "reflection scene",
+      "ms": 2.709291
+    },
+    {
+      "frame": 16,
+      "stage": "refraction scene",
+      "ms": 1.813
+    },
+    {
+      "frame": 17,
+      "stage": "main scene",
+      "ms": 19.669791
+    },
+    {
+      "frame": 18,
+      "stage": "volumetric clouds",
+      "ms": 3.399583
+    },
+    {
+      "frame": 19,
+      "stage": "bloom and grade",
+      "ms": 0.611375
+    },
+    {
+      "frame": 20,
+      "stage": "SMAA",
+      "ms": 0.348041
+    },
+    {
+      "frame": 21,
+      "stage": "sky environment",
+      "ms": 0.020749
+    },
+    {
+      "frame": 22,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 23,
+      "stage": "foam",
+      "ms": 0.023791
+    },
+    {
+      "frame": 24,
+      "stage": "oar water",
+      "ms": 0.033666
+    },
+    {
+      "frame": 25,
+      "stage": "FFT waves",
+      "ms": 0.597583
+    },
+    {
+      "frame": 26,
+      "stage": "directional shadows",
+      "ms": 1.187083
+    },
+    {
+      "frame": 27,
+      "stage": "reflection scene",
+      "ms": 3.389958
+    },
+    {
+      "frame": 28,
+      "stage": "refraction scene",
+      "ms": 2.452833
+    },
+    {
+      "frame": 29,
+      "stage": "main scene",
+      "ms": 18.431291
+    },
+    {
+      "frame": 30,
+      "stage": "volumetric clouds",
+      "ms": 3.74225
+    },
+    {
+      "frame": 31,
+      "stage": "bloom and grade",
+      "ms": 0.628083
+    },
+    {
+      "frame": 32,
+      "stage": "SMAA",
+      "ms": 0.351999
+    },
+    {
+      "frame": 33,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 34,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 35,
+      "stage": "foam",
+      "ms": 0.033
+    },
+    {
+      "frame": 36,
+      "stage": "oar water",
+      "ms": 0.031749
+    },
+    {
+      "frame": 37,
+      "stage": "FFT waves",
+      "ms": 0.58775
+    },
+    {
+      "frame": 38,
+      "stage": "directional shadows",
+      "ms": 1.184374
+    },
+    {
+      "frame": 39,
+      "stage": "reflection scene",
+      "ms": 2.700749
+    },
+    {
+      "frame": 40,
+      "stage": "refraction scene",
+      "ms": 1.815624
+    },
+    {
+      "frame": 41,
+      "stage": "main scene",
+      "ms": 17.370958
+    },
+    {
+      "frame": 42,
+      "stage": "volumetric clouds",
+      "ms": 3.909041
+    },
+    {
+      "frame": 43,
+      "stage": "bloom and grade",
+      "ms": 0.612333
+    },
+    {
+      "frame": 44,
+      "stage": "SMAA",
+      "ms": 0.590875
+    },
+    {
+      "frame": 45,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 46,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 47,
+      "stage": "foam",
+      "ms": 0.026374
+    },
+    {
+      "frame": 48,
+      "stage": "oar water",
+      "ms": 0.033458
+    },
+    {
+      "frame": 49,
+      "stage": "FFT waves",
+      "ms": 0.566708
+    },
+    {
+      "frame": 50,
+      "stage": "directional shadows",
+      "ms": 1.200666
+    },
+    {
+      "frame": 51,
+      "stage": "reflection scene",
+      "ms": 2.638125
+    },
+    {
+      "frame": 52,
+      "stage": "refraction scene",
+      "ms": 1.899875
+    },
+    {
+      "frame": 53,
+      "stage": "main scene",
+      "ms": 17.63525
+    },
+    {
+      "frame": 54,
+      "stage": "volumetric clouds",
+      "ms": 2.629958
+    },
+    {
+      "frame": 55,
+      "stage": "bloom and grade",
+      "ms": 0.605916
+    },
+    {
+      "frame": 56,
+      "stage": "SMAA",
+      "ms": 0.356541
+    },
+    {
+      "frame": 57,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 58,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 59,
+      "stage": "foam",
+      "ms": 0.02875
+    },
+    {
+      "frame": 60,
+      "stage": "oar water",
+      "ms": 0.033791
+    },
+    {
+      "frame": 61,
+      "stage": "FFT waves",
+      "ms": 0.581541
+    },
+    {
+      "frame": 62,
+      "stage": "directional shadows",
+      "ms": 1.215874
+    },
+    {
+      "frame": 63,
+      "stage": "reflection scene",
+      "ms": 2.719874
+    },
+    {
+      "frame": 64,
+      "stage": "refraction scene",
+      "ms": 2.509416
+    },
+    {
+      "frame": 65,
+      "stage": "main scene",
+      "ms": 15.86825
+    },
+    {
+      "frame": 66,
+      "stage": "volumetric clouds",
+      "ms": 3.90175
+    },
+    {
+      "frame": 67,
+      "stage": "bloom and grade",
+      "ms": 0.792958
+    },
+    {
+      "frame": 68,
+      "stage": "SMAA",
+      "ms": 0.464624
+    },
+    {
+      "frame": 69,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 70,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 71,
+      "stage": "foam",
+      "ms": 0.031499
+    },
+    {
+      "frame": 72,
+      "stage": "oar water",
+      "ms": 0.034124
+    },
+    {
+      "frame": 73,
+      "stage": "FFT waves",
+      "ms": 0.549
+    },
+    {
+      "frame": 74,
+      "stage": "directional shadows",
+      "ms": 1.1525
+    },
+    {
+      "frame": 75,
+      "stage": "reflection scene",
+      "ms": 2.623333
+    },
+    {
+      "frame": 76,
+      "stage": "refraction scene",
+      "ms": 1.914916
+    },
+    {
+      "frame": 77,
+      "stage": "main scene",
+      "ms": 16.132041
+    },
+    {
+      "frame": 78,
+      "stage": "volumetric clouds",
+      "ms": 3.119
+    },
+    {
+      "frame": 79,
+      "stage": "bloom and grade",
+      "ms": 0.636999
+    },
+    {
+      "frame": 80,
+      "stage": "SMAA",
+      "ms": 0.350874
+    },
+    {
+      "frame": 81,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 82,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 83,
+      "stage": "foam",
+      "ms": 0.031666
+    },
+    {
+      "frame": 84,
+      "stage": "oar water",
+      "ms": 0.03375
+    },
+    {
+      "frame": 85,
+      "stage": "FFT waves",
+      "ms": 0.516833
+    },
+    {
+      "frame": 86,
+      "stage": "directional shadows",
+      "ms": 1.206124
+    },
+    {
+      "frame": 87,
+      "stage": "reflection scene",
+      "ms": 3.464125
+    },
+    {
+      "frame": 88,
+      "stage": "refraction scene",
+      "ms": 2.570958
+    },
+    {
+      "frame": 89,
+      "stage": "main scene",
+      "ms": 18.656749
+    },
+    {
+      "frame": 90,
+      "stage": "volumetric clouds",
+      "ms": 2.99225
+    },
+    {
+      "frame": 91,
+      "stage": "bloom and grade",
+      "ms": 0.620791
+    },
+    {
+      "frame": 92,
+      "stage": "SMAA",
+      "ms": 0.351333
+    },
+    {
+      "frame": 93,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 94,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 95,
+      "stage": "foam",
+      "ms": 0.031416
+    },
+    {
+      "frame": 96,
+      "stage": "oar water",
+      "ms": 0.03425
+    },
+    {
+      "frame": 97,
+      "stage": "FFT waves",
+      "ms": 0.52675
+    },
+    {
+      "frame": 98,
+      "stage": "directional shadows",
+      "ms": 1.263624
+    },
+    {
+      "frame": 99,
+      "stage": "reflection scene",
+      "ms": 2.603541
+    },
+    {
+      "frame": 100,
+      "stage": "refraction scene",
+      "ms": 1.779041
+    },
+    {
+      "frame": 101,
+      "stage": "main scene",
+      "ms": 19.394875
+    },
+    {
+      "frame": 102,
+      "stage": "volumetric clouds",
+      "ms": 3.17875
+    },
+    {
+      "frame": 103,
+      "stage": "bloom and grade",
+      "ms": 0.620458
+    },
+    {
+      "frame": 104,
+      "stage": "SMAA",
+      "ms": 0.733625
+    },
+    {
+      "frame": 105,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 106,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 107,
+      "stage": "foam",
+      "ms": 0.027458
+    },
+    {
+      "frame": 108,
+      "stage": "oar water",
+      "ms": 0.0345
+    },
+    {
+      "frame": 109,
+      "stage": "FFT waves",
+      "ms": 0.902291
+    },
+    {
+      "frame": 110,
+      "stage": "directional shadows",
+      "ms": 1.205541
+    },
+    {
+      "frame": 111,
+      "stage": "reflection scene",
+      "ms": 3.512541
+    },
+    {
+      "frame": 112,
+      "stage": "refraction scene",
+      "ms": 1.783
+    },
+    {
+      "frame": 113,
+      "stage": "main scene",
+      "ms": 18.896499
+    },
+    {
+      "frame": 114,
+      "stage": "volumetric clouds",
+      "ms": 3.462166
+    },
+    {
+      "frame": 115,
+      "stage": "bloom and grade",
+      "ms": 0.6235
+    },
+    {
+      "frame": 116,
+      "stage": "SMAA",
+      "ms": 0.346291
+    },
+    {
+      "frame": 117,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 118,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 119,
+      "stage": "foam",
+      "ms": 0.027874
+    },
+    {
+      "frame": 120,
+      "stage": "oar water",
+      "ms": 0.034499
+    },
+    {
+      "frame": 121,
+      "stage": "FFT waves",
+      "ms": 0.55025
+    },
+    {
+      "frame": 122,
+      "stage": "directional shadows",
+      "ms": 1.283041
+    },
+    {
+      "frame": 123,
+      "stage": "reflection scene",
+      "ms": 2.935791
+    },
+    {
+      "frame": 124,
+      "stage": "refraction scene",
+      "ms": 2.120291
+    },
+    {
+      "frame": 125,
+      "stage": "main scene",
+      "ms": 15.964333
+    },
+    {
+      "frame": 126,
+      "stage": "volumetric clouds",
+      "ms": 3.690749
+    },
+    {
+      "frame": 127,
+      "stage": "bloom and grade",
+      "ms": 0.643333
+    },
+    {
+      "frame": 128,
+      "stage": "SMAA",
+      "ms": 0.358499
+    },
+    {
+      "frame": 129,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 130,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 131,
+      "stage": "foam",
+      "ms": 0.031624
+    },
+    {
+      "frame": 132,
+      "stage": "oar water",
+      "ms": 0.033416
+    },
+    {
+      "frame": 133,
+      "stage": "FFT waves",
+      "ms": 0.563708
+    },
+    {
+      "frame": 134,
+      "stage": "directional shadows",
+      "ms": 1.508208
+    },
+    {
+      "frame": 135,
+      "stage": "reflection scene",
+      "ms": 2.867541
+    },
+    {
+      "frame": 136,
+      "stage": "refraction scene",
+      "ms": 1.771916
+    },
+    {
+      "frame": 137,
+      "stage": "main scene",
+      "ms": 18.093291
+    },
+    {
+      "frame": 138,
+      "stage": "volumetric clouds",
+      "ms": 2.544249
+    },
+    {
+      "frame": 139,
+      "stage": "bloom and grade",
+      "ms": 0.61325
+    },
+    {
+      "frame": 140,
+      "stage": "SMAA",
+      "ms": 0.359583
+    },
+    {
+      "frame": 141,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 142,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 143,
+      "stage": "foam",
+      "ms": 0.0315
+    },
+    {
+      "frame": 144,
+      "stage": "oar water",
+      "ms": 0.032125
+    },
+    {
+      "frame": 145,
+      "stage": "FFT waves",
+      "ms": 0.5565
+    },
+    {
+      "frame": 146,
+      "stage": "directional shadows",
+      "ms": 1.213583
+    },
+    {
+      "frame": 147,
+      "stage": "reflection scene",
+      "ms": 2.646999
+    },
+    {
+      "frame": 148,
+      "stage": "refraction scene",
+      "ms": 1.779749
+    },
+    {
+      "frame": 149,
+      "stage": "main scene",
+      "ms": 18.057499
+    },
+    {
+      "frame": 150,
+      "stage": "volumetric clouds",
+      "ms": 3.206583
+    },
+    {
+      "frame": 151,
+      "stage": "bloom and grade",
+      "ms": 0.554083
+    },
+    {
+      "frame": 152,
+      "stage": "SMAA",
+      "ms": 0.353458
+    },
+    {
+      "frame": 153,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 154,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 155,
+      "stage": "foam",
+      "ms": 0.029625
+    },
+    {
+      "frame": 156,
+      "stage": "oar water",
+      "ms": 0.031499
+    },
+    {
+      "frame": 157,
+      "stage": "FFT waves",
+      "ms": 0.524208
+    },
+    {
+      "frame": 158,
+      "stage": "directional shadows",
+      "ms": 1.160875
+    },
+    {
+      "frame": 159,
+      "stage": "reflection scene",
+      "ms": 2.648875
+    },
+    {
+      "frame": 160,
+      "stage": "refraction scene",
+      "ms": 1.807833
+    },
+    {
+      "frame": 161,
+      "stage": "main scene",
+      "ms": 18.054333
+    },
+    {
+      "frame": 162,
+      "stage": "volumetric clouds",
+      "ms": 2.743375
+    },
+    {
+      "frame": 163,
+      "stage": "bloom and grade",
+      "ms": 0.520166
+    },
+    {
+      "frame": 164,
+      "stage": "SMAA",
+      "ms": 0.346791
+    },
+    {
+      "frame": 165,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 166,
+      "stage": "cloud shadows",
+      "ms": 0
+    },
+    {
+      "frame": 167,
+      "stage": "foam",
+      "ms": 0.027125
+    },
+    {
+      "frame": 168,
+      "stage": "oar water",
+      "ms": 0.029875
+    },
+    {
+      "frame": 169,
+      "stage": "FFT waves",
+      "ms": 0.495458
+    },
+    {
+      "frame": 170,
+      "stage": "directional shadows",
+      "ms": 1.223375
+    },
+    {
+      "frame": 171,
+      "stage": "reflection scene",
+      "ms": 2.738999
+    },
+    {
+      "frame": 172,
+      "stage": "refraction scene",
+      "ms": 2.132541
+    },
+    {
+      "frame": 173,
+      "stage": "main scene",
+      "ms": 19.050708
+    },
+    {
+      "frame": 174,
+      "stage": "volumetric clouds",
+      "ms": 2.731374
+    },
+    {
+      "frame": 175,
+      "stage": "bloom and grade",
+      "ms": 0.64
+    },
+    {
+      "frame": 176,
+      "stage": "SMAA",
+      "ms": 0.352124
+    },
+    {
+      "frame": 177,
+      "stage": "sky environment",
+      "ms": 0
+    },
+    {
+      "frame": 178,
+      "stage": "cloud shadows",
+      "ms": 0.105666
+    },
+    {
+      "frame": 179,
+      "stage": "foam",
+      "ms": 0.028374
+    },
+    {
+      "frame": 180,
+      "stage": "oar water",
+      "ms": 0.032833
+    }
+  ]
+}

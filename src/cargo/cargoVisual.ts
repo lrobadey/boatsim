@@ -1,56 +1,68 @@
-// Cargo in the hold (cargo-trade spec §7.4). Only what shows through the hatches is drawn: per hatch
-// rectangle plus 0.3 m, a grid at each look's footprint pitch, the column's stack from the floor up,
-// and its top two layers. Ship-local; the lead adds `group` to the model. Rebuilt only by update().
+// Whole-package visible subset of the hold manifest (cargo-trade spec §7.4). Models are packed into
+// the actual hatch projections; inventory beyond the visible single layer remains hidden below deck.
+// Ship-local; the lead adds `group` to the model. Rebuilt only by update().
 import * as THREE from 'three';
 import type { ShipDesign } from '../ship/design';
-import { goodById, type GoodId } from '../trade/goods';
-import { hash01 } from '../trade/hash';
-import type { ColumnFill, Hold, StowedCell } from './hold';
-import { createCargoMeshes, LOOK_FOOTPRINT, LOOK_LAYER, LOOKS, type CargoLook } from './cargoModels';
+import { GOODS, goodById, type GoodId } from '../trade/goods';
+import { patchMaterial } from '../gfx/shared';
+import type { Hold, Manifest, StowedCell } from './hold';
+import { createCargoMeshes, LOOKS, type CargoLook } from './cargoModels';
+import { getDunnagePlatforms, packVisibleCargo, type CargoPlacement, type DunnagePlatform } from './cargoPacking';
 
-const MARGIN = 0.3;
 const MAX_PER_LOOK = 400;
-
-interface Layer {
-  good: GoodId;
-  look: CargoLook;
-  y: number;
-}
-
-/** the column's layers from the floor up: each good takes its share of the filled height, one layer per look pitch */
-function columnLayers(col: ColumnFill): Layer[] {
-  const H = col.topY - col.floorY;
-  const total = col.parts.reduce((a, p) => a + p.volume, 0);
-  const out: Layer[] = [];
-  if (total <= 0 || H <= 0) return out;
-  let base = col.floorY;
-  for (const p of col.parts) {
-    const good = goodById(p.good);
-    const h = (H * p.volume) / total;
-    const pitch = LOOK_LAYER[good.look as CargoLook];
-    const n = Math.max(1, Math.floor(h / pitch + 0.5));
-    for (let l = 0; l < n; l++) out.push({ good: p.good, look: good.look as CargoLook, y: base + l * pitch });
-    base += h;
-  }
-  return out;
-}
 
 export class CargoVisual {
   readonly group = new THREE.Group();
   private readonly meshes = createCargoMeshes(MAX_PER_LOOK);
-  /** ship-local grid areas: each hatch rectangle plus the margin */
+  readonly dunnagePlatforms: readonly DunnagePlatform[];
+  /** ship-local hatch rectangles inset by 0.075 m, matching the allowed opening */
   readonly areas: { x0: number; x1: number; z0: number; z1: number }[];
   private readonly m = new THREE.Matrix4();
   private readonly c = new THREE.Color();
   private readonly counts: Record<CargoLook, number> = { amphora: 0, jar: 0, sack: 0, bundle: 0 };
+  private currentPlacements: CargoPlacement[] = [];
+  private currentVisibleCounts: Partial<Record<GoodId, number>> = {};
 
   constructor(private readonly hold: Hold, design: ShipDesign) {
     const cargo = design.cargo;
     if (!cargo) throw new Error(`${design.name} has no cargo hold`);
-    const hw = cargo.hatchHalfWidth + MARGIN;
+    this.dunnagePlatforms = getDunnagePlatforms(design);
+    const wood = patchMaterial(
+      new THREE.MeshStandardMaterial({ color: 0x70503a, roughness: 0.95 }),
+      undefined,
+      'cargo_dunnage',
+    );
+    for (const platform of this.dunnagePlatforms) {
+      const width = platform.x1 - platform.x0;
+      const depth = platform.z1 - platform.z0;
+      const seam = 0.003;
+      const plankWidth = (width - 4 * seam) / 5;
+      for (let i = 0; i < 5; i++) {
+        const x0 = platform.x0 + i * (plankWidth + seam);
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(plankWidth, platform.thickness, depth), wood);
+        plank.name = `cargo-dunnage-${platform.hatchIndex}-plank-${i}`;
+        plank.position.set(x0 + plankWidth / 2, platform.top - platform.thickness / 2, (platform.z0 + platform.z1) / 2);
+        plank.castShadow = true;
+        plank.receiveShadow = true;
+        this.group.add(plank);
+      }
+      for (let i = 0; i < platform.bearers.length; i++) {
+        const bearer = platform.bearers[i];
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(bearer.x1 - bearer.x0, bearer.y1 - bearer.y0, bearer.z1 - bearer.z0),
+          wood,
+        );
+        mesh.name = `cargo-dunnage-${platform.hatchIndex}-bearer-${i}`;
+        mesh.position.set((bearer.x0 + bearer.x1) / 2, (bearer.y0 + bearer.y1) / 2, (bearer.z0 + bearer.z1) / 2);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.group.add(mesh);
+      }
+    }
+    const hw = cargo.hatchHalfWidth - 0.075;
     this.areas = cargo.hatches.map((h) => {
       const za = design.hull.zOf(h.s0), zb = design.hull.zOf(h.s1);
-      return { x0: -hw, x1: hw, z0: Math.min(za, zb) - MARGIN, z1: Math.max(za, zb) + MARGIN };
+      return { x0: -hw, x1: hw, z0: Math.min(za, zb) + 0.075, z1: Math.max(za, zb) - 0.075 };
     });
     for (const look of LOOKS) this.group.add(this.meshes[look]);
   }
@@ -60,41 +72,52 @@ export class CargoVisual {
     return this.counts;
   }
 
-  /** rebuild from a stowage (Hold.stow output); deterministic for the same stowage */
-  update(stowed: StowedCell[]) {
+  get visibleCounts(): Readonly<Partial<Record<GoodId, number>>> {
+    return this.currentVisibleCounts;
+  }
+
+  get placements(): readonly CargoPlacement[] {
+    return this.currentPlacements;
+  }
+
+  /** Rebuild whole-package visible cargo. Production passes the manifest; older callers may omit it. */
+  update(stowed: StowedCell[], manifest?: Manifest) {
+    const exact = manifest ?? this.manifestFromStowage(stowed);
+    this.currentPlacements = packVisibleCargo(exact, this.hold.design);
+    const visible: Partial<Record<GoodId, number>> = {};
+    const byLook: Record<CargoLook, CargoPlacement[]> = { amphora: [], jar: [], sack: [], bundle: [] };
+    for (const placement of this.currentPlacements) {
+      visible[placement.good] = (visible[placement.good] ?? 0) + 1;
+      byLook[placement.look].push(placement);
+    }
+    this.currentVisibleCounts = visible;
     for (const look of LOOKS) {
       const mesh = this.meshes[look];
       let k = 0;
-      // footprint pitch in x and z; bundles lie along z in the hold, so their 0.95 m pitch is along z
-      const [px, pz] = look === 'bundle' ? [LOOK_FOOTPRINT.bundle[1], LOOK_FOOTPRINT.bundle[0]] : LOOK_FOOTPRINT[look];
-      for (const a of this.areas) {
-        const nx = Math.max(1, Math.floor((a.x1 - a.x0) / px));
-        const nz = Math.max(1, Math.floor((a.z1 - a.z0) / pz));
-        const xc = (a.x0 + a.x1) / 2, zc = (a.z0 + a.z1) / 2;
-        for (let i = 0; i < nx; i++) {
-          for (let j = 0; j < nz; j++) {
-            const x = xc + (i - (nx - 1) / 2) * px;
-            const z = zc + (j - (nz - 1) / 2) * pz;
-            const layers = columnLayers(this.hold.columnFillOf(stowed, x, z));
-            // top two layers of the column only
-            const top = layers.slice().sort((p, q) => q.y - p.y).slice(0, 2);
-            for (const l of top) {
-              if (l.look !== look || k >= MAX_PER_LOOK) continue;
-              const good = goodById(l.good);
-              // a fixed yaw per instance for the round looks; amphorae and bundles stand as modelled
-              const yaw = look === 'jar' || look === 'sack' ? hash01(k) * Math.PI * 2 : 0;
-              this.m.makeRotationY(yaw).setPosition(x, l.y, z);
-              mesh.setMatrixAt(k, this.m);
-              mesh.setColorAt(k, this.c.setHex(good.tint));
-              k++;
-            }
-          }
-        }
+      for (const placement of byLook[look]) {
+        this.m.makeRotationY(placement.yaw).setPosition(placement.position);
+        mesh.setMatrixAt(k, this.m);
+        mesh.setColorAt(k, this.c.setHex(goodById(placement.good).tint));
+        k++;
       }
       mesh.count = k;
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       this.counts[look] = k;
     }
+  }
+
+  private manifestFromStowage(stowed: StowedCell[]): Manifest {
+    const volume: Partial<Record<GoodId, number>> = {};
+    for (const cell of stowed) for (const part of cell.parts) {
+      volume[part.good] = (volume[part.good] ?? 0) + part.volume;
+    }
+    const result: Manifest = {};
+    for (const good of GOODS) {
+      const units = (volume[good.id] ?? 0) / good.stow;
+      const rounded = Math.round(units);
+      if (Math.abs(units - rounded) <= 1e-6) result[good.id] = rounded;
+    }
+    return result;
   }
 }

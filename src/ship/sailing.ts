@@ -330,13 +330,19 @@ export class SailingSystem {
       this.autoYardTarget = 0;
       return;
     }
-    const currentScore = this.trimScore(this.current.yardAngle, air);
+    // Movement effort and the absolute hysteresis are calibrated for an 8 m/s
+    // apparent breeze. Below that, aerodynamic benefit falls with V². Keeping
+    // either cost fixed in newtons can strand the yard edge-on or aback even
+    // when another reachable angle supplies positive drive. Strong-wind costs
+    // retain their existing calibration and the actuator rate stays unchanged.
+    const lightAirScale = Math.min(1, centerSpeed * centerSpeed / (8 * 8));
+    const currentScore = this.trimScore(this.current.yardAngle, air, lightAirScale);
     let bestAngle = 0;
     let bestScore = -Infinity;
     let bestDistance = Infinity;
     for (let k = 0; k <= 24; k++) {
       const angle = -this.rig.maxYardAngle + (k / 24) * (2 * this.rig.maxYardAngle);
-      const score = this.trimScore(angle, air);
+      const score = this.trimScore(angle, air, lightAirScale);
       const distance = Math.abs(angle - this.current.yardAngle);
       const scoreTie = Math.abs(score - bestScore) <= 1e-9;
       if (score > bestScore + 1e-9 || (scoreTie && (distance < bestDistance - 1e-9 || (Math.abs(distance - bestDistance) <= 1e-9 && Math.abs(angle) < Math.abs(bestAngle))))) {
@@ -345,17 +351,17 @@ export class SailingSystem {
         bestDistance = distance;
       }
     }
-    const improvementThreshold = Math.max(20, 0.025 * Math.abs(currentScore));
+    const improvementThreshold = Math.max(20 * lightAirScale, 0.025 * Math.abs(currentScore));
     if (bestScore > currentScore + improvementThreshold) this.autoYardTarget = bestAngle;
   }
 
-  private trimScore(angle: number, air: THREE.Vector3) {
+  private trimScore(angle: number, air: THREE.Vector3, movementScale=1) {
     this.setLocalNormal(angle, this.candidateNormal);
     const speed = air.length();
     const dot = speed > 1e-8 ? clamp(air.dot(this.candidateNormal) / speed, -1, 1) : 0;
     const candidateFill = this.fillTarget(air, this.candidateNormal, speed, dot);
     evaluateSailForce(air, this.candidateNormal, this.rig.area * this.current.deployment, candidateFill, this.candidateForce, undefined, this.aero);
-    return -this.candidateForce.z - this.trimSidePenalty * Math.abs(this.candidateForce.x) - this.aero.trimSlewPenalty * Math.abs(angle - this.current.yardAngle);
+    return -this.candidateForce.z - this.trimSidePenalty * Math.abs(this.candidateForce.x) - this.aero.trimSlewPenalty * movementScale * Math.abs(angle - this.current.yardAngle);
   }
 
   private pointOfSail(speed: number, apparentFrom: number): SailTelemetry['pointOfSail'] {

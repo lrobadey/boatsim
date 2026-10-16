@@ -3,7 +3,10 @@ import type { WorldGenResult } from './world/worldgenTypes';
 import type { HarbourLayout, Berth } from './world/harbour';
 import { Economy } from './trade/economy';
 import { TradeSession } from './trade/session';
-import { newVoyage, type VoyageState } from './trade/voyage';
+import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
+import { PriceNews, recordOf } from './trade/news';
+import { personaFor, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
+import { Talk, type TalkLine } from './ui/talk';
 import { buildSave, readSave, writeSave, deleteSave, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
 import { createStallInteractions } from './trade/stall';
@@ -15,7 +18,17 @@ import type { BoxSolid, Solid } from './world/walkable';
 import { Ledger, type LedgerMode, type LedgerSource } from './ui/ledger';
 import { tradeLedgerSource } from './ui/ledgerSource';
 import { WAGE_PER_HAND_DAY } from './trade/economy';
+import { formatHandlingDuration, handlingStatus } from './trade/handlingStatus';
+import * as THREE from 'three';
+import type { CargoJob } from './trade/voyage';
 
+
+/** what the conversation shows when no reply came back */
+const TALK_ERRORS: Record<string, string> = {
+  'no-key': 'Talking needs an OpenAI API key (OPENAI_API_KEY in .env.local).',
+  timeout: 'The model took too long to answer. Try again.',
+  upstream: 'The connection to the model failed. Try again.',
+};
 
 /**
  * Cargo and ports (docs/cargo-trade-spec.md): the merchant's economy, purse, hold and ledger, wired to the
@@ -26,6 +39,17 @@ import { WAGE_PER_HAND_DAY } from './trade/economy';
 export class TradeLayer {
   readonly hold: Hold;
   readonly ledger = new Ledger();
+  readonly talk = new Talk();
+  /** what each port has heard about the others, and each trader's note on the player (saved) */
+  private news = new PriceNews();
+  private notes: Record<number, string> = {};
+  /** the conversation at each stall this session (not saved) */
+  private talkLines = new Map<number, TalkLine[]>();
+  private readonly cargoStatus = document.createElement('div');
+  private readonly cargoStatusLabel = document.createElement('div');
+  private readonly cargoStatusDetail = document.createElement('div');
+  private readonly cargoStatusHint = document.createElement('div');
+  private cargoStatusCache = '';
   economy!: Economy;
   session!: TradeSession;
   readonly portNames: Record<number, string> = {};
@@ -36,6 +60,10 @@ export class TradeLayer {
   private quayStack = new QuayStack();
   private quaySolids: Solid[] = [];
   private quayKey = '';
+  private quayAnchorJob: CargoJob | null = null;
+  private quayAnchorCaptured = false;
+  private quayAnchorPlank: { shoreWorld: THREE.Vector3 } | null = null;
+  private quayAnchorSerial = 0;
   private hatchSolids: BoxSolid[] = [];
   private hatchDeck: number[] = [];
 
@@ -44,7 +72,11 @@ export class TradeLayer {
     private gen: WorldGenResult,
     private layouts: HarbourLayout[],
     private world: { seed: number; heightmapSize: number },
+    private review=false,
   ) {
+    this.cargoStatus.className = 'cargo-status';
+    this.cargoStatus.append(this.cargoStatusLabel, this.cargoStatusDetail, this.cargoStatusHint);
+    g.hud.mount(this.cargoStatus);
     this.hold = new Hold(g.design);
     for (const l of layouts) this.portNames[l.id] = l.name;
     this.ledger.onToast = (t) => g.hud.showToast(t);
@@ -54,7 +86,7 @@ export class TradeLayer {
         stalls,
         hasCargo: () => true,
         onFootWorld: () => g.player.mode === 'foot' && g.player.walker.frame === 'world',
-        open: (port) => this.openLedger(port),
+        open: (port) => this.openTalk(port),
       }),
     );
     if (g.model instanceof MerchantModel) {
@@ -88,20 +120,38 @@ export class TradeLayer {
   private updateQuay() {
     const g = this.g;
     const moor = g.ship.mooring;
-    const quay = this.session.voyage.job?.quay ?? {};
-    const berth = moor.linePhase === 'docked' ? moor.berth : null;
-    const key = `${berth?.id ?? -1}|${JSON.stringify(quay)}`;
+    const job = this.session.voyage.job;
+    const quay = job?.quay ?? {};
+    if (job !== this.quayAnchorJob) {
+      this.quayAnchorJob = job;
+      this.quayAnchorCaptured = false;
+      this.quayAnchorPlank = null;
+      this.quayAnchorSerial++;
+      this.quayKey = '';
+    }
+    if (job && !this.quayAnchorCaptured) {
+      if (this.isAtJobBerth(job)) {
+        const shoreWorld = moor.plank?.shoreWorld.clone() ?? null;
+        this.quayAnchorPlank = shoreWorld ? { shoreWorld } : null;
+      }
+      // A restored job first seen away from its berth uses the berth face as its stable fallback.
+      this.quayAnchorCaptured = true;
+    }
+    const berth = job ? this.berthById(job.berth) : null;
+    const plank = this.quayAnchorPlank;
+    const key = `${this.quayAnchorSerial}|${berth?.id ?? -1}|${plank?.shoreWorld.x ?? ''},${plank?.shoreWorld.z ?? ''}|${JSON.stringify(quay)}`;
     if (key === this.quayKey) return;
     this.quayKey = key;
     for (const s of this.quaySolids) g.walk.remove(s);
-    const l = berth ? this.layouts.find((x) => x.id === berth.port) : undefined;
+    const l = job ? this.layouts.find((x) => x.id === job.port) : undefined;
     const avoid = l ? [{ x: l.stall.x, z: l.stall.z }] : [];
-    this.quaySolids = this.quayStack.update(berth, moor.plank, quay, avoid);
+    this.quaySolids = this.quayStack.update(berth, plank, quay, avoid);
     for (const s of this.quaySolids) g.walk.add(s);
   }
 
+  /** the ledger or a conversation has the keyboard (the game's input and Escape wait) */
   get ledgerOpen() {
-    return this.ledger.isOpen;
+    return this.ledger.isOpen || this.talk.isOpen;
   }
 
   private get hands() {
@@ -123,21 +173,24 @@ export class TradeLayer {
 
   /** at boot: continue the saved voyage for this world, or set up a new one docked at the main harbour */
   init(): 'continue' | 'new' {
-    const save = readSave(this.world.seed, this.world.heightmapSize);
+    const save = this.review ? null : readSave(this.world.seed, this.world.heightmapSize);
     if (save && this.applySave(save)) return 'continue';
     this.newVoyage();
     return 'new';
   }
 
   get hasSave() {
-    return readSave(this.world.seed, this.world.heightmapSize) !== null;
+    return !this.review && readSave(this.world.seed, this.world.heightmapSize) !== null;
   }
 
   /** a fresh voyage: start purse and 70 jars of wine, docked bow out at berth 0 of the main harbour */
   newVoyage() {
-    deleteSave(this.world.seed, this.world.heightmapSize);
+    if(!this.review)deleteSave(this.world.seed, this.world.heightmapSize);
     this.economy = this.buildEconomy(this.g.clock.totalHours);
     this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity });
+    this.news = this.pastNews(this.economy.now);
+    this.notes = {};
+    this.talkLines.clear();
     const b = this.layouts[0]?.berths[0];
     if (b) this.placeDocked(b, true);
   }
@@ -157,6 +210,10 @@ export class TradeLayer {
       this.economy = this.buildEconomy(s.economy.T);
       this.economy.restore(s.economy);
       this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity });
+      this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
+      this.notes = {};
+      for (const [k, v] of Object.entries(s.talk?.notes ?? {})) if (typeof v === 'string' && this.portNames[Number(k)] !== undefined) this.notes[Number(k)] = v.slice(0, 300);
+      this.talkLines.clear();
       this.placeDocked(berth, s.berth.bowOut);
       return true;
     } catch (e) {
@@ -184,7 +241,7 @@ export class TradeLayer {
     this.manifestKey = key;
     this.hold.setManifest(m);
     this.g.ship.setStaticLoad(this.hold.staticLoad(m));
-    this.cargoVisual?.update(this.hold.stow(m));
+    this.cargoVisual?.update(this.hold.stow(m), m);
   }
 
   private dockedPort(): number | null {
@@ -192,7 +249,13 @@ export class TradeLayer {
     return moor.linePhase === 'docked' && moor.berth ? moor.berth.port : null;
   }
 
+  private isAtJobBerth(job: CargoJob): boolean {
+    const moor = this.g.ship.mooring;
+    return moor.linePhase === 'docked' && moor.berth?.port === job.port && moor.berth.id === job.berth;
+  }
+
   save() {
+    if(this.review)return;
     const moor = this.g.ship.mooring;
     if (moor.linePhase !== 'docked' || !moor.berth) return;
     const b = moor.berth;
@@ -207,6 +270,7 @@ export class TradeLayer {
       berth: { id: b.id, bowOut },
       voyage: this.session.voyage,
       economy: this.economy.snapshot(),
+      talk: { news: this.news.snapshot(), notes: { ...this.notes } },
     });
     writeSave(this.world.seed, this.world.heightmapSize, data);
   }
@@ -219,9 +283,12 @@ export class TradeLayer {
 
   /** R while on the lines: refuse while cargo is moving, else close the hatches and let the mooring cast off */
   canCastOff(): boolean {
+    const job = this.session.voyage.job;
+    if (job && !this.isAtJobBerth(job)) return true;
     const n = this.session.pendingUnits;
     if (n > 0) {
-      this.g.hud.showToast(`Cargo still moving · ${n} left`);
+      const status = handlingStatus(this.session.voyage.job, this.g.clock.totalHours, this.session.voyage.hatchUntil);
+      this.g.hud.showToast(`${status.label} · ${formatHandlingDuration(status.hours)} remaining`);
       return false;
     }
     this.session.castOff();
@@ -231,6 +298,7 @@ export class TradeLayer {
   private source(port: number, mode: LedgerMode): LedgerSource {
     const g = this.g;
     const moor = g.ship.mooring;
+    const originalBerth = moor.berth?.id ?? -1;
     const src = tradeLedgerSource({
       session: this.session,
       port,
@@ -242,6 +310,21 @@ export class TradeLayer {
       wagesPerDay: this.hands * WAGE_PER_HAND_DAY,
       holdCapacity: this.hold.capacity,
       portNames: this.portNames,
+      timeScale: () => g.clock.timeScale,
+      changeTimeSpeed: (factor) => g.changeTimeSpeed(factor),
+      canTrade: () => {
+        const current = g.ship.mooring;
+        const job = this.session.voyage.job;
+        return mode === 'trade' && current.linePhase === 'docked' && current.berth?.port === port && current.berth.id === originalBerth &&
+          (!job || (job.port === port && job.berth === originalBerth));
+      },
+      handlingContext: () => {
+        const job = this.session.voyage.job;
+        return {
+          connected: !job || this.isAtJobBerth(job),
+          ...(job ? { portName: this.portNames[job.port] ?? `Port ${job.port}` } : {}),
+        };
+      },
     });
     // every confirmed order is a save point while docked
     const confirm = src.confirm.bind(src);
@@ -258,6 +341,94 @@ export class TradeLayer {
     const mode: LedgerMode = this.dockedPort() === port ? 'trade' : 'read';
     this.g.input.freeze(true);
     this.ledger.open(this.source(port, mode));
+  }
+
+  /**
+   * A plausible past for a voyage without saved news: the prices of a twin economy started each of the last
+   * five days. Ships that left the other ports before the voyage began still bring news.
+   */
+  private pastNews(T: number): PriceNews {
+    const news = new PriceNews();
+    for (let d = 5; d >= 1; d--) {
+      const t = T - 24 * d;
+      news.add(recordOf(this.buildEconomy(t), t));
+    }
+    news.observe(this.economy, T);
+    return news;
+  }
+
+  /** E at a stall: talk with its trader; Tab in the conversation opens the ledger */
+  openTalk(port: number) {
+    if (this.ledger.isOpen || this.talk.isOpen) return;
+    const persona = personaFor(this.world.seed, port);
+    const lines = this.talkLines.get(port) ?? [];
+    this.talkLines.set(port, lines);
+    this.g.input.freeze(true);
+    this.talk.open({
+      name: persona.name,
+      port: this.portNames[port] ?? '',
+      lines,
+      say: (text) => this.say(port, persona, lines, text),
+      ledger: () => {
+        this.talk.close();
+        this.openLedger(port);
+      },
+    });
+  }
+
+  private async say(port: number, persona: Persona, lines: TalkLine[], text: string) {
+    lines.push({ who: 'you', text });
+    const now = this.g.clock.totalHours;
+    const route = (a: number, b: number) => this.economy.routeHours(a, b);
+    const others = this.economy.ports.map((p) => p.id).filter((id) => id !== port);
+    const portName = this.portNames[port] ?? '';
+    const facts = traderFacts({
+      persona,
+      port,
+      portName,
+      portNames: this.portNames,
+      now,
+      market: (good) => this.economy.market(port, good),
+      heard: others.map((id) => ({ port: id, news: this.news.heard(port, id, now, route) })),
+      memory: this.notes[port] ?? '',
+      shipHere: this.dockedPort() === port,
+    });
+    const messages = lines
+      .filter((l) => l.who !== 'info')
+      .slice(-16)
+      .map((l) => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text }));
+    let res: { ok: boolean; reply?: unknown; error?: string };
+    try {
+      const r = await fetch('/__trieres_talk__', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instructions: traderInstructions(persona, portName, facts),
+          messages,
+          schema: replySchema(others.map((id) => this.portNames[id])),
+        }),
+      });
+      res = await r.json();
+    } catch {
+      res = { ok: false, error: 'offline' };
+    }
+    const reply = res.ok ? parseReply(res.reply, this.portNames) : null;
+    if (!reply) {
+      lines.push({ who: 'info', text: TALK_ERRORS[res.error ?? ''] ?? TALK_ERRORS.upstream });
+      return;
+    }
+    lines.push({ who: 'them', text: reply.say });
+    if (reply.note) this.notes[port] = reply.note;
+    // every other-port price the trader passed on goes into the notebook, unless the notebook already knows newer
+    const notebook = this.session.voyage.notebook;
+    for (const t of reply.told) {
+      const h = this.news.heard(port, t.port, now, route);
+      if (!h) continue;
+      const seen = notebook.find((e) => e.port === t.port && e.good === t.good);
+      if (seen && seen.T >= h.T) continue;
+      updateNotebook(notebook, { port: t.port, good: t.good, ask: h.ask[t.good], bid: h.bid[t.good], T: h.T, heard: true });
+    }
+    this.save();
   }
 
   openHoldBook() {
@@ -278,7 +449,9 @@ export class TradeLayer {
     const T = Math.max(g.clock.totalHours, this.economy.now);
     let wages = 0;
     let done: 'stowed' | 'landed' | null = null;
-    for (const e of this.session.tick(T)) {
+    const job = this.session.voyage.job;
+    const connected = !job || this.isAtJobBerth(job);
+    for (const e of this.session.tick(T, connected)) {
       if (e.type === 'wages') wages += e.amount;
       else if (e.type === 'job-done') done = e.kind;
     }
@@ -288,14 +461,44 @@ export class TradeLayer {
       g.hud.showToast(done === 'stowed' ? 'Cargo stowed' : 'Cargo landed');
       this.save();
     }
-    const open = this.session.hatchesOpen(T);
+    const open = connected && this.session.hatchesOpen(T);
     if (open !== this.hatchOpen) {
       this.hatchOpen = open;
       this.setHatches(open);
     }
+    this.news.observe(this.economy, T);
     this.updateQuay();
     if (this.ledger.isOpen) this.ledger.update();
-    else if (g.input.frozen) g.input.freeze(false);
+    else if (!this.talk.isOpen && g.input.frozen) g.input.freeze(false);
+    this.updateCargoStatus(T);
+  }
+
+  private updateCargoStatus(T: number) {
+    const g = this.g;
+    const job = this.session.voyage.job;
+    const connected = !job || this.isAtJobBerth(job);
+    const status = handlingStatus(job, T, this.session.voyage.hatchUntil, {
+      connected,
+      ...(job ? { portName: this.portNames[job.port] ?? `Port ${job.port}` } : {}),
+    });
+    const docked = g.ship.mooring.linePhase === 'docked';
+    const visible = (status.phase === 'paused' || (docked && status.phase !== 'idle')) && !this.ledger.isOpen && g.hud.density !== 'none';
+    const scale = g.clock.timeScale;
+    const detail = status.detail;
+    const commanding = g.player.mode === 'helm' || (g.player.mode === 'chase' && g.player.prevShipMode === 'helm');
+    const hint = status.phase === 'paused'
+      ? 'I Hold'
+      : status.phase === 'ready'
+      ? (commanding ? 'R Cast off · I Hold' : 'Return to helm to cast off · I Hold')
+      : `I Hold · [ ] Time ×${scale}`;
+    const key = `${visible}|${status.label}|${detail}|${hint}`;
+    if (this.cargoStatusCache !== key) {
+      this.cargoStatusCache = key;
+      this.cargoStatusLabel.textContent = status.label;
+      this.cargoStatusDetail.textContent = detail;
+      this.cargoStatusHint.textContent = hint;
+      this.cargoStatus.classList.toggle('on', visible);
+    }
   }
 
   /** the job's quay contents (for the quay stack visual) */
@@ -305,5 +508,25 @@ export class TradeLayer {
 
   get voyage(): VoyageState {
     return this.session.voyage;
+  }
+
+  /** Read-only runtime cargo geometry for developer inspection and visual acceptance. */
+  get visualState() {
+    return {
+      hold: {
+        visibleCounts: { ...this.cargoVisual?.visibleCounts },
+        instanceCounts: { ...this.cargoVisual?.instanceCounts },
+        placements: (this.cargoVisual?.placements ?? []).map((p) => ({
+          id: p.id,
+          good: p.good,
+          position: p.position.toArray(),
+          bounds: { min: p.bounds.min.toArray(), max: p.bounds.max.toArray() },
+        })),
+      },
+      quay: {
+        instanceCounts: { ...this.quayStack.instanceCounts },
+        solids: this.quayStack.solids.map((solid) => ({ ...solid })),
+      },
+    };
   }
 }

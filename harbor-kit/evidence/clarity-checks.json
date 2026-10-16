@@ -1,0 +1,121 @@
+{
+  "assets": [
+    {
+      "id": "amphora-large",
+      "errors": "[]"
+    },
+    {
+      "id": "amphora-small",
+      "errors": "[]"
+    },
+    {
+      "id": "cargo-boat",
+      "errors": "[]"
+    },
+    {
+      "id": "coastal-shrub",
+      "errors": "[]"
+    },
+    {
+      "id": "gangplank",
+      "errors": "[]"
+    },
+    {
+      "id": "house-courtyard",
+      "errors": "[]"
+    },
+    {
+      "id": "house-tower",
+      "errors": "[]"
+    },
+    {
+      "id": "house-workshop",
+      "errors": "[]"
+    },
+    {
+      "id": "linen-canopy",
+      "errors": "[]"
+    },
+    {
+      "id": "mooring-stone",
+      "errors": "[]"
+    },
+    {
+      "id": "olive-a",
+      "errors": "[]"
+    },
+    {
+      "id": "olive-b",
+      "errors": "[]"
+    },
+    {
+      "id": "packing-rack",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-corner",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-a",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-b",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-c",
+      "errors": "[]"
+    },
+    {
+      "id": "retaining-wall",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-boulder",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-a",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-b",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-rubble",
+      "errors": "[]"
+    },
+    {
+      "id": "rope-coil",
+      "errors": "[]"
+    },
+    {
+      "id": "rope-fender",
+      "errors": "[]"
+    },
+    {
+      "id": "sea-stairs",
+      "errors": "[]"
+    },
+    {
+      "id": "timber-beam",
+      "errors": "[]"
+    },
+    {
+      "id": "timber-bench",
+      "errors": "[]"
+    },
+    {
+      "id": "warehouse",
+      "errors": "[]"
+    },
+    {
+      "id": "wicker-basket",
+      "errors": "[]"
+    }
+  ],
+  "console": []
+}

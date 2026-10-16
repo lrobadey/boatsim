@@ -1,0 +1,142 @@
+[
+  {
+    "good": "wine",
+    "physical": 0,
+    "rendered": {
+      "amphora": 0,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 1,
+    "rendered": {
+      "amphora": 5,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 2,
+    "rendered": {
+      "amphora": 8,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 4,
+    "rendered": {
+      "amphora": 12,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 10,
+    "rendered": {
+      "amphora": 16,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 20,
+    "rendered": {
+      "amphora": 16,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "wine",
+    "physical": 70,
+    "rendered": {
+      "amphora": 32,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 0,
+    "rendered": {
+      "amphora": 0,
+      "jar": 0,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 1,
+    "rendered": {
+      "amphora": 0,
+      "jar": 4,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 2,
+    "rendered": {
+      "amphora": 0,
+      "jar": 6,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 4,
+    "rendered": {
+      "amphora": 0,
+      "jar": 12,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 10,
+    "rendered": {
+      "amphora": 0,
+      "jar": 20,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 20,
+    "rendered": {
+      "amphora": 0,
+      "jar": 38,
+      "sack": 0,
+      "bundle": 0
+    }
+  },
+  {
+    "good": "honey",
+    "physical": 70,
+    "rendered": {
+      "amphora": 0,
+      "jar": 50,
+      "sack": 0,
+      "bundle": 0
+    }
+  }
+]

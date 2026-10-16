@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-16T02:29:29.845Z",
+  "node": "v25.4.0",
+  "request": {
+    "seed": 1729,
+    "size": 2048,
+    "worldSize": 12000,
+    "windFrom": 0.3490658503988659,
+    "vegetationDensity": 1.4,
+    "authoredHarbour": true
+  },
+  "scope": "Headless local CPU/data paths; warm world uses structuredClone storage, NOT browser IndexedDB. Times are not total launch times and overlapping tasks must not be added.",
+  "textures": {
+    "originalGenerateMs": 1849.6045419999998,
+    "currentGenerateMs": 1546.477417,
+    "fileReadAndValidateDecodeMs": 8.596792000000278,
+    "bytes": 6291468,
+    "bitExact": true,
+    "revision": "968656952566e6d038e04b41537ed979d50cd71832e401ec867570daaf87aa56"
+  },
+  "world": {
+    "coldGenerateAndCloneMs": 3864.0340829999996,
+    "warmCloneReadMs": [
+      5.661874999999782,
+      2.1054159999994226,
+      2.161417000000256,
+      4.818624999999884,
+      1.3449170000003505
+    ],
+    "completeWorldEqual": true,
+    "generationCount": 1,
+    "revision": "46f9efe143b1d74be4b1683d11dc2e934a2bd4abc8d36537b15b7c535e8e97ec"
+  }
+}

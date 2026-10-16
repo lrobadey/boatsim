@@ -181,8 +181,12 @@ for (const jars of [0, 95, 190, FULL_JARS]) {
   const { CargoVisual } = await import('../src/cargo/cargoVisual.ts');
   const { QuayStack } = await import('../src/cargo/quayStack.ts');
   const visual = new CargoVisual(hold, MERCHANT);
+  visual.update(hold.stow({ wine: 1 }), { wine: 1 });
+  check('cargo visual: one physical wine package is exactly one visible amphora', visual.visibleCounts.wine === 1 && visual.placements.length === 1);
+  visual.update(hold.stow({ honey: 1 }), { honey: 1 });
+  check('cargo visual: one physical honey package is exactly one visible jar', visual.visibleCounts.honey === 1 && visual.placements.length === 1);
   // instance matrices of every look, as numbers: equal after a rebuild from the same stowage
-  const snap = () => visual.group.children.map((m) => Array.from(m.instanceMatrix.array.slice(0, m.count * 16)));
+  const snap = () => visual.group.children.filter((m) => m.isInstancedMesh).map((m) => Array.from(m.instanceMatrix.array.slice(0, m.count * 16)));
   const cases = [
     ['empty hold', hold.stow({})],
     ['70 wine', hold.stow({ wine: 70 })],
@@ -202,7 +206,7 @@ for (const jars of [0, 95, 190, FULL_JARS]) {
     check(`cargo visual, ${name}: counts bounded and matrices deterministic`, bounded && same && JSON.stringify(c) === JSON.stringify(again),
       `amphora ${c.amphora}, jar ${c.jar}, sack ${c.sack}, bundle ${c.bundle}, total ${total}`);
   }
-  check('cargo visual: empty hold draws nothing', Object.values(seen['empty hold']).every((n) => n === 0));
+  check('cargo visual: empty hold has no package instances', Object.values(seen['empty hold']).every((n) => n === 0));
   check('cargo visual: 70 wine draws some amphorae, no sacks', seen['70 wine'].amphora > 0 && seen['70 wine'].sack === 0 && seen['70 wine'].bundle === 0);
   check('cargo visual: full hold of wheat draws sacks', seen['full hold of wheat'].sack > 0 && seen['full hold of wheat'].amphora === 0);
 

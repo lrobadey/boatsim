@@ -1,0 +1,20 @@
+{
+  "plank.glb": {
+    "bytes": 593748,
+    "triangles": 692,
+    "materials": 2,
+    "finite_positions_normals": true
+  },
+  "harbor.glb": {
+    "bytes": 92386948,
+    "triangles": 1403024,
+    "materials": 14,
+    "finite_positions_normals": true
+  },
+  "boat.glb": {
+    "bytes": 6042196,
+    "triangles": 119984,
+    "materials": 5,
+    "finite_positions_normals": true
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "build": "production",
+  "url": "http://127.0.0.1:5188/",
+  "assets": [
+    {
+      "id": "amphora-large",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "amphora-small",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "cargo-boat",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "coastal-shrub",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "gangplank",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "house-courtyard",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "house-tower",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "house-workshop",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "linen-canopy",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "mooring-stone",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "olive-a",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "olive-b",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "packing-rack",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-corner",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-a",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-b",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "quay-straight-c",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "retaining-wall",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-boulder",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-a",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-ledge-b",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rock-rubble",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rope-coil",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "rope-fender",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "sea-stairs",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "timber-beam",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "timber-bench",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "warehouse",
+      "ready": "true",
+      "errors": "[]"
+    },
+    {
+      "id": "wicker-basket",
+      "ready": "true",
+      "errors": "[]"
+    }
+  ]
+}

@@ -231,6 +231,56 @@ assert.equal(stagedJump.telemetry.generation, 2, 'epoch jump captures and publis
 assert.equal(jumpCaptureCalls.at(-1), 'full', 'epoch jump uses one complete reconciled capture');
 assert.equal(stagedJump.isBlending, false, 'epoch jump does not blend across unrelated snapshots');
 
+// Exercise the production attachment/capture paths without a GPU: screen clouds belong to
+// CloudPass, but full and staged environment captures must still contain the cloud layer.
+const { Sky } = await import('three/addons/objects/Sky.js');
+const cloudSky = Object.create(SkySystem.prototype);
+cloudSky.sky = new Sky();
+cloudSky.envSky = new Sky();
+cloudSky.clearSky = new Sky();
+cloudSky.seaDisc = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial());
+cloudSky.environmentSourceVersion = 1;
+cloudSky.night = 0;
+const clearTexture = new THREE.CubeTexture();
+const captureCalls = [];
+cloudSky.environment = {
+  previous: { clear: { texture: clearTexture } }, nextBundle: { clear: { texture: clearTexture } }, blend: 0,
+  captureClear: () => captureCalls.push('clear'),
+  captureRaw: () => {
+    assert.equal(cloudSky.envSky.material.uniforms.uCloudOn.value, 1);
+    captureCalls.push('raw');
+  },
+  captureRawFace: () => {
+    assert.equal(cloudSky.envSky.material.uniforms.uCloudOn.value, 1);
+    captureCalls.push('face');
+  },
+};
+const cloudInputs = { uniforms: Object.fromEntries([
+  'uCloudHazeSky', 'uCloudHazeSkyNext', 'uCloudHazeBlend', 'uCloudHazeReady',
+].map(name => [name, { value: null }])) };
+cloudSky.attachClouds(cloudInputs);
+assert.equal(cloudSky.sky.material.uniforms.uCloudOn.value, 0,
+  'the visible sky must leave volumetric clouds to CloudPass');
+assert.ok(cloudSky.envSky.material.fragmentShader.includes('vcMarch( direction, 28.0, 0.5 )'),
+  'environment shader retains its inline cloud march');
+const cloudBundle = { clear: { texture: new THREE.CubeTexture() } };
+cloudSky.captureEnvironment(cloudBundle);
+assert.deepEqual(captureCalls, ['clear', 'raw'], 'complete environment capture includes clouds');
+assert.equal(cloudSky.sky.material.uniforms.uCloudOn.value, 0,
+  'capturing cloudy reflections must not re-enable clouds on screen');
+assert.notEqual(cloudSky.sky.material.uniforms.uCloudOn, cloudSky.envSky.material.uniforms.uCloudOn,
+  'screen and capture cloud switches must be independent uniforms');
+captureCalls.length = 0;
+cloudSky.captureEnvironment(cloudBundle, -1);
+cloudSky.captureEnvironment(cloudBundle, 0);
+assert.deepEqual(captureCalls, ['clear', 'face'], 'staged capture also retains clouds');
+assert.equal(cloudSky.sky.material.uniforms.uCloudOn.value, 0);
+for (const sky of [cloudSky.sky, cloudSky.envSky, cloudSky.clearSky]) {
+  sky.geometry.dispose(); sky.material.dispose();
+}
+cloudSky.seaDisc.geometry.dispose(); cloudSky.seaDisc.material.dispose();
+clearTexture.dispose(); cloudBundle.clear.texture.dispose();
+
 // The production snapshot copier must detach mutable vectors/arrays so later live updates cannot
 // change the source selected for staged faces; immutable noise/image textures remain shareable.
 const sourceUniforms = {

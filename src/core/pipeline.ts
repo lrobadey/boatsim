@@ -15,6 +15,7 @@ import {
 import { Quality } from './quality';
 import { CloudPass } from '../gfx/cloudPass';
 import type { Clouds } from '../gfx/clouds';
+import { DirectionalShadowFrame } from '../gfx/directionalShadowFrame';
 
 export const LAYER_REFRACT = 1; // objects visible through the water surface (seabed, hull)
 export const LAYER_NOREFLECT = 2; // drawn by the main camera but left out of the sea reflection (vegetation)
@@ -78,6 +79,7 @@ export class Pipeline {
   renderScale: number;
   private renderPass: RenderPass;
   private cloudPass: CloudPass | null = null;
+  private readonly directionalShadows: DirectionalShadowFrame;
   private width = 1;
   private height = 1;
   // adaptive resolution
@@ -117,6 +119,11 @@ export class Pipeline {
   profileEnvironment = false;
   private upBlockedAt = 0; // render scale that last overloaded the GPU (don't retry it for a while)
   private upBlockT = 0;
+  // A frame's GPU time can't run far past the frame interval for long, or frames would arrive that
+  // slowly. Chrome on Metal reports ~60 ms elapsed while frames arrive every 16.7 ms: such a timer
+  // is dropped and adaptation falls back to counting missed frames.
+  private recentFrameMs: number[] = [];
+  private timerImplausible = 0;
 
   constructor(canvas: HTMLCanvasElement, private scene: THREE.Scene, private camera: THREE.PerspectiveCamera, private quality: Quality) {
     this.renderer = new THREE.WebGLRenderer({
@@ -132,6 +139,7 @@ export class Pipeline {
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.directionalShadows = new DirectionalShadowFrame(this.renderer, scene, camera, 1 << LAYER_REFRACT);
     this.renderScale = quality.renderScale;
     this.renderer.setPixelRatio(this.renderScale);
 
@@ -287,6 +295,7 @@ export class Pipeline {
     const budget = this.frameBudgetMs;
     this.adaptHold -= dt;
     this.upBlockT -= dt;
+    if (this.gpuMs > 0) this.checkGpuTimer(frameMs);
     if (this.gpuMs > 0) {
       if (this.adaptHold > 0) return;
       if (this.gpuMs > budget * 0.85) {
@@ -311,14 +320,17 @@ export class Pipeline {
     if (this.adaptHold > 0 || this.missWindow.length < 60) return;
     const misses = this.missWindow.reduce((a, b) => a + b, 0) / this.missWindow.length;
     if (misses > 0.12) {
+      this.upBlockedAt = this.renderScale;
+      this.upBlockT = 45;
       this.setRenderScale(this.renderScale - 0.15);
       this.adaptHold = 2.5;
       this.missWindow.length = 0;
       this.goodTime = 0;
     } else if (misses < 0.01) {
       this.goodTime += dt;
-      if (this.goodTime > 6 && this.renderScale < this.quality.maxScale) {
-        this.setRenderScale(this.renderScale + 0.1);
+      const next = Math.min(this.quality.maxScale, this.renderScale + 0.1);
+      if (this.goodTime > 6 && this.renderScale < this.quality.maxScale && !(this.upBlockT > 0 && next >= this.upBlockedAt - 0.01)) {
+        this.setRenderScale(next);
         this.adaptHold = 3;
         this.goodTime = 0;
         this.missWindow.length = 0;
@@ -326,19 +338,39 @@ export class Pipeline {
     } else this.goodTime = 0;
   }
 
-  render(dt: number, prePass: () => void) {
-    // 1. refraction pre-pass: only the layer of things seen under water
+  /** drop a GPU timer that reads well past the real frame interval for ~2 s straight */
+  private checkGpuTimer(frameMs: number) {
+    this.recentFrameMs.push(frameMs);
+    if (this.recentFrameMs.length > 120) this.recentFrameMs.shift();
+    if (this.recentFrameMs.length < 120) return;
+    const median = [...this.recentFrameMs].sort((a, b) => a - b)[60];
+    this.timerImplausible = this.gpuMs > median * 1.5 ? this.timerImplausible + 1 : 0;
+    if (this.timerImplausible < 120) return;
+    this.resetGpuSamples();
+    this.timerExt = null;
+    this.missWindow.length = 0;
+    this.adaptHold = 0;
+  }
+
+  render(dt: number, prePass: () => void, reflectionPass?: () => void) {
     const r = this.renderer;
-    const mask = this.camera.layers.mask;
-    this.camera.layers.set(LAYER_REFRACT);
-    r.setRenderTarget(this.refractTarget);
-    r.setClearColor(0x000000, 1);
-    r.clear(true, true, false);
-    prePass();
-    r.render(this.scene, this.camera);
-    this.camera.layers.mask = mask;
-    r.setRenderTarget(null);
-    // 2. main render + post
-    this.composer.render(dt);
+    this.directionalShadows.render(() => {
+      // The first scene pass updates the complete caster set before any pass samples it.
+      reflectionPass?.();
+      const mask = this.camera.layers.mask;
+      const target = r.getRenderTarget();
+      try {
+        this.camera.layers.set(LAYER_REFRACT);
+        r.setRenderTarget(this.refractTarget);
+        r.setClearColor(0x000000, 1);
+        r.clear(true, true, false);
+        prePass();
+        r.render(this.scene, this.camera);
+      } finally {
+        this.camera.layers.mask = mask;
+        r.setRenderTarget(target);
+      }
+      this.composer.render(dt);
+    });
   }
 }

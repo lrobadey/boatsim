@@ -1,0 +1,1559 @@
+{
+  "partial": {
+    "clock": {
+      "totalHours": 7.416666666666667,
+      "hours": 7.416666666666667,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14738.520949468071,
+      "payloadMass": 585,
+      "time": 16.19166666666639,
+      "position": [
+        568.4479565674801,
+        -0.2323258815669642,
+        -2224.3844087731063
+      ],
+      "draft": 1.1541277889002595
+    },
+    "manifest": {},
+    "purse": 84720,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 10
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 10
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 6.666666666666643
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 10,
+      "remainingKg": 243.33333333333337,
+      "hours": 0.6083333333333334
+    },
+    "pendingUnits": 10,
+    "physicalHoldUse": {
+      "volume": 0,
+      "tonnes": 0
+    },
+    "committedHoldUse": {
+      "volume": 0.4,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {},
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": []
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 10,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": [
+          {
+            "kind": "box",
+            "cx": 569.147411790528,
+            "cz": -2228.430596760713,
+            "hx": 0.2217416271846696,
+            "hz": 0.8372415370082672,
+            "rot": -3.141592653589793,
+            "y0": 1.7850000000000001,
+            "y1": 2.927399950027466,
+            "surface": "stone",
+            "walkTop": false
+          }
+        ]
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 10,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Quay view · berth 0"
+  },
+  "away": {
+    "clock": {
+      "totalHours": 31.428504999999994,
+      "hours": 7.428504999999996,
+      "timeScale": 1
+    },
+    "mooring": {
+      "linePhase": "casting",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14738.520949468071,
+      "payloadMass": 585,
+      "time": 22.066666666666055,
+      "position": [
+        568.450040936772,
+        -0.25721231126177196,
+        -2224.3825763139844
+      ],
+      "draft": 1.1982753199835596
+    },
+    "manifest": {},
+    "purse": 83520,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 10
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 10
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 6.666666666666643
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 10,
+      "remainingKg": 243.33333333333337,
+      "hours": 0.6083333333333334
+    },
+    "pendingUnits": 10,
+    "physicalHoldUse": {
+      "volume": 0,
+      "tonnes": 0
+    },
+    "committedHoldUse": {
+      "volume": 0.4,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {},
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": []
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 10,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": [
+          {
+            "kind": "box",
+            "cx": 569.147411790528,
+            "cz": -2228.430596760713,
+            "hx": 0.2217416271846696,
+            "hz": 0.8372415370082672,
+            "rot": -3.141592653589793,
+            "y0": 1.7850000000000001,
+            "y1": 2.927399950027466,
+            "surface": "stone",
+            "walkTop": false
+          }
+        ]
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "casting",
+      "jobPending": 10,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Advanced 1440 minutes · 31.421 game hours"
+  },
+  "resumed": {
+    "clock": {
+      "totalHours": 31.63713833333333,
+      "hours": 7.63713833333333,
+      "timeScale": 1
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14788.520949468071,
+      "payloadMass": 585,
+      "time": 30.583333333332238,
+      "position": [
+        568.4478087035118,
+        -0.2770229137033038,
+        -2224.383907357205
+      ],
+      "draft": 1.2047965338028341
+    },
+    "manifest": {
+      "honey": 2
+    },
+    "purse": 83506,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 8
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 8
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 0.059999999999504894
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 8,
+      "remainingKg": 199.9400000000005,
+      "hours": 0.4998500000000013
+    },
+    "pendingUnits": 8,
+    "physicalHoldUse": {
+      "volume": 0.08,
+      "tonnes": 0.05
+    },
+    "committedHoldUse": {
+      "volume": 0.4,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "honey": 2
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 2,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "honey:1",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          },
+          {
+            "id": "honey:2",
+            "good": "honey",
+            "position": [
+              0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                0.29281694412231446,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 8,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": [
+          {
+            "kind": "box",
+            "cx": 569.147411790528,
+            "cz": -2228.2872313581097,
+            "hx": 0.2217416271846696,
+            "hz": 0.6938761344050727,
+            "rot": -3.141592653589793,
+            "y0": 1.7850000000000001,
+            "y1": 2.927399950027466,
+            "surface": "stone",
+            "walkTop": false
+          }
+        ]
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 8,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Advanced 6 minutes · 31.632 game hours"
+  },
+  "wrongBerth": {
+    "clock": {
+      "totalHours": 31.797139999999988,
+      "hours": 7.797139999999989,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 1
+    },
+    "ship": {
+      "mass": 14838.520949468071,
+      "payloadMass": 585,
+      "time": 43.05833333333153,
+      "position": [
+        568.4576270861055,
+        -0.24094332735959828,
+        -2235.0962912454656
+      ],
+      "draft": 1.2068624827583998
+    },
+    "manifest": {
+      "honey": 4
+    },
+    "purse": 83492,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 6
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 6
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 14.060666666663124
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 6,
+      "remainingKg": 135.9393333333369,
+      "hours": 0.33984833333334225
+    },
+    "pendingUnits": 6,
+    "physicalHoldUse": {
+      "volume": 0.16,
+      "tonnes": 0.1
+    },
+    "committedHoldUse": {
+      "volume": 0.4,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "honey": 4
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 4,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "honey:1",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          },
+          {
+            "id": "honey:2",
+            "good": "honey",
+            "position": [
+              0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                0.29281694412231446,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          },
+          {
+            "id": "honey:3",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -2.244018011920929
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.3940180178813937
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -2.0940180059604647
+              ]
+            }
+          },
+          {
+            "id": "honey:4",
+            "good": "honey",
+            "position": [
+              0.15015847206115723,
+              -0.6083391356736074,
+              -2.244018011920929
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.3940180178813937
+              ],
+              "max": [
+                0.29281694412231446,
+                -0.05963916065987451,
+                -2.0940180059604647
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 6,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": [
+          {
+            "kind": "box",
+            "cx": 569.147411790528,
+            "cz": -2228.1267676992256,
+            "hx": 0.22120274774057636,
+            "hz": 0.5334124755207904,
+            "rot": -3.141592653589793,
+            "y0": 1.7850000000000001,
+            "y1": 2.927399950027466,
+            "surface": "stone",
+            "walkTop": false
+          }
+        ]
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 6,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": true,
+    "status": "Trade book open"
+  },
+  "leaveOther": {
+    "clock": {
+      "totalHours": 31.803804999999997,
+      "hours": 7.803804999999996,
+      "timeScale": 1
+    },
+    "mooring": {
+      "linePhase": "casting",
+      "berth": 1
+    },
+    "ship": {
+      "mass": 14838.520949468071,
+      "payloadMass": 585,
+      "time": 61.2583333333305,
+      "position": [
+        568.456171284586,
+        -0.2593816715312116,
+        -2235.095109374214
+      ],
+      "draft": 1.2126353552319795
+    },
+    "manifest": {
+      "honey": 4
+    },
+    "purse": 83492,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 6
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 6
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 14.060666666663124
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 6,
+      "remainingKg": 135.9393333333369,
+      "hours": 0.33984833333334225
+    },
+    "pendingUnits": 6,
+    "physicalHoldUse": {
+      "volume": 0.16,
+      "tonnes": 0.1
+    },
+    "committedHoldUse": {
+      "volume": 0.4,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "honey": 4
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 4,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "honey:1",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          },
+          {
+            "id": "honey:2",
+            "good": "honey",
+            "position": [
+              0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                0.29281694412231446,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          },
+          {
+            "id": "honey:3",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -2.244018011920929
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.3940180178813937
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -2.0940180059604647
+              ]
+            }
+          },
+          {
+            "id": "honey:4",
+            "good": "honey",
+            "position": [
+              0.15015847206115723,
+              -0.6083391356736074,
+              -2.244018011920929
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.3940180178813937
+              ],
+              "max": [
+                0.29281694412231446,
+                -0.05963916065987451,
+                -2.0940180059604647
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 6,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": [
+          {
+            "kind": "box",
+            "cx": 569.147411790528,
+            "cz": -2228.1267676992256,
+            "hx": 0.22120274774057636,
+            "hz": 0.5334124755207904,
+            "rot": -3.141592653589793,
+            "y0": 1.7850000000000001,
+            "y1": 2.927399950027466,
+            "surface": "stone",
+            "walkTop": false
+          }
+        ]
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "casting",
+      "jobPending": 6,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Cast off through the mooring system"
+  },
+  "draftBefore": "- generic: Harbour of Serrothos\n- generic: Harbour\n- text: \"0.0\"\n- generic: kn\n- img \"Anchor stowed\":\n- generic: 270°\n- generic: \"?\"\n- generic: Controls\n- heading \"At the helm\" [level=4]\n- generic: W\n- generic: S\n- text: Stroke order\n- generic: A\n- generic: D\n- text: Steer ·\n- generic: X\n- text: Centre\n- generic: Space\n- text: Hold water (brake)\n- generic: F\n- text: Raise / brail sail ·\n- generic: G\n- text: full / half\n- generic: J\n- generic: L\n- text: Trim yard ·\n- generic: K\n- text: crew trim\n- generic: R\n- text: Moor / cast off\n- generic: Z\n- text: Drop / raise anchor\n- generic: E\n- text: Leave the helm\n- heading \"On foot\" [level=4]\n- generic: W\n- generic: A\n- generic: S\n- generic: D\n- text: Walk ·\n- generic: Shift\n- text: Run\n- generic: Space\n- text: Jump · swim up\n- generic: E\n- text: Use · take the helm\n- generic: B\n- text: Build on deck\n- heading \"Look\" [level=4]\n- generic: ←\n- generic: →\n- generic: ↑\n- generic: ↓\n- text: Look around\n- generic: V\n- text: Spyglass ·\n- generic: −\n- generic: =\n- text: Zoom\n- generic: C\n- text: Chase camera ·\n- generic: Q\n- text: Eagle view\n- heading \"World\" [level=4]\n- generic: M\n- text: Map\n- generic: I\n- text: Hold book\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: T\n- text: Skip to dawn, noon, dusk, night\n- generic: H\n- text: \"Interface: full, minimal, off\"\n- generic: \"N\"\n- text: Mute\n- generic: Esc\n- text: Pause and settings\n- generic: Casting off\n- generic: R\n- generic: Cargo. Stacks two high and can be stood on.\n- generic: \"1\"\n- generic: Crate\n- generic: 60 kg\n- generic: \"2\"\n- generic: Amphora rack\n- generic: 260 kg\n- generic: \"3\"\n- generic: Pithos\n- generic: 180 kg\n- generic: \"4\"\n- generic: Rope coil\n- generic: 25 kg\n- generic: \"5\"\n- generic: Nets\n- generic: 30 kg\n- generic: \"6\"\n- generic: Lamp\n- generic: 20 kg\n- generic: \"7\"\n- generic: Brazier\n- generic: 90 kg\n- generic: \"8\"\n- generic: Awning\n- generic: 70 kg\n- generic: \"9\"\n- generic: Altar\n- generic: 300 kg\n- generic: \"0\"\n- generic: Bench\n- generic: 35 kg\n- generic: Shield rack\n- generic: 110 kg\n- generic: Banner\n- generic: 15 kg\n- generic: Deck load\n- generic: 0.58 / 2.50 t\n- heading \"Serrothos\" [level=2]\n- generic: Day 2 · 07:48 · Time ×0\n- table:\n  - rowgroup:\n    - row \"Goods Stock Buy Sell Aboard Order\":\n      - columnheader \"Goods\"\n      - columnheader \"Stock\"\n      - columnheader \"Buy\"\n      - columnheader \"Sell\"\n      - columnheader \"Aboard\"\n      - columnheader \"Order\"\n  - rowgroup:\n    - row \"Wine 2085 8.0 7.6 70 —\":\n      - cell \"Wine\"\n      - cell \"2085\"\n      - cell \"8.0\"\n      - cell \"7.6\"\n      - cell \"70\":\n        - generic: \"70\"\n      - cell \"—\"\n    - row \"Olive oil 403 33.8 31.8 — —\":\n      - cell \"Olive oil\"\n      - cell \"403\"\n      - cell \"33.8\"\n      - cell \"31.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Wheat 1796 9.5 8.9 — +10\":\n      - cell \"Wheat\"\n      - cell \"1796\"\n      - cell \"9.5\"\n      - cell \"8.9\"\n      - cell \"—\":\n        - generic: —\n      - cell \"+10\"\n    - row \"Almonds 446 10.0 9.4 — —\":\n      - cell \"Almonds\"\n      - cell \"446\"\n      - cell \"10.0\"\n      - cell \"9.4\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Salt fish 160 17.3 16.3 — —\":\n      - cell \"Salt fish\"\n      - cell \"160\"\n      - cell \"17.3\"\n      - cell \"16.3\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Honey 478 14.9 14.1 — —\":\n      - cell \"Honey\"\n      - cell \"478\"\n      - cell \"14.9\"\n      - cell \"14.1\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Firewood 5800 0.9 0.8 — —\":\n      - cell \"Firewood\"\n      - cell \"5800\"\n      - cell \"0.9\"\n      - cell \"0.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Pitch 611 4.8 4.6 — —\":\n      - cell \"Pitch\"\n      - cell \"611\"\n      - cell \"4.8\"\n      - cell \"4.6\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n- generic: Order total\n- generic: −97.8 dr\n- generic: Duty 1.9 dr\n- generic: Porters 1.0 dr\n- generic: Added handling 1 h\n- generic: Purse 300.0 dr\n- generic: Hold 2.9 t · 5.3 of 20.5 m³\n- generic: After orders 3.3 t · 5.9 of 20.5 m³\n- generic: ↑\n- generic: ↓\n- text: Select\n- generic: ←\n- generic: →\n- text: Amount\n- generic: Shift\n- text: ×10\n- generic: Enter\n- text: Confirm\n- generic: Tab\n- text: Notebook\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: Esc\n- text: Close\n- button \"Sell 10 wine\"\n- button \"Buy 10 wine\"\n- button \"Buy 10 honey\"\n- button \"Buy 100 wheat\"\n- button \"Sell 1 wine\"\n- button \"Buy 1 wine\"\n- button \"Buy 1 honey\"\n- button \"Advance 1 min\"\n- button \"Advance 6 min\"\n- button \"Advance 15 min\"\n- button \"Advance 1 day\"\n- button \"Empty hold\"\n- button \"Reset review\"\n- button \"Run ×1\"\n- button \"Run ×8\"\n- button \"Freeze\"\n- button \"Trade book\"\n- button \"Hold book\"\n- button \"Close book\"\n- button \"Cast off\"\n- button \"Release lines (test)\"\n- button \"Return to job berth\"\n- button \"Other berth (test)\"\n- button \"View quay\"\n- button \"View hold\"\n- button \"View aft hold\"\n- button \"View deck\"\n- button \"View side\"\n- status: Trade book open",
+  "stale": {
+    "clock": {
+      "totalHours": 631.8040833333333,
+      "hours": 7.804083333333331,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 17678.520949468068,
+      "payloadMass": 585,
+      "time": 76.09166666667329,
+      "position": [
+        568.4466161925866,
+        -0.3953287600515786,
+        -2224.3828314882935
+      ],
+      "draft": 1.2984370168639714
+    },
+    "manifest": {
+      "wine": 70
+    },
+    "purse": 0,
+    "hatchUntil": null,
+    "job": null,
+    "jobSummary": null,
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 5.25,
+      "tonnes": 2.94
+    },
+    "committedHoldUse": {
+      "volume": 5.25,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "wine": 12
+        },
+        "instanceCounts": {
+          "amphora": 12,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "wine:1",
+            "good": "wine",
+            "position": [
+              0,
+              -0.6083391356736074,
+              -2.136518002980232
+            ],
+            "bounds": {
+              "min": [
+                -0.19021129608154297,
+                -0.6083391356736074,
+                -2.3365180059604644
+              ],
+              "max": [
+                0.19021129608154297,
+                0.32166087147894995,
+                -1.936518
+              ]
+            }
+          },
+          {
+            "id": "wine:2",
+            "good": "wine",
+            "position": [
+              0,
+              -0.6083391356736074,
+              -1.7215179970197678
+            ],
+            "bounds": {
+              "min": [
+                -0.19021129608154297,
+                -0.6083391356736074,
+                -1.921518
+              ],
+              "max": [
+                0.19021129608154297,
+                0.32166087147894995,
+                -1.5215179940395356
+              ]
+            }
+          },
+          {
+            "id": "wine:3",
+            "good": "wine",
+            "position": [
+              -0.39542259216308595,
+              -0.6083391356736074,
+              -2.136518002980232
+            ],
+            "bounds": {
+              "min": [
+                -0.5856338882446289,
+                -0.6083391356736074,
+                -2.3365180059604644
+              ],
+              "max": [
+                -0.20521129608154298,
+                0.32166087147894995,
+                -1.936518
+              ]
+            }
+          },
+          {
+            "id": "wine:4",
+            "good": "wine",
+            "position": [
+              0.39542259216308595,
+              -0.6083391356736074,
+              -2.136518002980232
+            ],
+            "bounds": {
+              "min": [
+                0.20521129608154298,
+                -0.6083391356736074,
+                -2.3365180059604644
+              ],
+              "max": [
+                0.5856338882446289,
+                0.32166087147894995,
+                -1.936518
+              ]
+            }
+          },
+          {
+            "id": "wine:5",
+            "good": "wine",
+            "position": [
+              -0.39542259216308595,
+              -0.6083391356736074,
+              -1.7215179970197678
+            ],
+            "bounds": {
+              "min": [
+                -0.5856338882446289,
+                -0.6083391356736074,
+                -1.921518
+              ],
+              "max": [
+                -0.20521129608154298,
+                0.32166087147894995,
+                -1.5215179940395356
+              ]
+            }
+          },
+          {
+            "id": "wine:6",
+            "good": "wine",
+            "position": [
+              0.39542259216308595,
+              -0.6083391356736074,
+              -1.7215179970197678
+            ],
+            "bounds": {
+              "min": [
+                0.20521129608154298,
+                -0.6083391356736074,
+                -1.921518
+              ],
+              "max": [
+                0.5856338882446289,
+                0.32166087147894995,
+                -1.5215179940395356
+              ]
+            }
+          },
+          {
+            "id": "wine:7",
+            "good": "wine",
+            "position": [
+              0,
+              -0.7166164391495877,
+              -0.03526625298023203
+            ],
+            "bounds": {
+              "min": [
+                -0.19021129608154297,
+                -0.7166164391495877,
+                -0.23526625596046427
+              ],
+              "max": [
+                0.19021129608154297,
+                0.21338356800296965,
+                0.1647337500000002
+              ]
+            }
+          },
+          {
+            "id": "wine:8",
+            "good": "wine",
+            "position": [
+              0,
+              -0.7166164391495877,
+              0.3797337529802325
+            ],
+            "bounds": {
+              "min": [
+                -0.19021129608154297,
+                -0.7166164391495877,
+                0.17973375000000025
+              ],
+              "max": [
+                0.19021129608154297,
+                0.21338356800296965,
+                0.5797337559604647
+              ]
+            }
+          },
+          {
+            "id": "wine:9",
+            "good": "wine",
+            "position": [
+              -0.39542259216308595,
+              -0.7166164391495877,
+              -0.03526625298023203
+            ],
+            "bounds": {
+              "min": [
+                -0.5856338882446289,
+                -0.7166164391495877,
+                -0.23526625596046427
+              ],
+              "max": [
+                -0.20521129608154298,
+                0.21338356800296965,
+                0.1647337500000002
+              ]
+            }
+          },
+          {
+            "id": "wine:10",
+            "good": "wine",
+            "position": [
+              0.39542259216308595,
+              -0.7166164391495877,
+              -0.03526625298023203
+            ],
+            "bounds": {
+              "min": [
+                0.20521129608154298,
+                -0.7166164391495877,
+                -0.23526625596046427
+              ],
+              "max": [
+                0.5856338882446289,
+                0.21338356800296965,
+                0.1647337500000002
+              ]
+            }
+          },
+          {
+            "id": "wine:11",
+            "good": "wine",
+            "position": [
+              -0.39542259216308595,
+              -0.7166164391495877,
+              0.3797337529802325
+            ],
+            "bounds": {
+              "min": [
+                -0.5856338882446289,
+                -0.7166164391495877,
+                0.17973375000000025
+              ],
+              "max": [
+                -0.20521129608154298,
+                0.21338356800296965,
+                0.5797337559604647
+              ]
+            }
+          },
+          {
+            "id": "wine:12",
+            "good": "wine",
+            "position": [
+              0.39542259216308595,
+              -0.7166164391495877,
+              0.3797337529802325
+            ],
+            "bounds": {
+              "min": [
+                0.20521129608154298,
+                -0.7166164391495877,
+                0.17973375000000025
+              ],
+              "max": [
+                0.5856338882446289,
+                0.21338356800296965,
+                0.5797337559604647
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": []
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 0,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": true,
+    "status": "Advanced 1440 minutes · 631.804 game hours"
+  },
+  "staleDOM": "- generic: Harbour of Serrothos\n- generic: Harbour\n- text: \"0.0\"\n- generic: kn\n- img \"Anchor stowed\":\n- generic: 270°\n- generic: \"?\"\n- generic: Controls\n- heading \"At the helm\" [level=4]\n- generic: W\n- generic: S\n- text: Stroke order\n- generic: A\n- generic: D\n- text: Steer ·\n- generic: X\n- text: Centre\n- generic: Space\n- text: Hold water (brake)\n- generic: F\n- text: Raise / brail sail ·\n- generic: G\n- text: full / half\n- generic: J\n- generic: L\n- text: Trim yard ·\n- generic: K\n- text: crew trim\n- generic: R\n- text: Moor / cast off\n- generic: Z\n- text: Drop / raise anchor\n- generic: E\n- text: Leave the helm\n- heading \"On foot\" [level=4]\n- generic: W\n- generic: A\n- generic: S\n- generic: D\n- text: Walk ·\n- generic: Shift\n- text: Run\n- generic: Space\n- text: Jump · swim up\n- generic: E\n- text: Use · take the helm\n- generic: B\n- text: Build on deck\n- heading \"Look\" [level=4]\n- generic: ←\n- generic: →\n- generic: ↑\n- generic: ↓\n- text: Look around\n- generic: V\n- text: Spyglass ·\n- generic: −\n- generic: =\n- text: Zoom\n- generic: C\n- text: Chase camera ·\n- generic: Q\n- text: Eagle view\n- heading \"World\" [level=4]\n- generic: M\n- text: Map\n- generic: I\n- text: Hold book\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: T\n- text: Skip to dawn, noon, dusk, night\n- generic: H\n- text: \"Interface: full, minimal, off\"\n- generic: \"N\"\n- text: Mute\n- generic: Esc\n- text: Pause and settings\n- generic: Wages paid · 12.0 dr\n- generic: R\n- generic: Cargo. Stacks two high and can be stood on.\n- generic: \"1\"\n- generic: Crate\n- generic: 60 kg\n- generic: \"2\"\n- generic: Amphora rack\n- generic: 260 kg\n- generic: \"3\"\n- generic: Pithos\n- generic: 180 kg\n- generic: \"4\"\n- generic: Rope coil\n- generic: 25 kg\n- generic: \"5\"\n- generic: Nets\n- generic: 30 kg\n- generic: \"6\"\n- generic: Lamp\n- generic: 20 kg\n- generic: \"7\"\n- generic: Brazier\n- generic: 90 kg\n- generic: \"8\"\n- generic: Awning\n- generic: 70 kg\n- generic: \"9\"\n- generic: Altar\n- generic: 300 kg\n- generic: \"0\"\n- generic: Bench\n- generic: 35 kg\n- generic: Shield rack\n- generic: 110 kg\n- generic: Banner\n- generic: 15 kg\n- generic: Deck load\n- generic: 0.58 / 2.50 t\n- heading \"Serrothos\" [level=2]\n- generic: Day 27 · 07:48 · Time ×0\n- table:\n  - rowgroup:\n    - row \"Goods Stock Buy Sell Aboard Order\":\n      - columnheader \"Goods\"\n      - columnheader \"Stock\"\n      - columnheader \"Buy\"\n      - columnheader \"Sell\"\n      - columnheader \"Aboard\"\n      - columnheader \"Order\"\n  - rowgroup:\n    - row \"Wine 1886 8.7 8.2 70 —\":\n      - cell \"Wine\"\n      - cell \"1886\"\n      - cell \"8.7\"\n      - cell \"8.2\"\n      - cell \"70\":\n        - generic: \"70\"\n      - cell \"—\"\n    - row \"Olive oil 390 34.5 32.5 — —\":\n      - cell \"Olive oil\"\n      - cell \"390\"\n      - cell \"34.5\"\n      - cell \"32.5\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Wheat 1893 8.9 8.4 — +10\":\n      - cell \"Wheat\"\n      - cell \"1893\"\n      - cell \"8.9\"\n      - cell \"8.4\"\n      - cell \"—\":\n        - generic: —\n      - cell \"+10\"\n    - row \"Almonds 456 9.8 9.3 — —\":\n      - cell \"Almonds\"\n      - cell \"456\"\n      - cell \"9.8\"\n      - cell \"9.3\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Salt fish 184 15.7 14.8 — —\":\n      - cell \"Salt fish\"\n      - cell \"184\"\n      - cell \"15.7\"\n      - cell \"14.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Honey 527 14.2 13.4 — —\":\n      - cell \"Honey\"\n      - cell \"527\"\n      - cell \"14.2\"\n      - cell \"13.4\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Firewood 5760 0.9 0.8 — —\":\n      - cell \"Firewood\"\n      - cell \"5760\"\n      - cell \"0.9\"\n      - cell \"0.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Pitch 567 5.1 4.8 — —\":\n      - cell \"Pitch\"\n      - cell \"567\"\n      - cell \"5.1\"\n      - cell \"4.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n- generic: Order total\n- generic: −92.3 dr\n- generic: Duty 1.8 dr\n- generic: Porters 1.0 dr\n- generic: Added handling 1 h\n- generic: Order changed with time. Review amounts and confirm again.\n- generic: Purse 0.0 dr\n- generic: Hold 2.9 t · 5.3 of 20.5 m³\n- generic: After orders 3.3 t · 5.9 of 20.5 m³\n- generic: ↑\n- generic: ↓\n- text: Select\n- generic: ←\n- generic: →\n- text: Amount\n- generic: Shift\n- text: ×10\n- generic: Enter\n- text: Confirm\n- generic: Tab\n- text: Notebook\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: Esc\n- text: Close\n- button \"Sell 10 wine\"\n- button \"Buy 10 wine\"\n- button \"Buy 10 honey\"\n- button \"Buy 100 wheat\"\n- button \"Sell 1 wine\"\n- button \"Buy 1 wine\"\n- button \"Buy 1 honey\"\n- button \"Advance 1 min\"\n- button \"Advance 6 min\"\n- button \"Advance 15 min\"\n- button \"Advance 1 day\" [active]\n- button \"Empty hold\"\n- button \"Reset review\"\n- button \"Run ×1\"\n- button \"Run ×8\"\n- button \"Freeze\"\n- button \"Trade book\"\n- button \"Hold book\"\n- button \"Close book\"\n- button \"Cast off\"\n- button \"Release lines (test)\"\n- button \"Return to job berth\"\n- button \"Other berth (test)\"\n- button \"View quay\"\n- button \"View hold\"\n- button \"View aft hold\"\n- button \"View deck\"\n- button \"View side\"\n- status: Advanced 1440 minutes · 631.804 game hours",
+  "draftReduced": "- generic: Harbour of Serrothos\n- generic: Harbour\n- text: \"0.0\"\n- generic: kn\n- img \"Anchor stowed\":\n- generic: 270°\n- generic: \"?\"\n- generic: Controls\n- heading \"At the helm\" [level=4]\n- generic: W\n- generic: S\n- text: Stroke order\n- generic: A\n- generic: D\n- text: Steer ·\n- generic: X\n- text: Centre\n- generic: Space\n- text: Hold water (brake)\n- generic: F\n- text: Raise / brail sail ·\n- generic: G\n- text: full / half\n- generic: J\n- generic: L\n- text: Trim yard ·\n- generic: K\n- text: crew trim\n- generic: R\n- text: Moor / cast off\n- generic: Z\n- text: Drop / raise anchor\n- generic: E\n- text: Leave the helm\n- heading \"On foot\" [level=4]\n- generic: W\n- generic: A\n- generic: S\n- generic: D\n- text: Walk ·\n- generic: Shift\n- text: Run\n- generic: Space\n- text: Jump · swim up\n- generic: E\n- text: Use · take the helm\n- generic: B\n- text: Build on deck\n- heading \"Look\" [level=4]\n- generic: ←\n- generic: →\n- generic: ↑\n- generic: ↓\n- text: Look around\n- generic: V\n- text: Spyglass ·\n- generic: −\n- generic: =\n- text: Zoom\n- generic: C\n- text: Chase camera ·\n- generic: Q\n- text: Eagle view\n- heading \"World\" [level=4]\n- generic: M\n- text: Map\n- generic: I\n- text: Hold book\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: T\n- text: Skip to dawn, noon, dusk, night\n- generic: H\n- text: \"Interface: full, minimal, off\"\n- generic: \"N\"\n- text: Mute\n- generic: Esc\n- text: Pause and settings\n- generic: Wages paid · 12.0 dr\n- generic: R\n- generic: Cargo. Stacks two high and can be stood on.\n- generic: \"1\"\n- generic: Crate\n- generic: 60 kg\n- generic: \"2\"\n- generic: Amphora rack\n- generic: 260 kg\n- generic: \"3\"\n- generic: Pithos\n- generic: 180 kg\n- generic: \"4\"\n- generic: Rope coil\n- generic: 25 kg\n- generic: \"5\"\n- generic: Nets\n- generic: 30 kg\n- generic: \"6\"\n- generic: Lamp\n- generic: 20 kg\n- generic: \"7\"\n- generic: Brazier\n- generic: 90 kg\n- generic: \"8\"\n- generic: Awning\n- generic: 70 kg\n- generic: \"9\"\n- generic: Altar\n- generic: 300 kg\n- generic: \"0\"\n- generic: Bench\n- generic: 35 kg\n- generic: Shield rack\n- generic: 110 kg\n- generic: Banner\n- generic: 15 kg\n- generic: Deck load\n- generic: 0.58 / 2.50 t\n- heading \"Serrothos\" [level=2]\n- generic: Day 27 · 07:48 · Time ×0\n- table:\n  - rowgroup:\n    - row \"Goods Stock Buy Sell Aboard Order\":\n      - columnheader \"Goods\"\n      - columnheader \"Stock\"\n      - columnheader \"Buy\"\n      - columnheader \"Sell\"\n      - columnheader \"Aboard\"\n      - columnheader \"Order\"\n  - rowgroup:\n    - row \"Wine 1886 8.7 8.2 70 —\":\n      - cell \"Wine\"\n      - cell \"1886\"\n      - cell \"8.7\"\n      - cell \"8.2\"\n      - cell \"70\":\n        - generic: \"70\"\n      - cell \"—\"\n    - row \"Olive oil 390 34.5 32.5 — —\":\n      - cell \"Olive oil\"\n      - cell \"390\"\n      - cell \"34.5\"\n      - cell \"32.5\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Wheat 1893 8.9 8.4 — —\":\n      - cell \"Wheat\"\n      - cell \"1893\"\n      - cell \"8.9\"\n      - cell \"8.4\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Almonds 456 9.8 9.3 — —\":\n      - cell \"Almonds\"\n      - cell \"456\"\n      - cell \"9.8\"\n      - cell \"9.3\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Salt fish 184 15.7 14.8 — —\":\n      - cell \"Salt fish\"\n      - cell \"184\"\n      - cell \"15.7\"\n      - cell \"14.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Honey 527 14.2 13.4 — —\":\n      - cell \"Honey\"\n      - cell \"527\"\n      - cell \"14.2\"\n      - cell \"13.4\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Firewood 5760 0.9 0.8 — —\":\n      - cell \"Firewood\"\n      - cell \"5760\"\n      - cell \"0.9\"\n      - cell \"0.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n    - row \"Pitch 567 5.1 4.8 — —\":\n      - cell \"Pitch\"\n      - cell \"567\"\n      - cell \"5.1\"\n      - cell \"4.8\"\n      - cell \"—\":\n        - generic: —\n      - cell \"—\"\n- generic: Order total\n- generic: 0.0 dr\n- generic: Duty 0.0 dr\n- generic: Porters 0.0 dr\n- generic: Purse 0.0 dr\n- generic: Hold 2.9 t · 5.3 of 20.5 m³\n- generic: ↑\n- generic: ↓\n- text: Select\n- generic: ←\n- generic: →\n- text: Amount\n- generic: Shift\n- text: ×10\n- generic: Enter\n- text: Confirm\n- generic: Tab\n- text: Notebook\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: Esc\n- text: Close\n- button \"Sell 10 wine\"\n- button \"Buy 10 wine\"\n- button \"Buy 10 honey\"\n- button \"Buy 100 wheat\"\n- button \"Sell 1 wine\"\n- button \"Buy 1 wine\"\n- button \"Buy 1 honey\"\n- button \"Advance 1 min\"\n- button \"Advance 6 min\"\n- button \"Advance 15 min\"\n- button \"Advance 1 day\" [active]\n- button \"Empty hold\"\n- button \"Reset review\"\n- button \"Run ×1\"\n- button \"Run ×8\"\n- button \"Freeze\"\n- button \"Trade book\"\n- button \"Hold book\"\n- button \"Close book\"\n- button \"Cast off\"\n- button \"Release lines (test)\"\n- button \"Return to job berth\"\n- button \"Other berth (test)\"\n- button \"View quay\"\n- button \"View hold\"\n- button \"View aft hold\"\n- button \"View deck\"\n- button \"View side\"\n- status: Advanced 1440 minutes · 631.804 game hours",
+  "ready": {
+    "clock": {
+      "totalHours": 631.9040833333333,
+      "hours": 7.904083333333331,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14763.520949468071,
+      "payloadMass": 585,
+      "time": 87.70000000001586,
+      "position": [
+        568.4550918079672,
+        -0.18609781561287478,
+        -2224.379508537524
+      ],
+      "draft": 1.1603213174148999
+    },
+    "manifest": {
+      "honey": 1
+    },
+    "purse": 98630,
+    "hatchUntil": null,
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {},
+      "outgoing": {},
+      "quay": {},
+      "active": null,
+      "cartAt": 632.8665833333333
+    },
+    "jobSummary": {
+      "phase": null,
+      "good": null,
+      "units": 0,
+      "remainingKg": 0,
+      "hours": 0
+    },
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 0.04,
+      "tonnes": 0.025
+    },
+    "committedHoldUse": {
+      "volume": 0.04,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "honey": 1
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 1,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "honey:1",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": []
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 0,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": true,
+    "status": "Hold book open"
+  },
+  "departed": {
+    "clock": {
+      "totalHours": 631.9093366666667,
+      "hours": 7.909336666666668,
+      "timeScale": 1
+    },
+    "mooring": {
+      "linePhase": "casting",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14763.520949468071,
+      "payloadMass": 585,
+      "time": 93.16666666668688,
+      "position": [
+        568.4533252539206,
+        -0.23671707279240672,
+        -2224.380495483162
+      ],
+      "draft": 1.1990291004394769
+    },
+    "manifest": {
+      "honey": 1
+    },
+    "purse": 98630,
+    "hatchUntil": null,
+    "job": null,
+    "jobSummary": null,
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 0.04,
+      "tonnes": 0.025
+    },
+    "committedHoldUse": {
+      "volume": 0.04,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "honey": 1
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 1,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "honey:1",
+            "good": "honey",
+            "position": [
+              -0.15015847206115723,
+              -0.6083391356736074,
+              -1.9290180000000001
+            ],
+            "bounds": {
+              "min": [
+                -0.29281694412231446,
+                -0.6083391356736074,
+                -2.0790180059604646
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.05963916065987451,
+                -1.7790179940395356
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": []
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "casting",
+      "jobPending": 0,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Cast off through the mooring system"
+  },
+  "light": {
+    "clock": {
+      "totalHours": 631.9101916666667,
+      "hours": 7.910191666666665,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 14738.520949468071,
+      "payloadMass": 585,
+      "time": 106.94166666669784,
+      "position": [
+        568.4481349644807,
+        -0.2882723265307994,
+        -2224.3821402906638
+      ],
+      "draft": 1.214985792748632
+    },
+    "manifest": {},
+    "purse": 100000,
+    "hatchUntil": null,
+    "job": null,
+    "jobSummary": null,
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 0,
+      "tonnes": 0
+    },
+    "committedHoldUse": {
+      "volume": 0,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {},
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "placements": []
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": []
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 0,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Side view · berth 0 · midships at waterline"
+  },
+  "heavy": {
+    "clock": {
+      "totalHours": 655.9101916666667,
+      "hours": 7.910191666666666,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 18738.520949468053,
+      "payloadMass": 585,
+      "time": 120.4666666667086,
+      "position": [
+        568.453839569059,
+        -0.39365450169949806,
+        -2224.378968407848
+      ],
+      "draft": 1.3254320543158917
+    },
+    "manifest": {
+      "wheat": 100
+    },
+    "purse": 10672,
+    "hatchUntil": 643.9101916666667,
+    "job": null,
+    "jobSummary": null,
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 6.5,
+      "tonnes": 4
+    },
+    "committedHoldUse": {
+      "volume": 6.5,
+      "capacity": 20.510402717845505
+    },
+    "tradeVisuals": {
+      "hold": {
+        "visibleCounts": {
+          "wheat": 8
+        },
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 8,
+          "bundle": 0
+        },
+        "placements": [
+          {
+            "id": "wheat:1",
+            "good": "wheat",
+            "position": [
+              -0.2834999930858612,
+              -0.6083391356736074,
+              -2.176517994635582
+            ],
+            "bounds": {
+              "min": [
+                -0.5594999861717225,
+                -0.6083391356736074,
+                -2.416517989271164
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.15833914759453638,
+                -1.936518
+              ]
+            }
+          },
+          {
+            "id": "wheat:2",
+            "good": "wheat",
+            "position": [
+              0.2834999930858612,
+              -0.6083391356736074,
+              -2.176517994635582
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -2.416517989271164
+              ],
+              "max": [
+                0.5594999861717225,
+                -0.15833914759453638,
+                -1.936518
+              ]
+            }
+          },
+          {
+            "id": "wheat:3",
+            "good": "wheat",
+            "position": [
+              -0.2834999930858612,
+              -0.6083391356736074,
+              -1.681518005364418
+            ],
+            "bounds": {
+              "min": [
+                -0.5594999861717225,
+                -0.6083391356736074,
+                -1.921518
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.15833914759453638,
+                -1.4415180107288361
+              ]
+            }
+          },
+          {
+            "id": "wheat:4",
+            "good": "wheat",
+            "position": [
+              0.2834999930858612,
+              -0.6083391356736074,
+              -1.681518005364418
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.6083391356736074,
+                -1.921518
+              ],
+              "max": [
+                0.5594999861717225,
+                -0.15833914759453638,
+                -1.4415180107288361
+              ]
+            }
+          },
+          {
+            "id": "wheat:5",
+            "good": "wheat",
+            "position": [
+              -0.2834999930858612,
+              -0.7166164391495877,
+              -0.07526624463558176
+            ],
+            "bounds": {
+              "min": [
+                -0.5594999861717225,
+                -0.7166164391495877,
+                -0.3152662392711637
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.2666164510705167,
+                0.1647337500000002
+              ]
+            }
+          },
+          {
+            "id": "wheat:6",
+            "good": "wheat",
+            "position": [
+              0.2834999930858612,
+              -0.7166164391495877,
+              -0.07526624463558176
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.7166164391495877,
+                -0.3152662392711637
+              ],
+              "max": [
+                0.5594999861717225,
+                -0.2666164510705167,
+                0.1647337500000002
+              ]
+            }
+          },
+          {
+            "id": "wheat:7",
+            "good": "wheat",
+            "position": [
+              -0.2834999930858612,
+              -0.7166164391495877,
+              0.4197337446355822
+            ],
+            "bounds": {
+              "min": [
+                -0.5594999861717225,
+                -0.7166164391495877,
+                0.17973375000000025
+              ],
+              "max": [
+                -0.007500000000000007,
+                -0.2666164510705167,
+                0.6597337392711642
+              ]
+            }
+          },
+          {
+            "id": "wheat:8",
+            "good": "wheat",
+            "position": [
+              0.2834999930858612,
+              -0.7166164391495877,
+              0.4197337446355822
+            ],
+            "bounds": {
+              "min": [
+                0.007500000000000007,
+                -0.7166164391495877,
+                0.17973375000000025
+              ],
+              "max": [
+                0.5594999861717225,
+                -0.2666164510705167,
+                0.6597337392711642
+              ]
+            }
+          }
+        ]
+      },
+      "quay": {
+        "instanceCounts": {
+          "amphora": 0,
+          "jar": 0,
+          "sack": 0,
+          "bundle": 0
+        },
+        "solids": []
+      }
+    },
+    "pausedContext": {
+      "gamePaused": false,
+      "linePhase": "docked",
+      "jobPending": 0,
+      "cartDelayRemainingHours": 0
+    },
+    "ledgerOpen": false,
+    "status": "Advanced 1440 minutes · 655.910 game hours"
+  },
+  "readPausedDOM": "- generic: Harbour of Serrothos\n- generic: Harbour\n- text: \"0.0\"\n- generic: kn\n- img \"Anchor stowed\":\n- generic: 270°\n- generic: \"?\"\n- generic: Controls\n- heading \"At the helm\" [level=4]\n- generic: W\n- generic: S\n- text: Stroke order\n- generic: A\n- generic: D\n- text: Steer ·\n- generic: X\n- text: Centre\n- generic: Space\n- text: Hold water (brake)\n- generic: F\n- text: Raise / brail sail ·\n- generic: G\n- text: full / half\n- generic: J\n- generic: L\n- text: Trim yard ·\n- generic: K\n- text: crew trim\n- generic: R\n- text: Moor / cast off\n- generic: Z\n- text: Drop / raise anchor\n- generic: E\n- text: Leave the helm\n- heading \"On foot\" [level=4]\n- generic: W\n- generic: A\n- generic: S\n- generic: D\n- text: Walk ·\n- generic: Shift\n- text: Run\n- generic: Space\n- text: Jump · swim up\n- generic: E\n- text: Use · take the helm\n- generic: B\n- text: Build on deck\n- heading \"Look\" [level=4]\n- generic: ←\n- generic: →\n- generic: ↑\n- generic: ↓\n- text: Look around\n- generic: V\n- text: Spyglass ·\n- generic: −\n- generic: =\n- text: Zoom\n- generic: C\n- text: Chase camera ·\n- generic: Q\n- text: Eagle view\n- heading \"World\" [level=4]\n- generic: M\n- text: Map\n- generic: I\n- text: Hold book\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: T\n- text: Skip to dawn, noon, dusk, night\n- generic: H\n- text: \"Interface: full, minimal, off\"\n- generic: \"N\"\n- text: Mute\n- generic: Esc\n- text: Pause and settings\n- generic: Cargo stowed\n- generic: R\n- generic: Cargo. Stacks two high and can be stood on.\n- generic: \"1\"\n- generic: Crate\n- generic: 60 kg\n- generic: \"2\"\n- generic: Amphora rack\n- generic: 260 kg\n- generic: \"3\"\n- generic: Pithos\n- generic: 180 kg\n- generic: \"4\"\n- generic: Rope coil\n- generic: 25 kg\n- generic: \"5\"\n- generic: Nets\n- generic: 30 kg\n- generic: \"6\"\n- generic: Lamp\n- generic: 20 kg\n- generic: \"7\"\n- generic: Brazier\n- generic: 90 kg\n- generic: \"8\"\n- generic: Awning\n- generic: 70 kg\n- generic: \"9\"\n- generic: Altar\n- generic: 300 kg\n- generic: \"0\"\n- generic: Bench\n- generic: 35 kg\n- generic: Shield rack\n- generic: 110 kg\n- generic: Banner\n- generic: 15 kg\n- generic: Deck load\n- generic: 0.58 / 2.50 t\n- heading \"Serrothos\" [level=2]\n- generic: Day 28 · 07:54 · Time ×0\n- table:\n  - rowgroup:\n    - row \"Goods Stock Buy Sell Aboard\":\n      - columnheader \"Goods\"\n      - columnheader \"Stock\"\n      - columnheader \"Buy\"\n      - columnheader \"Sell\"\n      - columnheader \"Aboard\"\n  - rowgroup:\n    - row \"Wine 1849 8.8 8.3 —\":\n      - cell \"Wine\"\n      - cell \"1849\"\n      - cell \"8.8\"\n      - cell \"8.3\"\n      - cell \"—\":\n        - generic: —\n    - row \"Olive oil 394 34.3 32.3 —\":\n      - cell \"Olive oil\"\n      - cell \"394\"\n      - cell \"34.3\"\n      - cell \"32.3\"\n      - cell \"—\":\n        - generic: —\n    - row \"Wheat 1896 8.9 8.4 100\":\n      - cell \"Wheat\"\n      - cell \"1896\"\n      - cell \"8.9\"\n      - cell \"8.4\"\n      - cell \"100\":\n        - generic: \"100\"\n    - row \"Almonds 467 9.7 9.1 —\":\n      - cell \"Almonds\"\n      - cell \"467\"\n      - cell \"9.7\"\n      - cell \"9.1\"\n      - cell \"—\":\n        - generic: —\n    - row \"Salt fish 159 17.4 16.4 —\":\n      - cell \"Salt fish\"\n      - cell \"159\"\n      - cell \"17.4\"\n      - cell \"16.4\"\n      - cell \"—\":\n        - generic: —\n    - row \"Honey 600 13.3 12.6 — 1 after handling\":\n      - cell \"Honey\"\n      - cell \"600\"\n      - cell \"13.3\"\n      - cell \"12.6\"\n      - cell \"— 1 after handling\":\n        - generic: —\n        - generic: 1 after handling\n    - row \"Firewood 5695 0.9 0.9 —\":\n      - cell \"Firewood\"\n      - cell \"5695\"\n      - cell \"0.9\"\n      - cell \"0.9\"\n      - cell \"—\":\n        - generic: —\n    - row \"Pitch 486 5.5 5.2 —\":\n      - cell \"Pitch\"\n      - cell \"486\"\n      - cell \"5.5\"\n      - cell \"5.2\"\n      - cell \"—\":\n        - generic: —\n- generic: Your ship isn't at this quay\n- generic: Purse 93.1 dr\n- generic: Hold 4.0 t · 6.5 of 20.5 m³\n- generic: After handling 4.0 t · 6.5 of 20.5 m³\n- generic: Wages 12.0 dr a day\n- generic: Handling paused · Return to Serrothos berth · 1 left\n- generic: Tab\n- text: Notebook\n- generic: \"[\"\n- generic: \"]\"\n- text: Time speed\n- generic: Esc\n- text: Close\n- button \"Sell 10 wine\"\n- button \"Buy 10 wine\"\n- button \"Buy 10 honey\"\n- button \"Buy 100 wheat\"\n- button \"Sell 1 wine\"\n- button \"Buy 1 wine\"\n- button \"Buy 1 honey\"\n- button \"Advance 1 min\"\n- button \"Advance 6 min\"\n- button \"Advance 15 min\"\n- button \"Advance 1 day\"\n- button \"Empty hold\"\n- button \"Reset review\"\n- button \"Run ×1\"\n- button \"Run ×8\"\n- button \"Freeze\"\n- button \"Trade book\"\n- button \"Hold book\"\n- button \"Close book\"\n- button \"Cast off\"\n- button \"Release lines (test)\"\n- button \"Return to job berth\"\n- button \"Other berth (test)\" [active]\n- button \"View quay\"\n- button \"View hold\"\n- button \"View aft hold\"\n- button \"View deck\"\n- button \"View side\"\n- status: Test berth · Mole, north side; current cargo job remains at its recorded berth",
+  "console": []
+}

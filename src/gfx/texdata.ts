@@ -194,10 +194,11 @@ const remap = (v: number, a: number, b: number, c: number, d: number) => c + ((v
  * 64^3 Worley detail texture that erodes the edges into wisps. Both tile seamlessly.
  */
 /** float -> IEEE half (for 16-bit textures: 8-bit noise bands once the coverage remap stretches it) */
+const halfFloatScratch = new Float32Array(1);
+const halfUintScratch = new Uint32Array(halfFloatScratch.buffer);
 function toHalf(v: number): number {
-  const f = new Float32Array(1), i = new Uint32Array(f.buffer);
-  f[0] = v;
-  const x = i[0];
+  halfFloatScratch[0] = v;
+  const x = halfUintScratch[0];
   const sign = (x >> 16) & 0x8000;
   let e = ((x >> 23) & 0xff) - 127 + 15;
   const m = x & 0x7fffff;

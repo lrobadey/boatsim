@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import {prepareHarborGround,inHarborCourt,PLANS,PLAN_FOR_HARBOUR,PLAN_BERTH_CLEARANCE,planPier} from './ormosLayout';
 import { createNoise2D } from 'simplex-noise';
 import type { WorldGenRequest, WorldGenResult, IslandInfo, Sites, House, HarbourSite, PortProfile } from './worldgenTypes';
 import { bakeSeaState, pierMole, seaStateBuffers } from './seaState';
@@ -467,6 +468,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   // --- pier: a mole from the shore into the harbour, its berth zone dredged to working depth.
   // Runs before the village, the start and vegetation so they all sample the dredged heights.
   const { shore, pier } = buildPier(harbour);
+  if(req.authoredHarbour)prepareHarborGround(H,N,S,pier);
 
   // --- village: houses on gentle slopes around the harbour shore, density falling off with distance ---
   progress(0.86, 'Building the village');
@@ -477,6 +479,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     const d = Math.pow(vr(), 0.7) * 650;
     const x = shore.x + Math.cos(a) * d,
       z = shore.z + Math.sin(a) * d;
+    if (req.authoredHarbour && inHarborCourt(pier,x,z,15)) continue;
     const h = sample(x, z);
     if (h < 2.2 || h > 70) continue;
     const sl = slopeAt(x, z);
@@ -528,6 +531,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     for (let x = -half; x < half; x += vstep) {
       const jx = x + (pr() - 0.5) * vstep,
         jz = z + (pr() - 0.5) * vstep;
+      if(req.authoredHarbour && inHarborCourt(pier,jx,jz,8))continue;
       const h = sample(jx, jz);
       if (h < 2.5) continue;
       const sl = slopeAt(jx, jz);
@@ -598,9 +602,19 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     }
   }
   const piers = found.map((f) => buildPier(f.harbour));
+  // authored courts of the other harbours (harbour id k + 1), graded before their villages sample the ground
+  // a plan fitted to one world applies only there, and only if its quay face leaves the berths clear
+  const courts = piers.map((pr, k) => {
+    const name = PLAN_FOR_HARBOUR[k + 1];
+    const plan = req.authoredHarbour && name ? PLANS[name] : undefined;
+    if (!plan || (plan.world && (plan.world.seed !== seed || plan.world.size !== N))) return null;
+    if (pr.pier.berthStart < (plan.origin ?? 0) + PLAN_BERTH_CLEARANCE) return null;
+    return { name, pier: planPier(pr.pier, plan), court: plan.court };
+  });
+  for (const c of courts) if (c) prepareHarborGround(H, N, S, c.pier, c.court);
 
   // village of a new harbour (§3.1 step 4): the main village's placement rules, no temple
-  const villageAt = (rng: () => number, c: { x: number; z: number }, radius: number, maxHouses: number) => {
+  const villageAt = (rng: () => number, c: { x: number; z: number }, radius: number, maxHouses: number, keepOut: ((x: number, z: number) => boolean) | null = null) => {
     const out: House[] = [];
     for (let t = 0; t < 9000 && out.length < maxHouses; t++) {
       const a = rng() * Math.PI * 2;
@@ -609,6 +623,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
         z = c.z + Math.sin(a) * d;
       const h = sample(x, z);
       if (h < 2.2 || h > 70) continue;
+      if (keepOut?.(x, z)) continue;
       const sl = slopeAt(x, z);
       if (sl > 0.42) continue;
       if (rng() > Math.exp(-d / 320)) continue;
@@ -631,19 +646,21 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
   const villages = found.map((f, k) => {
     const ar = infos[f.island].area / mainIsland.area;
     const maxHouses = Math.min(140, Math.max(12, Math.round(140 * Math.pow(ar, 0.8))));
-    return villageAt(mulberry(seed + 31 + 1000 * (k + 1)), piers[k].shore, 650 * Math.pow(ar, 0.4), maxHouses);
+    const c = courts[k];
+    return villageAt(mulberry(seed + 31 + 1000 * (k + 1)), piers[k].shore, 650 * Math.pow(ar, 0.4), maxHouses, c ? (x, z) => inHarborCourt(c.pier, x, z, 15, c.court) : null);
   });
 
   // vegetation filter (§3.1 step 5): drop plants on the new house footprints (same rule as the main village)
   // and inside the new dredge rectangles. Filter only: no draws from the vegetation RNG.
   {
     const newHouses = villages.flat();
-    if (newHouses.length || piers.length) {
+    if (newHouses.length || piers.length || courts.some(Boolean)) {
       let o = 0;
       for (let v = 0; v < veg.length; v += 6) {
         const vx = veg[v],
           vz = veg[v + 2];
         let drop = newHouses.some((hs) => Math.abs(hs.x - vx) < 9 && Math.abs(hs.z - vz) < 9);
+        for (const c of courts) if (!drop && c && inHarborCourt(c.pier, vx, vz, 8, c.court)) drop = true;
         for (const p of piers) {
           if (drop) break;
           const r = p.rect;
@@ -654,7 +671,9 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
           if (along >= r.a0 && along <= r.a1 && Math.abs(lat) <= 18) drop = true;
         }
         if (drop) continue;
+        // plants were placed before the other harbours' dredges and courts changed the ground: put them back on it
         for (let q = 0; q < 6; q++) veg[o++] = veg[v + q];
+        if (courts.some(Boolean)) veg[o - 5] = sample(vx, vz);
       }
       veg.length = o;
     }
@@ -699,7 +718,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
     return { houses: houseCount, area: landCells * A, features };
   };
   const harbourSites: HarbourSite[] = [
-    { id: 0, island: 0, name: mainIsland.name, harbour, shore, pier, houses, detail: 1, profile: profileOf(mainIsland, houses.length) },
+    { id: 0, island: 0, name: mainIsland.name, harbour, shore, pier, houses, detail: 1, profile: profileOf(mainIsland, houses.length), ...(req.authoredHarbour ? { plan: 'ormos' as const } : {}) },
     ...found.map((f, k): HarbourSite => ({
       id: k + 1,
       island: f.island,
@@ -710,6 +729,7 @@ function generate(req: WorldGenRequest, progress: (p: number, label: string) => 
       houses: villages[k],
       detail: k + 2,
       profile: profileOf(infos[f.island], villages[k].length),
+      ...(courts[k] ? { plan: courts[k]!.name } : {}),
     })),
   ];
 

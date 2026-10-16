@@ -69,6 +69,7 @@ function makeSlots(assets: VisualAssets): Map<string, THREE.Material> {
   slots.set('cloth', plain('cloth', { color: 0xe8e0cc, roughness: 0.9, side: THREE.DoubleSide }));
   slots.set('cloth_red', plain('cloth_red', { color: 0x8f2a1c, roughness: 0.9, side: THREE.DoubleSide }));
   slots.set('cloth_blue', plain('cloth_blue', { color: 0x2a4a7a, roughness: 0.9, side: THREE.DoubleSide }));
+  slots.set('crew', plain('crew', {color:0xffffff,vertexColors:true,roughness:.8,side:THREE.DoubleSide}));
   slots.set('skin', plain('skin', { color: 0xb07a5a, roughness: 0.6 }));
   slots.set('hair', plain('hair', { color: 0x2a1c14, roughness: 0.7 }));
   slots.set('leather', plain('leather', { color: 0x6a4a2a, roughness: 0.7 }));

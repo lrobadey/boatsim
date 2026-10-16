@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 const { GOODS, GOOD_IDS, goodById } = await import('../src/trade/goods.ts');
 const { Economy } = await import('../src/trade/economy.ts');
 const { TradeSession } = await import('../src/trade/session.ts');
-const { newVoyage, porterFeePerUnit, LOAD_RATE, START_PURSE } = await import('../src/trade/voyage.ts');
+const { newVoyage, porterFeePerUnit, START_PURSE } = await import('../src/trade/voyage.ts');
+const { CARGO_WORK_KG_PER_HOUR } = await import('../src/trade/job.ts');
 const { buildSave, parseSave, writeSave, readSave, deleteSave, saveKey } = await import('../src/trade/save.ts');
 
 let passed = 0;
@@ -126,7 +127,7 @@ test('confirm settles money and stock at once; the manifest changes only through
   assert.equal(m.S, S0 + 30);
   assert.equal(voyage.manifest.wine, 70, 'manifest unchanged at confirm');
   const purse1 = voyage.purse;
-  session.tick(T0 + 3);
+  session.tick(T0 + 3.15);
   assert.equal(voyage.manifest.wine, 40);
   assert.equal(purse1 - voyage.purse, 30 * porterFeePerUnit(goodById('wine')));
   return `receive ${receive} c, porterage 330 c`;
@@ -147,8 +148,8 @@ test('porterage: charged per unit moved, ceil(0.25 · mass)', () => {
   void p0;
 });
 
-test('LOAD_RATE: 30 units take 3 game hours, and job-done comes with the last unit', () => {
-  assert.equal(LOAD_RATE, 10);
+test('mass handling: 30 wheat sacks take 3 game hours, and job-done comes with the last unit', () => {
+  assert.equal(CARGO_WORK_KG_PER_HOUR, 400);
   const { session, voyage } = setup({ purse: 1e6 });
   session.confirm(0, 0, { wheat: 30 });
   assert.equal(voyage.manifest.wheat ?? 0, 0);
@@ -168,13 +169,13 @@ test('unloading before loading: sells leave before buys come aboard', () => {
   const { session, voyage } = setup({ purse: 1e6 });
   session.confirm(0, 0, { wine: -30, wheat: 30 });
   const e1 = session.tick(T0 + 1);
-  assert.equal(voyage.manifest.wine, 60, 'first hour unloads wine');
+  assert.equal(voyage.manifest.wine, 61, 'mass handling moves nine wine jars in the first hour');
   assert.ok(!e1.some((e) => e.type === 'moved' && e.good === 'wheat'), 'wheat moved too early');
   const e3 = session.tick(T0 + 3);
-  assert.equal(voyage.manifest.wine, 40);
+  assert.equal(voyage.manifest.wine, 42, 'wine unload takes 3.15 hours');
   assert.equal(voyage.manifest.wheat ?? 0, 0, 'wheat must wait for the wine to clear');
   assert.ok(!e3.some((e) => e.type === 'job-done'), 'job done before the wheat loaded');
-  const e6 = session.tick(T0 + 6);
+  const e6 = session.tick(T0 + 6.15);
   assert.equal(voyage.manifest.wheat, 30);
   assert.deepEqual(e6.filter((e) => e.type === 'job-done'), [{ type: 'job-done', kind: 'stowed' }], 'last kind is a load');
 });
@@ -182,13 +183,13 @@ test('unloading before loading: sells leave before buys come aboard', () => {
 test('job-done landed, then the quay is carted off one game hour later and the job ends', () => {
   const { session, voyage } = setup({ purse: 1e6 });
   session.confirm(0, 0, { wine: -30 });
-  const e3 = session.tick(T0 + 3);
+  const e3 = session.tick(T0 + 3.15);
   assert.deepEqual(e3.filter((e) => e.type === 'job-done'), [{ type: 'job-done', kind: 'landed' }]);
   assert.ok(voyage.job, 'job ends only after the cart');
   assert.equal(voyage.job.quay.wine, 30, 'landed units sit on the quay');
-  session.tick(T0 + 3.5);
+  session.tick(T0 + 3.65);
   assert.ok(voyage.job, 'still on the quay half an hour later');
-  session.tick(T0 + 4);
+  session.tick(T0 + 4.15);
   assert.equal(voyage.job, null);
   assert.equal(session.pendingUnits, 0);
 });
@@ -210,10 +211,10 @@ test('hatches: open while a job runs and for 1 hour after it ends; castOff refus
 test('hatches close one game hour after a job ends (quay cleared at +1 h)', () => {
   const { session } = setup({ purse: 1e6 });
   session.confirm(0, 0, { wine: -30 });
-  session.tick(T0 + 3);
-  session.tick(T0 + 4); // quay cleared, job ends
-  assert.equal(session.hatchesOpen(T0 + 4), true);
-  assert.equal(session.hatchesOpen(T0 + 5), false);
+  session.tick(T0 + 3.15);
+  session.tick(T0 + 4.15); // quay cleared, job ends
+  assert.equal(session.hatchesOpen(T0 + 4.15), true);
+  assert.equal(session.hatchesOpen(T0 + 5.15), false);
 });
 
 test('hold use: aboard volume and tonnes follow the loaded units', () => {

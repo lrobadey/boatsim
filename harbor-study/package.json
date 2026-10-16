@@ -1,0 +1,1 @@
+{"name":"harbor-study","private":true,"type":"module","scripts":{"dev":"vite --config vite.config.mjs","build":"vite build --config vite.config.mjs","preview":"vite preview --config vite.config.mjs --host 127.0.0.1 --port 5186"}}

@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 1,
+  "materials": {
+    "tile": {
+      "name": "tile",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/tile_color-d6f256e76b98.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/tile_rough-d9bd6cca9a4b.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/tile_normal-9254b2280cf1.png",
+          "texCoord": 0,
+          "scale": 0.2199999988079071,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "cloth": {
+      "name": "cloth",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/cloth_color-db99470ef89e.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/cloth_rough-6949834bde6e.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/cloth_normal-27ea69830b10.png",
+          "texCoord": 0,
+          "scale": 0.30000001192092896,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "darkwood": {
+      "name": "darkwood",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/wood_color-97f31cf5fe3a.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/wood_rough-b31ff81584f9.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/wood_normal-48e2de82a2f9.png",
+          "texCoord": 0,
+          "scale": 0.3199999928474426,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "wood": {
+      "name": "wood",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/wood_color-97f31cf5fe3a.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/wood_rough-b31ff81584f9.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/wood_normal-48e2de82a2f9.png",
+          "texCoord": 0,
+          "scale": 0.3199999928474426,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "rope": {
+      "name": "rope",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/rope_color-a4a39197a6b2.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/rope_rough-f94f25865cd1.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/rope_normal-805d6e3f0a45.png",
+          "texCoord": 0,
+          "scale": 0.44999998807907104,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "leaf": {
+      "name": "leaf",
+      "baseColor": [
+        0.17000000178813934,
+        0.23000000417232513,
+        0.0949999988079071,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 0.9399999976158142,
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": null,
+        "metallicRoughness": null,
+        "normal": null,
+        "occlusion": null
+      }
+    },
+    "limestone": {
+      "name": "limestone",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/limestone_color-4b43524326d3.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/limestone_rough-6f6f6dcdb60e.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/limestone_normal-0ab66eee7141.png",
+          "texCoord": 0,
+          "scale": 0.25999999046325684,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "paint": {
+      "name": "paint",
+      "baseColor": [
+        0.10499999672174454,
+        0.23000000417232513,
+        0.2199999988079071,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 0.8299999833106995,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": null,
+        "metallicRoughness": null,
+        "normal": null,
+        "occlusion": null
+      }
+    },
+    "paving": {
+      "name": "paving",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/paving_color-8f7a2f1d7f7c.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/paving_rough-aaaaa5f2055b.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/paving_normal-464e4e5b6408.png",
+          "texCoord": 0,
+          "scale": 0.2199999988079071,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "plaster": {
+      "name": "plaster",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/plaster_color-8aa9076f6d27.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/plaster_rough-d6272d57a64d.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/plaster_normal-cad2a9a66bec.png",
+          "texCoord": 0,
+          "scale": 0.1599999964237213,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "shadow": {
+      "name": "shadow",
+      "baseColor": [
+        0.04800000041723251,
+        0.03799999877810478,
+        0.027000000700354576,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": null,
+        "metallicRoughness": null,
+        "normal": null,
+        "occlusion": null
+      }
+    },
+    "olive_leaf": {
+      "name": "olive_leaf",
+      "baseColor": [
+        0.30000001192092896,
+        0.36000001430511475,
+        0.20000000298023224,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 0.9399999976158142,
+      "doubleSided": true,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": null,
+        "metallicRoughness": null,
+        "normal": null,
+        "occlusion": null
+      }
+    },
+    "rock": {
+      "name": "rock",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/rock_color-a02cab11434a.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/rock_rough-b6945e5f2dba.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/rock_normal-7adcf4c5d83e.png",
+          "texCoord": 0,
+          "scale": 0.30000001192092896,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    },
+    "earth": {
+      "name": "earth",
+      "baseColor": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "metalness": 0,
+      "roughness": 1,
+      "doubleSided": false,
+      "alphaMode": "OPAQUE",
+      "maps": {
+        "color": {
+          "uri": "textures/earth_color-894e7c735c46.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "metallicRoughness": {
+          "uri": "textures/earth_rough-9db184cb7f19.jpg",
+          "texCoord": 0,
+          "scale": 1,
+          "strength": 1
+        },
+        "normal": {
+          "uri": "textures/earth_normal-9e79ff55f1d0.png",
+          "texCoord": 0,
+          "scale": 0.30000001192092896,
+          "strength": 1
+        },
+        "occlusion": null
+      }
+    }
+  }
+}
