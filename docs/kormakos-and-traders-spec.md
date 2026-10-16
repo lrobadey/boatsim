@@ -85,7 +85,7 @@ When the trader tells you another port's price, it goes into your notebook with 
    - `heard(listener, about, now, routeHours)` returns the latest record at or before `now − routeHours(about, listener)`, or nothing.
    - It is saved as an optional field of the save, so old saves stay valid.
 2. **`src/trade/trader.ts`** (pure).
-   - A persona per port, seeded from the world seed and port id: a name and a temperament.
+   - A written character for each harbour slot: Damaris at the main harbour, Philon and Myrto on the two islands. Each has a life to talk about and a voice of their own. Only trade facts come from the economy.
    - `traderFacts(...)` builds the facts JSON: the trader's market in dr, stock words, heard news with source port and age in days, time of day, the memory note, and how much the player has traded at this port.
    - The system instructions, and the response JSON schema:
      - `say`: string;

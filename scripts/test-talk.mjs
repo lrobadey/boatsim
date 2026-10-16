@@ -89,15 +89,15 @@ test('facts: every price is a real ask or bid, formatted, and unknown news says 
   const rec = news.records[0].ports.find((p) => p.port === 0);
   const heardPrices = new Set([...rec.ask, ...rec.bid].map((c) => (c / 100).toFixed(1) + ' dr'));
   for (const row of facts.news_from_ships[0].prices_there) assert.ok(heardPrices.has(row.they_sell_at) && heardPrices.has(row.they_buy_at));
-  assert.equal(facts.news_from_ships[1].prices_there, 'no ship from there lately');
+  assert.equal(facts.news_from_ships[1].heard, 'nothing: no ship in from there lately');
   assert.equal(facts.this_customer.your_note, 'first time you have spoken');
 });
 
 test('instructions: plain-speech rules, no-advice rule, and the facts are inside', () => {
   const p = personaFor(1729, 0);
   const text = traderInstructions(p, 'Serrothos', '{"x":1}');
-  for (const must of [p.name, 'Serrothos', 'One to three short sentences', 'Never invent a price', 'Advise what to buy', '{"x":1}']) assert.ok(text.includes(must), must);
-  assert.ok(text.length < 3000, `instructions grew to ${text.length} characters`);
+  for (const must of [p.name, 'Serrothos', 'One to three short sentences', 'never invent a price', 'Never tell them what to buy', '{"x":1}']) assert.ok(text.includes(must), must);
+  assert.ok(text.length < 4600, `instructions grew to ${text.length} characters`);
 });
 
 test('persona: stable per world and port', () => {
