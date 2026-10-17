@@ -39,6 +39,8 @@ export interface EconomyOptions {
   /** test hooks: no shocks, or no NPC shipments (both default to false) */
   noShocks?: boolean;
   noShipments?: boolean;
+  /** acts at each midnight, the pre-run included */
+  actors?: EconActor[];
 }
 
 export type EconEvent =
@@ -66,6 +68,11 @@ export interface EconomySnapshot {
   frac: number;
 }
 
+/** Something that acts on the economy at each midnight (after the NPC shipments, before the wages). */
+export interface EconActor {
+  onMidnight(T: number, economy: Economy): void;
+}
+
 /** People per house (§4.3). */
 export const POP_PER_HOUSE = 30;
 /** Wages per hand per game day, centidrachmas (1.5 dr). */
@@ -87,7 +94,8 @@ const ONE: ShockMultipliers = { p: 1, d: 1 };
 /**
  * Reference production and demand per port and good (§4.3 rev. 2), indexed [port][good] in the same
  * order as the profiles and GOODS. Demand is N·perCapita with N = 30·houses. Production is
- * r·D with r = base·clamp((share/mean)^1.5, 0.25, 3), share = features/area, mean over the ports.
+ * r·D with r = base·clamp((share/mean)^1.5, 0.25, 3), share = features/area, mean over the ports;
+ * r = 0 where the port has no share and some port does.
  */
 export function referenceFlows(profiles: readonly PortProfile[]): { P_ref: number; D_ref: number }[][] {
   const n = profiles.length;
@@ -104,7 +112,8 @@ export function referenceFlows(profiles: readonly PortProfile[]): { P_ref: numbe
       for (let q = 0; q < n; q++) sum += share[q][gi];
       const mean = sum / n;
       const ratio = mean > 0 ? Math.pow(share[pi][gi] / mean, 1.5) : 1;
-      const r = mean > 0 ? g.base * Math.min(3, Math.max(0.25, ratio)) : g.base;
+      // a world with no land for this good (a land-use scale of 0) produces none of it
+      const r = mean > 0 ? (share[pi][gi] === 0 ? 0 : g.base * Math.min(3, Math.max(0.25, ratio))) : g.base;
       const D = demand[pi][gi];
       return { P_ref: r * D, D_ref: D };
     }),
@@ -124,6 +133,7 @@ export class Economy {
   private readonly hands: number;
   private readonly noShocks: boolean;
   private readonly noShipments: boolean;
+  private actors: EconActor[];
   /** [port index][ship] busy-until hour */
   private fleetBusy: number[][];
   private inflight: Shipment[] = [];
@@ -141,6 +151,7 @@ export class Economy {
     this.hands = o.hands;
     this.noShocks = o.noShocks ?? false;
     this.noShipments = o.noShipments ?? false;
+    this.actors = [...(o.actors ?? [])];
     o.ports.forEach((p, i) => {
       if (this.portIndex.has(p.id)) throw new RangeError(`duplicate port id ${p.id}`);
       this.portIndex.set(p.id, i);
@@ -172,6 +183,11 @@ export class Economy {
     this.advanceTo(o.startT);
     this.prerun = false;
     this.eventList = [];
+  }
+
+  /** Adds an actor for the midnights after this call (not the pre-run already done). */
+  addActor(a: EconActor): void {
+    this.actors.push(a);
   }
 
   /** Time the economy has advanced to (absolute game hours). */
@@ -294,6 +310,7 @@ export class Economy {
 
   private midnight(T: number): void {
     if (!this.noShipments) this.npcShipments(T, T / 24);
+    for (const a of this.actors) a.onMidnight(T, this);
     if (!this.prerun && this.hands > 0) {
       this.eventList.push({ type: 'wages', days: 1, amount: this.hands * WAGE_PER_HAND_DAY });
     }

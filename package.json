@@ -41,6 +41,7 @@
     "test:ormos": "node scripts/test-ormos.mjs",
     "test:talk": "node scripts/test-talk.mjs",
     "test:calendar": "node scripts/test-calendar.mjs",
+    "test:world": "node scripts/test-world.mjs",
     "test:trade": "node scripts/test-market.mjs && node scripts/test-voyage.mjs && node scripts/test-cargo-handling.mjs && node scripts/test-handling-status.mjs && node scripts/test-ledger-source.mjs && node scripts/test-hold.mjs && node scripts/test-talk.mjs && node scripts/test-books.mjs && node scripts/test-trade-golden.mjs",
     "assets:ormos": "node scripts/stage-ormos.mjs"
   },

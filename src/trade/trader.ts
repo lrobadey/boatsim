@@ -44,6 +44,11 @@ export function personaFor(seed: number, port: number): Persona {
   return CHARACTERS[((port % CHARACTERS.length) + CHARACTERS.length) % CHARACTERS.length];
 }
 
+/** The written character with this id (damaris, philon or myrto). */
+export function personaById(id: 'damaris' | 'philon' | 'myrto'): Persona {
+  return CHARACTERS.find((c) => c.name.toLowerCase() === id)!;
+}
+
 /** The part of a market the facts read. */
 export interface FactsMarket {
   ask(): number;
