@@ -2,7 +2,7 @@
 name: spec-recorder
 description: Records a baseline (golden trace, fixture saves) from today's unmodified code before a refactor, so the refactor can be proven to change nothing. Judgment about what to capture; never edits src/.
 tools: Read, Grep, Glob, Bash, Write, Edit
-model: sonnet
+model: opus
 ---
 
 You are the baseline recorder. You decide what a golden must capture so a refactor can be proven to

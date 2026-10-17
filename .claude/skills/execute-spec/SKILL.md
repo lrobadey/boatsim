@@ -1,6 +1,6 @@
 ---
 name: execute-spec
-description: Lead playbook for executing a spec pass or any sizeable change with agents. The lead composes a workflow per task from a menu of roles (Haiku implements what the lead designed, Sonnet for judgment, Opus reviews), using only the roles the task's real risks justify. Use when the user asks to execute or continue a spec pass (e.g. expectations MVP 1b/1c) or to run work "with the team".
+description: Lead playbook for executing a spec pass or any sizeable change with agents. The lead composes a workflow per task from a menu of roles (Haiku carries out what Opus designed; Opus does design, judgment and review), using only the roles the task's real risks justify. Use when the user asks to execute or continue a spec pass (e.g. expectations MVP 1b/1c) or to run work "with the team".
 ---
 
 # Executing work with agents
@@ -38,12 +38,31 @@ which models, what runs in parallel, and why.
   saves. Pass 1a done well would have looked like this.
 - **Parallel Haiku lanes:** independent pieces, such as the 1b calendar beside the world lane, each with
   its own brief and worktree.
-- **Sonnet for judgment pieces:** a budget scenario, choosing what a golden captures, writing the few
-  tests that matter, or investigating something unclear before the lead designs.
+- **An Opus agent for a judgment piece:** a budget scenario, choosing what a golden captures, writing
+  the few tests that matter, or investigating something unclear. Use it when the lead's own context is
+  better kept for coordination. Otherwise the lead does it.
 - **Full lanes with a capped test author and a review:** a large new system with a long gate list.
 
 If unsure, start lighter. A focused review at the end catches what matters more cheaply than extra roles
 up front.
+
+## Models and roles (definitions in .claude/agents/)
+
+Two models:
+- **Haiku** for execution: implementing a brief, mechanical edits, running commands.
+- **Opus** for design, judgment and review: the lead itself, and any agent whose work needs judgment.
+
+| Role | Agent | Model | Use for |
+|---|---|---|---|
+| Lead | main session | opus | design, briefs, merges, small fixes, user contact |
+| Implementer | spec-implementer | haiku | building exactly what the brief specifies |
+| Runner | spec-gate-runner | haiku | mechanical edits, running commands |
+| Baseline recorder | spec-recorder | opus | deciding what a golden must capture and recording it |
+| Test author | spec-gate-author | opus | the few tests a change needs, within a size cap |
+| Reviewer | spec-auditor | opus | a focused review where a mistake would be costly or hard to see |
+
+If the named agent types aren't loaded (definitions load at session start), spawn `general-purpose`
+with the same `model` and tell it to read and follow `.claude/agents/<role>.md`.
 
 ## Writing a brief Haiku can execute
 
@@ -117,7 +136,7 @@ off: the golden trace (`npm run test:trade-golden`) and one Opus review, which f
 path. What was waste: an Opus implementer that also ran a 48k-operation fuzz test the golden made
 redundant; a test author with no size cap; five roles with five handoffs; a contract written before
 the code was fully read; worktrees cut from `main`. Done the new way, 1a would have been the lead's
-brief, a Sonnet recorder, a Haiku implementer and one review, in about half the time. The lesson is not
+brief, a recorder, a Haiku implementer and one review, in about half the time. The lesson is not
 "use four roles". It's that each role must answer a named risk.
 
 ## Pass notes

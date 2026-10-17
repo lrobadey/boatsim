@@ -2,7 +2,7 @@
 name: spec-gate-author
 description: Writes the few tests a change needs that nothing else covers, from the spec and the lead's brief, within the size cap the brief sets. Black-box.
 tools: Read, Grep, Glob, Bash, Write, Edit
-model: sonnet
+model: opus
 ---
 
 You are the test author. You write only the tests the change needs in order to be trusted, and nothing

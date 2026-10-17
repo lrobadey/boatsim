@@ -12,7 +12,7 @@ Lead's plan, October 16, 2026, for [expectations-mvp-spec.md](expectations-mvp-s
 | B. Land use, characters, celebration, Philon, save | Haiku, own worktree | Designed below step by step. One agent, because the steps share economy.ts and save.ts. |
 | Wiring and merge | Lead | A few lines in tradeLayer once both lanes are in. |
 | Review | Opus, once | Philon's rule, time ordering and save restore are where a quiet bug would cost the most. |
-| Budget scenario and §3.5 re-measure | Sonnet, after merge | Needs judgment: a real crossing time, a plain strategy, an honest report. |
+| Budget scenario and §3.5 re-measure | Agent, after merge | Needs judgment: a real crossing time, a plain strategy, an honest report. |
 | Checkpoint | User | The budget result is economics. You decide before anything is tuned. |
 
 Not used: no baseline recorder (behaviour changes on purpose here, and the trade golden uses synthetic
@@ -131,7 +131,7 @@ src/trade/trader.ts (persona lookup by id), scripts/test-world.mjs (new, short).
   the sky tests and the build.
 - **Opus review:** steps B3–B5 and the clock change. The risk areas are time ordering under jumps, wallet
   and stock conservation, save restore and old saves, and the earmark leaking into the market.
-- **Sonnet budget run** (spec §7 gate 1b):
+- **Budget run** (spec §7 gate 1b):
   - Use the default world, generated headless with authored harbours, and a fresh game: 300 dr, the 40
     consigned jars, and the celebration.
   - Measure the crossing time with real ship physics, not estimates.
