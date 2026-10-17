@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#202c2b"><title>Ormos · Harbor study</title></head>
+<body>
+  <main id="viewport" aria-label="Interactive three-dimensional harbor"><canvas id="scene" aria-label="Harbor scene. Drag to look around; scroll to move closer."></canvas></main>
+  <header class="masthead"><div><p class="eyebrow">AEGEAN COAST / ENVIRONMENT STUDY 01</p><h1>Ormos<span> / Όρμος</span></h1><p class="subtitle">Stone, salt & shelter.</p></div><button id="settings-toggle" class="icon-button" aria-label="Open scene settings" aria-expanded="false">☷</button></header>
+  <div id="loading" role="status"><span class="loading-mark">O</span><p>Preparing the waterfront</p><div class="load-track"><i id="load-bar"></i></div><small id="load-detail">Loading geometry and materials</small></div>
+  <aside id="settings" hidden aria-label="Scene settings">
+    <div class="panel-head"><h2>Scene</h2><button id="close-settings" aria-label="Close settings">×</button></div>
+    <label class="range-label" for="sun">Sun position <output id="sun-value">16:00</output></label><input id="sun" type="range" min="7" max="18.7" value="16" step="0.1">
+    <div class="segmented"><button data-light="12">Noon</button><button data-light="16" class="active">Afternoon</button><button data-light="18.2">Late sun</button></div>
+    <label class="range-label" for="weather">Water movement <output id="water-value">Sheltered</output></label><input id="weather" type="range" min="0" max="1" value="0.35" step="0.05">
+    <label class="select-label" for="quality">Render quality<select id="quality"><option value="1">Standard</option><option value="1.5" selected>High</option><option value="2">Ultra</option></select></label>
+    <label class="check"><input id="motion" type="checkbox" checked> Animate water & boat</label>
+    <label class="check"><input id="annotations" type="checkbox"> Show material notes</label>
+    <div class="panel-actions"><button id="capture">Save view</button><button id="reset">Reset view</button></div>
+    <p class="panel-note">A standalone environment study. Boat movement is a visual inspection aid, not the game's sailing simulation.</p><output id="stats"></output>
+  </aside>
+  <div id="notes" hidden></div>
+  <div id="view-label"><span id="view-number">01</span><div><strong id="view-title">The approach</strong><span id="view-description">A working waterfront, seen from the sea.</span></div></div>
+  <nav class="view-nav" aria-label="Viewpoints"><button data-view="approach" class="active"><span>01</span>Approach</button><button data-view="berth"><span>02</span>Alongside</button><button data-view="quay"><span>03</span>On the quay</button><button data-view="court"><span>04</span>Loading court</button><button data-view="shore"><span>05</span>Shoreline</button><button data-view="overview"><span>06</span>Overview</button><button data-view="boat"><span>07</span>Boat</button></nav>
+  <footer><p id="controls-hint">Drag to orbit · Scroll to explore · Right-drag to pan</p><div class="mode-controls"><button id="walk">Walk ashore</button><button id="hide-ui" aria-label="Hide interface (H)">Hide UI <kbd>H</kbd></button></div></footer>
+  <div id="walk-hint" hidden>W A S D to walk · Drag to look · Shift to move faster · Esc to return</div>
+  <button id="restore-ui" hidden>Show controls · H</button>
+  <div id="toast" role="status"></div>
+  <script type="module" src="./main.js"></script>
+</body></html>

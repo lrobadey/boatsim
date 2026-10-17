@@ -1,0 +1,7716 @@
+{
+  "kind": "main-scene-paired-ablation",
+  "at": "2026-10-16T03:26:42.826Z",
+  "quality": "ultra",
+  "scale": 1.3,
+  "canvas": [
+    1965,
+    900
+  ],
+  "viewport": [
+    1512,
+    693
+  ],
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+  "paused": true,
+  "ship": "merchant",
+  "view": "boat",
+  "hour": 12.5,
+  "baselineGpuMs": {
+    "count": 80,
+    "mean": 16.806972449999996,
+    "median": 16.680624,
+    "p95": 19.428249
+  },
+  "baselineWallMs": {
+    "count": 80,
+    "mean": 22.51374999987893,
+    "median": 22.5,
+    "p95": 25.199999999254942
+  },
+  "invalidTimerSamples": 0,
+  "disjoints": 0,
+  "pairCount": 80,
+  "drawCounts": {
+    "sky": {
+      "calls": {
+        "count": 80,
+        "mean": 2,
+        "median": 2,
+        "p95": 2
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 12,
+        "median": 12,
+        "p95": 12
+      }
+    },
+    "other world props": {
+      "calls": {
+        "count": 80,
+        "mean": 28,
+        "median": 28,
+        "p95": 28
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 196144,
+        "median": 196144,
+        "p95": 196144
+      }
+    },
+    "rigging and local effects": {
+      "calls": {
+        "count": 80,
+        "mean": 7,
+        "median": 7,
+        "p95": 7
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 1802,
+        "median": 1802,
+        "p95": 1802
+      }
+    },
+    "ship and crew": {
+      "calls": {
+        "count": 80,
+        "mean": 57,
+        "median": 57,
+        "p95": 57
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 107238,
+        "median": 107238,
+        "p95": 107238
+      }
+    },
+    "Ormos harbor": {
+      "calls": {
+        "count": 80,
+        "mean": 89,
+        "median": 89,
+        "p95": 89
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 934334,
+        "median": 934334,
+        "p95": 934334
+      }
+    },
+    "terrain": {
+      "calls": {
+        "count": 80,
+        "mean": 217,
+        "median": 217,
+        "p95": 217
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 124416,
+        "median": 124416,
+        "p95": 124416
+      }
+    },
+    "vegetation": {
+      "calls": {
+        "count": 80,
+        "mean": 273,
+        "median": 273,
+        "p95": 273
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 6801124,
+        "median": 6801124,
+        "p95": 6801124
+      }
+    },
+    "other scene objects": {
+      "calls": {
+        "count": 80,
+        "mean": 4,
+        "median": 4,
+        "p95": 4
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 0,
+        "median": 0,
+        "p95": 0
+      }
+    },
+    "ocean surface": {
+      "calls": {
+        "count": 80,
+        "mean": 13,
+        "median": 13,
+        "p95": 13
+      },
+      "triangles": {
+        "count": 80,
+        "mean": 519584,
+        "median": 519584,
+        "p95": 519584
+      }
+    }
+  },
+  "rows": [
+    {
+      "variant": "sky cloud march disabled",
+      "baselineGpuMs": {
+        "count": 80,
+        "mean": 16.806972449999996,
+        "median": 16.680624,
+        "p95": 19.428249
+      },
+      "withoutGpuMs": {
+        "count": 80,
+        "mean": 9.856002675000006,
+        "median": 9.816666,
+        "p95": 10.560624
+      },
+      "pairedGpuSavedMs": {
+        "count": 80,
+        "mean": 6.950969775000002,
+        "median": 6.565042,
+        "p95": 9.297375
+      },
+      "pairedWallSavedMs": {
+        "count": 80,
+        "mean": 6.758749999804422,
+        "median": 6.599999999627471,
+        "p95": 9.799999998882413
+      },
+      "pairs": [
+        {
+          "gpuSavedMs": 8.271291999999999,
+          "wallSavedMs": 8.400000000372529
+        },
+        {
+          "gpuSavedMs": 9.542625999999998,
+          "wallSavedMs": 9.399999998509884
+        },
+        {
+          "gpuSavedMs": 7.8349579999999985,
+          "wallSavedMs": 8.199999999254942
+        },
+        {
+          "gpuSavedMs": 8.532166,
+          "wallSavedMs": 8.299999998882413
+        },
+        {
+          "gpuSavedMs": 7.52225,
+          "wallSavedMs": 7.600000001490116
+        },
+        {
+          "gpuSavedMs": 10.347124999999998,
+          "wallSavedMs": 10.800000000745058
+        },
+        {
+          "gpuSavedMs": 9.297375,
+          "wallSavedMs": 9.800000000745058
+        },
+        {
+          "gpuSavedMs": 7.687001,
+          "wallSavedMs": 7.899999998509884
+        },
+        {
+          "gpuSavedMs": 8.22825,
+          "wallSavedMs": 8.799999998882413
+        },
+        {
+          "gpuSavedMs": 7.009207999999999,
+          "wallSavedMs": 7.299999998882413
+        },
+        {
+          "gpuSavedMs": 6.264958999999999,
+          "wallSavedMs": 5.400000000372529
+        },
+        {
+          "gpuSavedMs": 5.439416,
+          "wallSavedMs": 5.700000001117587
+        },
+        {
+          "gpuSavedMs": 6.002750000000001,
+          "wallSavedMs": 6.400000000372529
+        },
+        {
+          "gpuSavedMs": 5.950084,
+          "wallSavedMs": 6.400000000372529
+        },
+        {
+          "gpuSavedMs": 9.290958,
+          "wallSavedMs": 8.599999999627471
+        },
+        {
+          "gpuSavedMs": 9.986792,
+          "wallSavedMs": 9.399999998509884
+        },
+        {
+          "gpuSavedMs": 8.160208999999998,
+          "wallSavedMs": 9.199999999254942
+        },
+        {
+          "gpuSavedMs": 7.6810420000000015,
+          "wallSavedMs": 7.5
+        },
+        {
+          "gpuSavedMs": 7.473584000000001,
+          "wallSavedMs": 7.699999999254942
+        },
+        {
+          "gpuSavedMs": 8.176166,
+          "wallSavedMs": 9.099999999627471
+        },
+        {
+          "gpuSavedMs": 8.571584000000001,
+          "wallSavedMs": 9.300000000745058
+        },
+        {
+          "gpuSavedMs": 8.708334,
+          "wallSavedMs": 9.800000000745058
+        },
+        {
+          "gpuSavedMs": 7.726042,
+          "wallSavedMs": 8.099999999627471
+        },
+        {
+          "gpuSavedMs": 9.251915999999998,
+          "wallSavedMs": 9.799999998882413
+        },
+        {
+          "gpuSavedMs": 7.6346669999999985,
+          "wallSavedMs": 7.699999999254942
+        },
+        {
+          "gpuSavedMs": 7.151208000000002,
+          "wallSavedMs": 7.199999999254942
+        },
+        {
+          "gpuSavedMs": 7.529166999999999,
+          "wallSavedMs": 7.300000000745058
+        },
+        {
+          "gpuSavedMs": 6.535207999999999,
+          "wallSavedMs": 6.500000001862645
+        },
+        {
+          "gpuSavedMs": 6.2105830000000015,
+          "wallSavedMs": 6.199999999254942
+        },
+        {
+          "gpuSavedMs": 5.854459,
+          "wallSavedMs": 6.099999999627471
+        },
+        {
+          "gpuSavedMs": 6.007542000000001,
+          "wallSavedMs": 6.200000001117587
+        },
+        {
+          "gpuSavedMs": 6.196249,
+          "wallSavedMs": 5.900000000372529
+        },
+        {
+          "gpuSavedMs": 7.4885839999999995,
+          "wallSavedMs": 7.400000000372529
+        },
+        {
+          "gpuSavedMs": 6.523792,
+          "wallSavedMs": 6.199999999254942
+        },
+        {
+          "gpuSavedMs": 5.682291999999999,
+          "wallSavedMs": 6
+        },
+        {
+          "gpuSavedMs": 6.144875000000001,
+          "wallSavedMs": 6.199999999254942
+        },
+        {
+          "gpuSavedMs": 6.317583000000001,
+          "wallSavedMs": 7.099999999627471
+        },
+        {
+          "gpuSavedMs": 6.2916240000000005,
+          "wallSavedMs": 6.099999999627471
+        },
+        {
+          "gpuSavedMs": 5.919249000000001,
+          "wallSavedMs": 6.599999997764826
+        },
+        {
+          "gpuSavedMs": 7.163126,
+          "wallSavedMs": 6.799999998882413
+        },
+        {
+          "gpuSavedMs": 5.552333000000001,
+          "wallSavedMs": 5.699999999254942
+        },
+        {
+          "gpuSavedMs": 7.626499000000001,
+          "wallSavedMs": 7.500000001862645
+        },
+        {
+          "gpuSavedMs": 8.151084,
+          "wallSavedMs": 8.699999999254942
+        },
+        {
+          "gpuSavedMs": 5.907000999999999,
+          "wallSavedMs": 5.5
+        },
+        {
+          "gpuSavedMs": 5.8895420000000005,
+          "wallSavedMs": 5.599999997764826
+        },
+        {
+          "gpuSavedMs": 5.831873999999999,
+          "wallSavedMs": 5.899999998509884
+        },
+        {
+          "gpuSavedMs": 6.262667,
+          "wallSavedMs": 6.400000000372529
+        },
+        {
+          "gpuSavedMs": 5.602792000000001,
+          "wallSavedMs": 5.300000000745058
+        },
+        {
+          "gpuSavedMs": 6.096667,
+          "wallSavedMs": 6.199999999254942
+        },
+        {
+          "gpuSavedMs": 6.037958,
+          "wallSavedMs": 6.200000001117587
+        },
+        {
+          "gpuSavedMs": 6.565042,
+          "wallSavedMs": -4
+        },
+        {
+          "gpuSavedMs": 6.186249,
+          "wallSavedMs": 6
+        },
+        {
+          "gpuSavedMs": 5.900167,
+          "wallSavedMs": 6
+        },
+        {
+          "gpuSavedMs": 5.917582999999999,
+          "wallSavedMs": 5.599999999627471
+        },
+        {
+          "gpuSavedMs": 6.212292,
+          "wallSavedMs": 6.099999999627471
+        },
+        {
+          "gpuSavedMs": 5.897124,
+          "wallSavedMs": 6.099999999627471
+        },
+        {
+          "gpuSavedMs": 7.146250000000002,
+          "wallSavedMs": 6.700000001117587
+        },
+        {
+          "gpuSavedMs": 7.929042000000001,
+          "wallSavedMs": 7.899999998509884
+        },
+        {
+          "gpuSavedMs": 5.406540999999999,
+          "wallSavedMs": 5.300000000745058
+        },
+        {
+          "gpuSavedMs": 5.8434989999999996,
+          "wallSavedMs": -5.900000000372529
+        },
+        {
+          "gpuSavedMs": 5.480708,
+          "wallSavedMs": 5.799999998882413
+        },
+        {
+          "gpuSavedMs": 5.936166999999999,
+          "wallSavedMs": 5.699999999254942
+        },
+        {
+          "gpuSavedMs": 7.600083,
+          "wallSavedMs": 7.299999998882413
+        },
+        {
+          "gpuSavedMs": 7.128499999999999,
+          "wallSavedMs": 6.699999999254942
+        },
+        {
+          "gpuSavedMs": 5.853166,
+          "wallSavedMs": 6.699999999254942
+        },
+        {
+          "gpuSavedMs": 5.584250000000001,
+          "wallSavedMs": 5.200000001117587
+        },
+        {
+          "gpuSavedMs": 5.989166000000001,
+          "wallSavedMs": 6.300000000745058
+        },
+        {
+          "gpuSavedMs": 5.8306249999999995,
+          "wallSavedMs": 6.399999998509884
+        },
+        {
+          "gpuSavedMs": 5.632625000000001,
+          "wallSavedMs": 5.800000000745058
+        },
+        {
+          "gpuSavedMs": 7.465458999999999,
+          "wallSavedMs": 7.5
+        },
+        {
+          "gpuSavedMs": 7.9043740000000025,
+          "wallSavedMs": 7.800000000745058
+        },
+        {
+          "gpuSavedMs": 7.051291000000001,
+          "wallSavedMs": 6.599999999627471
+        },
+        {
+          "gpuSavedMs": 5.750667,
+          "wallSavedMs": 5.799999998882413
+        },
+        {
+          "gpuSavedMs": 7.221873999999998,
+          "wallSavedMs": 7.700000001117587
+        },
+        {
+          "gpuSavedMs": 5.906874999999999,
+          "wallSavedMs": 5.400000000372529
+        },
+        {
+          "gpuSavedMs": 7.6952500000000015,
+          "wallSavedMs": 9.5
+        },
+        {
+          "gpuSavedMs": 7.252709000000001,
+          "wallSavedMs": 5.700000001117587
+        },
+        {
+          "gpuSavedMs": 5.667167000000001,
+          "wallSavedMs": 5.799999998882413
+        },
+        {
+          "gpuSavedMs": 7.9304999999999986,
+          "wallSavedMs": 8.200000001117587
+        },
+        {
+          "gpuSavedMs": 7.627625000000002,
+          "wallSavedMs": 7.599999997764826
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 0,
+      "baseline": true,
+      "wallMs": 24.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.758708
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 0,
+      "baseline": false,
+      "wallMs": 16.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.487416
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 1,
+      "baseline": false,
+      "wallMs": 16,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.422249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 1,
+      "baseline": true,
+      "wallMs": 25.399999998509884,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 19.964875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 2,
+      "baseline": true,
+      "wallMs": 23.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.667958
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 2,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 3,
+      "baseline": false,
+      "wallMs": 16.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.896083
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 3,
+      "baseline": true,
+      "wallMs": 24.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 19.428249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 4,
+      "baseline": true,
+      "wallMs": 22.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.083374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 4,
+      "baseline": false,
+      "wallMs": 14.899999998509884,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.561124
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 5,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.865583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 5,
+      "baseline": true,
+      "wallMs": 26.200000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 20.212708
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 6,
+      "baseline": true,
+      "wallMs": 24.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.809041
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 6,
+      "baseline": false,
+      "wallMs": 15.099999999627471,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.511666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 7,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.836249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 7,
+      "baseline": true,
+      "wallMs": 23.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.52325
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 8,
+      "baseline": true,
+      "wallMs": 23.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.13675
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 8,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.9085
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 9,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.016166
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 9,
+      "baseline": true,
+      "wallMs": 22.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.025374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 10,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.806875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 10,
+      "baseline": false,
+      "wallMs": 15.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.541916
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 11,
+      "baseline": false,
+      "wallMs": 15.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.953125
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 11,
+      "baseline": true,
+      "wallMs": 21,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.392541
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 12,
+      "baseline": true,
+      "wallMs": 21.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.432833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 12,
+      "baseline": false,
+      "wallMs": 14.899999998509884,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.430083
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 13,
+      "baseline": false,
+      "wallMs": 14.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.440916
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 13,
+      "baseline": true,
+      "wallMs": 21.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.391
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 14,
+      "baseline": true,
+      "wallMs": 23.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 19.030749
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 14,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.739791
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 15,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.490166
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 15,
+      "baseline": true,
+      "wallMs": 24.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 19.476958
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 16,
+      "baseline": true,
+      "wallMs": 25.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.720833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 16,
+      "baseline": false,
+      "wallMs": 16,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.560624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 17,
+      "baseline": false,
+      "wallMs": 15.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.821416
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 17,
+      "baseline": true,
+      "wallMs": 22.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.502458
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 18,
+      "baseline": true,
+      "wallMs": 22.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.3745
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 18,
+      "baseline": false,
+      "wallMs": 15.100000001490116,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.900916
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 19,
+      "baseline": false,
+      "wallMs": 15.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.036125
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 19,
+      "baseline": true,
+      "wallMs": 24.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.212291
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 20,
+      "baseline": true,
+      "wallMs": 24,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.078458
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 20,
+      "baseline": false,
+      "wallMs": 14.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.506874
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 21,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.908541
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 21,
+      "baseline": true,
+      "wallMs": 25.200000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 18.616875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 22,
+      "baseline": true,
+      "wallMs": 23.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.557875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 22,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.831833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 23,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.82525
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 23,
+      "baseline": true,
+      "wallMs": 25.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 19.077166
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 24,
+      "baseline": true,
+      "wallMs": 23.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.49
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 24,
+      "baseline": false,
+      "wallMs": 15.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.855333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 25,
+      "baseline": false,
+      "wallMs": 15.200000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.954958
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 25,
+      "baseline": true,
+      "wallMs": 22.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.106166
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 26,
+      "baseline": true,
+      "wallMs": 22.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.705375
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 26,
+      "baseline": false,
+      "wallMs": 15.099999999627471,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.176208
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 27,
+      "baseline": false,
+      "wallMs": 14.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.721375
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 27,
+      "baseline": true,
+      "wallMs": 21.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.256583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 28,
+      "baseline": true,
+      "wallMs": 21,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.041333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 28,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.83075
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 29,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.885041
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 29,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.7395
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 30,
+      "baseline": true,
+      "wallMs": 21,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.738208
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 30,
+      "baseline": false,
+      "wallMs": 14.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.730666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 31,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.660625
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 31,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.856874
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 32,
+      "baseline": true,
+      "wallMs": 23.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.785708
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 32,
+      "baseline": false,
+      "wallMs": 16.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.297124
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 33,
+      "baseline": false,
+      "wallMs": 16.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.385749
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 33,
+      "baseline": true,
+      "wallMs": 22.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.909541
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 34,
+      "baseline": true,
+      "wallMs": 21.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.526333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 34,
+      "baseline": false,
+      "wallMs": 15.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.844041
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 35,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.870125
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 35,
+      "baseline": true,
+      "wallMs": 21.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.015
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 36,
+      "baseline": true,
+      "wallMs": 22.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.007874
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 36,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.690291
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 37,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.63975
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 37,
+      "baseline": true,
+      "wallMs": 21.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.931374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 38,
+      "baseline": true,
+      "wallMs": 21.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.681124
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 38,
+      "baseline": false,
+      "wallMs": 15.100000001490116,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.761875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 39,
+      "baseline": false,
+      "wallMs": 16.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.738499
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 39,
+      "baseline": true,
+      "wallMs": 23.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.901625
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 40,
+      "baseline": true,
+      "wallMs": 22.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.192083
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 40,
+      "baseline": false,
+      "wallMs": 16.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.63975
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 41,
+      "baseline": false,
+      "wallMs": 16.399999998509884,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.205
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 41,
+      "baseline": true,
+      "wallMs": 23.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.831499
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 42,
+      "baseline": true,
+      "wallMs": 24.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.868583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 42,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.717499
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 43,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.744624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 43,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.651625
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 44,
+      "baseline": true,
+      "wallMs": 21.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.691541
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 44,
+      "baseline": false,
+      "wallMs": 15.700000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.801999
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 45,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.7955
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 45,
+      "baseline": true,
+      "wallMs": 21.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.627374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 46,
+      "baseline": true,
+      "wallMs": 21.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.111
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 46,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.848333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 47,
+      "baseline": false,
+      "wallMs": 15.599999999627471,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.975541
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 47,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.578333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 48,
+      "baseline": true,
+      "wallMs": 21.09999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.833791
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 48,
+      "baseline": false,
+      "wallMs": 14.900000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.737124
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 49,
+      "baseline": false,
+      "wallMs": 15.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.80775
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 49,
+      "baseline": true,
+      "wallMs": 21.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.845708
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 50,
+      "baseline": true,
+      "wallMs": 22.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.370625
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 50,
+      "baseline": false,
+      "wallMs": 26.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.805583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 51,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.449375
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 51,
+      "baseline": true,
+      "wallMs": 21,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.635624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 52,
+      "baseline": true,
+      "wallMs": 20.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.347
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 52,
+      "baseline": false,
+      "wallMs": 14.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.446833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 53,
+      "baseline": false,
+      "wallMs": 14.900000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.44325
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 53,
+      "baseline": true,
+      "wallMs": 20.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.360833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 54,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.655875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 54,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.443583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 55,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.48625
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 55,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.383374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 56,
+      "baseline": true,
+      "wallMs": 23.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.777249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 56,
+      "baseline": false,
+      "wallMs": 16.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.630999
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 57,
+      "baseline": false,
+      "wallMs": 15.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.783249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 57,
+      "baseline": true,
+      "wallMs": 23.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.712291
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 58,
+      "baseline": true,
+      "wallMs": 22.600000001490116,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.891791
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 58,
+      "baseline": false,
+      "wallMs": 17.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.48525
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 59,
+      "baseline": false,
+      "wallMs": 26.700000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.85275
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 59,
+      "baseline": true,
+      "wallMs": 20.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.696249
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 60,
+      "baseline": true,
+      "wallMs": 20.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.297374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 60,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.816666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 61,
+      "baseline": false,
+      "wallMs": 14.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.716291
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 61,
+      "baseline": true,
+      "wallMs": 20.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.652458
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 62,
+      "baseline": true,
+      "wallMs": 24.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.453999
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 62,
+      "baseline": false,
+      "wallMs": 17.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.853916
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 63,
+      "baseline": false,
+      "wallMs": 17.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.981666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 63,
+      "baseline": true,
+      "wallMs": 24.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.110166
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 64,
+      "baseline": true,
+      "wallMs": 23.59999999962747,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.866666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 64,
+      "baseline": false,
+      "wallMs": 16.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.0135
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 65,
+      "baseline": false,
+      "wallMs": 15.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.771125
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 65,
+      "baseline": true,
+      "wallMs": 20.90000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.355375
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 66,
+      "baseline": true,
+      "wallMs": 21.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.722666
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 66,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.7335
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 67,
+      "baseline": false,
+      "wallMs": 14.900000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.708833
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 67,
+      "baseline": true,
+      "wallMs": 21.299999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.539458
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 68,
+      "baseline": true,
+      "wallMs": 20.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.326624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 68,
+      "baseline": false,
+      "wallMs": 14.899999998509884,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.693999
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 69,
+      "baseline": false,
+      "wallMs": 15.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.075416
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 69,
+      "baseline": true,
+      "wallMs": 23.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.540875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 70,
+      "baseline": true,
+      "wallMs": 23.300000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.682124
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 70,
+      "baseline": false,
+      "wallMs": 15.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.77775
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 71,
+      "baseline": false,
+      "wallMs": 15.400000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.629333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 71,
+      "baseline": true,
+      "wallMs": 22,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.680624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 72,
+      "baseline": true,
+      "wallMs": 22,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.82925
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 72,
+      "baseline": false,
+      "wallMs": 16.200000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 10.078583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 73,
+      "baseline": false,
+      "wallMs": 15.099999999627471,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.6835
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 73,
+      "baseline": true,
+      "wallMs": 22.800000000745058,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.905374
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 74,
+      "baseline": true,
+      "wallMs": 21.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.747499
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 74,
+      "baseline": false,
+      "wallMs": 16,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.840624
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 75,
+      "baseline": false,
+      "wallMs": 15,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.656333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 75,
+      "baseline": true,
+      "wallMs": 24.5,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.351583
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 76,
+      "baseline": true,
+      "wallMs": 22.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 16.888
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 76,
+      "baseline": false,
+      "wallMs": 16.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.635291
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 77,
+      "baseline": false,
+      "wallMs": 15.900000000372529,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.916333
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 77,
+      "baseline": true,
+      "wallMs": 21.699999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 15.5835
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 78,
+      "baseline": true,
+      "wallMs": 23.40000000037253,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.562875
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 78,
+      "baseline": false,
+      "wallMs": 15.199999999254942,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.632375
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 79,
+      "baseline": false,
+      "wallMs": 15.200000001117587,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 9.796916
+    },
+    {
+      "variant": "sky cloud march disabled",
+      "pair": 79,
+      "baseline": true,
+      "wallMs": 22.799999998882413,
+      "counts": {
+        "sky": {
+          "calls": 2,
+          "triangles": 12
+        },
+        "other world props": {
+          "calls": 28,
+          "triangles": 196144
+        },
+        "rigging and local effects": {
+          "calls": 7,
+          "triangles": 1802
+        },
+        "ship and crew": {
+          "calls": 57,
+          "triangles": 107238
+        },
+        "Ormos harbor": {
+          "calls": 89,
+          "triangles": 934334
+        },
+        "terrain": {
+          "calls": 217,
+          "triangles": 124416
+        },
+        "vegetation": {
+          "calls": 273,
+          "triangles": 6801124
+        },
+        "other scene objects": {
+          "calls": 4,
+          "triangles": 0
+        },
+        "ocean surface": {
+          "calls": 13,
+          "triangles": 519584
+        }
+      },
+      "gpuMs": 17.424541
+    }
+  ],
+  "note": "Main-view-only hide-one-category ablations; reflection/refraction/shadows retain all objects. Savings overlap through occlusion and are not additive. Each main pass has current-target synchronous pixel readback before/after."
+}

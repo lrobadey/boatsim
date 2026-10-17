@@ -2,3 +2,14 @@ node_modules
 dist
 .DS_Store
 __pycache__/
+/Trieres.app/
+/Play Trieres.app
+/profiles/
+/public/generated/startup-textures/
+
+# local secrets (OPENAI_API_KEY for the trader voice)
+.env.local
+.env.*.local
+
+# superseded harbour-study snapshots, kept on disk only
+harbor-study/archive/

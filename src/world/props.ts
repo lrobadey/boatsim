@@ -1,3 +1,5 @@
+import {harborMarket,harborWorld,planPier} from './ormosLayout';
+import type {OrmosHarbour} from './ormosHarbour';
 import { LAYER_NOREFLECT } from '../core/pipeline';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -14,6 +16,12 @@ import type { Solid } from './walkable';
 import { LAYER_REFRACT } from '../core/pipeline';
 
 const BLOCK = 1500;
+/** vegetation draw tile (m); divides BLOCK so tiles nest inside blocks */
+const VEG_TILE = 500;
+/** harbour lamp switch: night level (0..1) and camera distance (m) beyond the outermost lamp.
+ *  On/off thresholds differ so the light count, and with it the shader programs, changes rarely. */
+const LAMP_NIGHT_ON = 0.03, LAMP_NIGHT_OFF = 0.01;
+const LAMP_FADE_START = 180, LAMP_FAR_ON = 260, LAMP_FAR_OFF = 300;
 
 function colorize(g: THREE.BufferGeometry, c: THREE.Color, jitter: number, r: () => number, heightDarken = 0) {
   const n = g.attributes.position.count;
@@ -165,20 +173,49 @@ export class Props {
   private fireMat: THREE.MeshStandardMaterial;
   /** blocking solids for people on the quay and village dock (world): props and standing figures */
   readonly solids: Solid[] = [];
+  private harborLamps:THREE.PointLight[]=[];
+  /** lamp centroid (xz) and the farthest lamp from it, for the camera-distance switch */
+  private lampCenter=new THREE.Vector2();
+  private lampReach=0;
+  /** Lamps start lit so the startup shader warm-up compiles the lamp-on programs; update() then
+   *  switches all of them together (changing the light count recompiles every lit material). */
+  private lampsLit=true;
 
-  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets, private models: ModelKit) {
+  constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets, private models: ModelKit, ormos?:OrmosHarbour) {
     this.fireMat = models.material('fire');
     const ports = portSites(gen);
     this.buildVegetation(gen);
     for (const p of ports) this.buildVillage(p.houses);
     this.buildTemple(gen);
-    for (const p of ports) this.buildPier(p.pier);
+    const authored = new Set(ormos?.ports.map((a) => a.id) ?? []);
+    const nativePorts = ports.filter((p) => !authored.has(p.id));
+    for (const p of nativePorts) this.buildPier(p.pier);
     // stalls are placed before dock life, which treats their footprints as pre-placed (§8)
     const stalls = ports.map((p) => stallGeometry(pierFrame(p.pier), p.id));
-    stalls.forEach((g) => this.buildStall(g));
-    ports.forEach((p, i) => this.buildDockLife(p, stalls[i]));
-    this.buildRockFaces(ports, assets);
-    this.buildBoats(ports);
+    ports.forEach((p, i) => {if(!authored.has(p.id))this.buildStall(stalls[i]);});
+    ports.forEach((p, i) => {if(!authored.has(p.id))this.buildDockLife(p, stalls[i]);});
+    this.buildRockFaces(nativePorts, assets);
+    this.buildBoats(nativePorts);
+    for(const art of ormos?.ports ?? []){
+      const pier=ports.find((p)=>p.id===art.id)!.pier;
+      this.group.add(art.group);this.solids.push(...art.solids);
+      // the starting harbour is always near; the others are culled by distance like the rock faces
+      if(art.id!==0)this.blocks.push({obj:art.group,center:new THREE.Vector3(pier.x,0,pier.z),maxDist:600});
+      // the trader and the lamps are in world coordinates; away from the start they are culled with the harbour
+      const life=new THREE.Group();this.group.add(life);
+      if(art.id!==0)this.blocks.push({obj:life,center:new THREE.Vector3(pier.x,0,pier.z),maxDist:600});
+      const site=harborMarket(pier,art.plan),figure=models.get('fig_sailor_idle');
+      figure.position.set(site.x,site.y,site.z);figure.rotation.y=site.yaw;life.add(figure);
+      for(const [x,z] of art.plan.lamps){
+        const v=harborWorld(planPier(pier,art.plan),x,z),lamp=models.get('lamp_post');lamp.position.set(v.x,site.y,v.z);life.add(lamp);
+        // every point light costs every lit material in the world, so only the starting harbour's lamps cast light
+        if(art.id===0){const light=new THREE.PointLight(0xffb76c,0,11,2);light.position.set(v.x,site.y+1.82,v.z);life.add(light);this.harborLamps.push(light);}
+        this.solids.push({kind:'cyl',cx:v.x,cz:v.z,r:.16,y0:site.y,y1:site.y+1.9,surface:'wood',walkTop:false});
+      }
+      this.solids.push({kind:'cyl',cx:site.x,cz:site.z,r:.3,y0:site.y,y1:site.y+1.8,surface:'wood',walkTop:false});
+    }
+    for(const l of this.harborLamps)this.lampCenter.x+=l.position.x/this.harborLamps.length,this.lampCenter.y+=l.position.z/this.harborLamps.length;
+    for(const l of this.harborLamps)this.lampReach=Math.max(this.lampReach,Math.hypot(l.position.x-this.lampCenter.x,l.position.z-this.lampCenter.y));
     // beacon fire in front of the temple (east side)
     const t = gen.sites.temple;
     this.beaconMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff8a30, emissiveIntensity: 2, transparent: true, opacity: 0.9, depthWrite: false });
@@ -240,30 +277,45 @@ export class Props {
     const r = rng(5);
     for (const [key, list] of byBlock) {
       const type = Number(key.split(',')[2]);
-      const inst = new THREE.InstancedMesh(arche[type], mats[type], list.length);
       let cx = 0,
         cz = 0;
-      list.forEach((e, i) => {
+      for (const e of list) {
+        cx += e[0];
+        cz += e[2];
+      }
+      // the distance cut stays per block; each block's plants are drawn as small tiles so the view
+      // and shadow frustums can cull them (a block-wide mesh is always drawn whole)
+      const center = new THREE.Vector3(cx / list.length, 0, cz / list.length);
+      const maxDist = type === 2 ? 2200 : type === 3 ? 3500 : 7000;
+      const tileOf = (e: number[]) => `${Math.floor(e[0] / VEG_TILE)},${Math.floor(e[2] / VEG_TILE)}`;
+      const tileCount = new Map<string, number>();
+      for (const e of list) tileCount.set(tileOf(e), (tileCount.get(tileOf(e)) ?? 0) + 1);
+      const tiles = new Map<string, { inst: THREE.InstancedMesh; next: number }>();
+      for (const [tile, count] of tileCount) {
+        const inst = new THREE.InstancedMesh(arche[type], mats[type], count);
+        inst.castShadow = true;
+        inst.receiveShadow = true;
+        inst.layers.set(LAYER_NOREFLECT); // thousands of instances for little gain in a rippled mirror
+        this.group.add(inst);
+        this.blocks.push({ obj: inst, center, maxDist });
+        tiles.set(tile, { inst, next: 0 });
+      }
+      // instances in their original order, so the random heights and tints are unchanged
+      for (const e of list) {
         const [x, y, z, s, rot] = e;
+        const t = tiles.get(tileOf(e))!;
+        const i = t.next++;
         Q.setFromAxisAngle(up, rot);
         const sy = type === 0 ? s * (0.8 + r() * 0.5) : s;
         S.set(s, sy, s);
         P.set(x, y - 0.25 * s, z);
         M.compose(P, Q, S);
-        inst.setMatrixAt(i, M);
+        t.inst.setMatrixAt(i, M);
         tint.setHSL(0.25 + (r() - 0.5) * 0.05, 0.1 + r() * 0.1, 0.45 + r() * 0.15);
         const k = 0.85 + r() * 0.3;
-        inst.setColorAt(i, new THREE.Color(k, k, k * (0.95 + r() * 0.1)));
-        cx += x;
-        cz += z;
-      });
-      inst.computeBoundingSphere();
-      inst.castShadow = true;
-      inst.receiveShadow = true;
-      inst.layers.set(LAYER_NOREFLECT); // thousands of instances for little gain in a rippled mirror
-      this.group.add(inst);
-      const maxDist = type === 2 ? 2200 : type === 3 ? 3500 : 7000;
-      this.blocks.push({ obj: inst, center: new THREE.Vector3(cx / list.length, 0, cz / list.length), maxDist });
+        t.inst.setColorAt(i, new THREE.Color(k, k, k * (0.95 + r() * 0.1)));
+      }
+      for (const { inst } of tiles.values()) inst.computeBoundingSphere();
     }
   }
 
@@ -578,6 +630,7 @@ export class Props {
 
   update(dt: number, time: number, camera: THREE.Camera, night: number) {
     const cp = camera.position;
+    this.updateLamps(cp,night);
     for (const b of this.blocks) {
       const d = Math.hypot(b.center.x - cp.x, b.center.z - cp.z);
       b.obj.visible = d < b.maxDist + BLOCK;
@@ -595,5 +648,19 @@ export class Props {
     this.beaconMat.emissiveIntensity = 3 + 4 * night * flick;
     this.flame.scale.set(1 + 0.1 * Math.sin(time * 9), 0.9 + 0.2 * flick, 1 + 0.1 * Math.cos(time * 7));
     this.fireMat.emissiveIntensity = night * 3;
+  }
+
+  /** Every point light in the scene is evaluated by every lit material, so the lamps leave the
+   *  scene by day and away from the harbour. They fade out with distance before the switch and the
+   *  on/off thresholds are apart, so the switch is invisible and happens only at dusk, dawn or on
+   *  crossing the harbour's range. */
+  private updateLamps(cp:THREE.Vector3,night:number){
+    if(!this.harborLamps.length)return;
+    const d=Math.max(0,Math.hypot(cp.x-this.lampCenter.x,cp.z-this.lampCenter.y)-this.lampReach);
+    const lit=this.lampsLit?night>LAMP_NIGHT_OFF&&d<LAMP_FAR_OFF:night>LAMP_NIGHT_ON&&d<LAMP_FAR_ON;
+    if(lit!==this.lampsLit){this.lampsLit=lit;for(const l of this.harborLamps)l.visible=lit;}
+    if(!lit)return;
+    const fade=1-THREE.MathUtils.smoothstep(d,LAMP_FADE_START,LAMP_FAR_ON);
+    for(const l of this.harborLamps)l.intensity=night*20*fade;
   }
 }

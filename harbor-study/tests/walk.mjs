@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {terrainSurface,surfaceAt,moveWalker} from '../runtime/walk.mjs';
+const m=JSON.parse(fs.readFileSync(new URL('../assets/manifest.json',import.meta.url)));
+const start=(x,z)=>({x,z,y:surfaceAt(m,x,z).height});
+// Both halves of a deliberately non-planar quad use its exported diagonal.
+const grid={x0:0,nativeY0:0,step:1,columns:2,rows:2,heights:[0,1,2,4]};
+assert.equal(terrainSurface(grid,.75,-.25).height,1.5);
+assert.equal(terrainSurface(grid,.25,-.75).height,2);
+assert.equal(terrainSurface(grid,-.1,0),null);
+const doorway=moveWalker(m,start(-13,-13),0,-2.5);
+assert.equal(doorway.z,-15.5);assert.equal(doorway.y,2.15);
+const wall=moveWalker(m,start(-19,-12),0,-10);
+assert(wall.z>-14,'warehouse facade must stop even a large movement');
+const upstairs=moveWalker(m,start(0,-28),0,-10);
+assert(Math.abs(upstairs.z+38)<1e-6);assert.equal(upstairs.y,4.5);
+const downstairs=moveWalker(m,upstairs,0,10);
+assert(Math.abs(downstairs.z+28)<1e-6);assert.equal(downstairs.y,2.15);
+const edge=moveWalker(m,start(0,-1),0,10);
+assert(edge.z<.6,'quay edge must stop an unsupported drop');
+const cargo=moveWalker(m,doorway,0,-5);
+assert(cargo.z>-16.4,'warehouse cargo must block passage');
+console.log(JSON.stringify({result:'pass',checks:['terrain triangle interpolation','open warehouse doorway','facade collision and substeps','stairs up and down','quay drop boundary','cargo obstruction']}));

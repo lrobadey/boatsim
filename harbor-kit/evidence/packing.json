@@ -1,0 +1,403 @@
+{
+  "encoder": "meshoptimizer",
+  "losslessGeometry": true,
+  "files": [
+    {
+      "file": "amphora-large.glb",
+      "rawBytes": 420816,
+      "packedBytes": 70236,
+      "buffersVerified": 5,
+      "sha256": "03c0f5a77fa2d1241096caba2aa5d9b3b62a5241098c8538a016989113eb47de"
+    },
+    {
+      "file": "amphora-small.glb",
+      "rawBytes": 420860,
+      "packedBytes": 70428,
+      "buffersVerified": 5,
+      "sha256": "ceca6aa45e094bbf5c47a307bd105dc4df00b0f2d00913ebf1414869dd17b18f"
+    },
+    {
+      "file": "cargo-boat.glb",
+      "rawBytes": 5590444,
+      "packedBytes": 2273392,
+      "buffersVerified": 30,
+      "sha256": "879e119df338d3129a632feccfa383bac6c73f35eb542bc0a81ec7b1a9b848e6"
+    },
+    {
+      "file": "coastal-shrub.glb",
+      "rawBytes": 854016,
+      "packedBytes": 350556,
+      "buffersVerified": 10,
+      "sha256": "42c2beff97ccf0fb1880525da77d4514c3f1e19028397aad376a73e4ccb60e0e"
+    },
+    {
+      "file": "coastal-shrub-lod1.glb",
+      "rawBytes": 522412,
+      "packedBytes": 172040,
+      "buffersVerified": 10,
+      "sha256": "d7ed534247a9b8b8274737fdcf866b4937f4afcea454b6666dea42f31bb9eed7"
+    },
+    {
+      "file": "gangplank.glb",
+      "rawBytes": 431624,
+      "packedBytes": 31864,
+      "buffersVerified": 10,
+      "sha256": "72ab2581553dadf3beace895707fb778440ff077ef08df3081828eae66ad8b65"
+    },
+    {
+      "file": "house-courtyard.glb",
+      "rawBytes": 1661120,
+      "packedBytes": 330024,
+      "buffersVerified": 40,
+      "sha256": "8285df55f182886d0709072f52d5b06add444b619944522a20603a3cb6074913"
+    },
+    {
+      "file": "house-tower.glb",
+      "rawBytes": 1611676,
+      "packedBytes": 305316,
+      "buffersVerified": 40,
+      "sha256": "2e9771443eafc7fbeb102d61719a0a4fadd92cb6b1313dd95a92b30a4f9c0752"
+    },
+    {
+      "file": "house-workshop.glb",
+      "rawBytes": 2049012,
+      "packedBytes": 573232,
+      "buffersVerified": 45,
+      "sha256": "f94d9ce91c8c5d411d2365fe6b0bd10b16fc51a0f0dfce71d3c8a4d6a0c09bfb"
+    },
+    {
+      "file": "linen-canopy.glb",
+      "rawBytes": 853380,
+      "packedBytes": 74748,
+      "buffersVerified": 25,
+      "sha256": "a1bfac0384b1aaeade0a74cf0afec7a45d6a1aeda63c851f368c49f409ac1c72"
+    },
+    {
+      "file": "merchant-gangplank.glb",
+      "rawBytes": 427604,
+      "packedBytes": 29984,
+      "buffersVerified": 10,
+      "sha256": "e8a16e44f733631702bb67ce50fb6f0ba43ce5a6ffae6d008f227f2e65907264"
+    },
+    {
+      "file": "merchant-shell.glb",
+      "rawBytes": 4356092,
+      "packedBytes": 1866648,
+      "buffersVerified": 30,
+      "sha256": "598bb9d504cbb36ce648c1017960f902c4007b358467fb641fce515d8a5e4ee5"
+    },
+    {
+      "file": "mooring-stone.glb",
+      "rawBytes": 193512,
+      "packedBytes": 21680,
+      "buffersVerified": 5,
+      "sha256": "4b5ba215e1c3576a7f28f35e592cbac1cd2aef9d9a65f13e334b113678885145"
+    },
+    {
+      "file": "olive-a.glb",
+      "rawBytes": 2567420,
+      "packedBytes": 1380072,
+      "buffersVerified": 10,
+      "sha256": "adeabc827bc98d8b5292d3299bdf6d09ce115775820db1f35a4e597d5268da3f"
+    },
+    {
+      "file": "olive-a-lod1.glb",
+      "rawBytes": 1757088,
+      "packedBytes": 971272,
+      "buffersVerified": 10,
+      "sha256": "c43d6914c1a579480e0e79a28175deac4f8980001b09b7ab2e9d3ef0f02201d2"
+    },
+    {
+      "file": "olive-b.glb",
+      "rawBytes": 2567420,
+      "packedBytes": 1377220,
+      "buffersVerified": 10,
+      "sha256": "d246c92d70bf027a71d5c5bb8fda169b58da58ff9327e6c5c57d9436eafda68e"
+    },
+    {
+      "file": "olive-b-lod1.glb",
+      "rawBytes": 1756808,
+      "packedBytes": 968604,
+      "buffersVerified": 10,
+      "sha256": "cc1f941fef5b0a4747f53c1540c557bbea4c69c52766730bdd6bef03398670c9"
+    },
+    {
+      "file": "packing-rack.glb",
+      "rawBytes": 314256,
+      "packedBytes": 40372,
+      "buffersVerified": 10,
+      "sha256": "befb612766f8fbcfac6bd35cb80b5599f08b362c7ce1b799780dfabea727b963"
+    },
+    {
+      "file": "quay-corner.glb",
+      "rawBytes": 1044864,
+      "packedBytes": 268072,
+      "buffersVerified": 15,
+      "sha256": "b78f554d91bfee562db43bf42276dcdca0a923289147ceda08dad25c8c8943e2"
+    },
+    {
+      "file": "quay-straight-a.glb",
+      "rawBytes": 815428,
+      "packedBytes": 152964,
+      "buffersVerified": 15,
+      "sha256": "8d2818c97bb05c6a3448bee51b887e7a2a721097a04a2e7b475f05dad82def09"
+    },
+    {
+      "file": "quay-straight-b.glb",
+      "rawBytes": 837300,
+      "packedBytes": 163852,
+      "buffersVerified": 20,
+      "sha256": "0d97e75b9e95c81565689b5d7781362d002eff75cbd44f97b9065821ac676981"
+    },
+    {
+      "file": "quay-straight-c.glb",
+      "rawBytes": 602072,
+      "packedBytes": 155336,
+      "buffersVerified": 10,
+      "sha256": "91e0990f317381e44ad7367cf54e9f92b98d0b30dce1db0a0540f2465c86651e"
+    },
+    {
+      "file": "retaining-wall.glb",
+      "rawBytes": 262336,
+      "packedBytes": 57076,
+      "buffersVerified": 5,
+      "sha256": "124c3fe16b1c12720ee0b89a19dc47c8e9e11a9586f1a6fad30137f6269ebe06"
+    },
+    {
+      "file": "rock-boulder.glb",
+      "rawBytes": 285524,
+      "packedBytes": 74532,
+      "buffersVerified": 5,
+      "sha256": "1fd22b0695cf266897a8b428a9960381dcb5bd95e2938cb35442f6ffcf1cde7a"
+    },
+    {
+      "file": "rock-boulder-lod1.glb",
+      "rawBytes": 206632,
+      "packedBytes": 27460,
+      "buffersVerified": 5,
+      "sha256": "1bd9cbedf74878d3f796590e7ff083c861fffb78068b70224abae5e464415e31"
+    },
+    {
+      "file": "rock-boulder-collision.glb",
+      "rawBytes": 5492,
+      "packedBytes": 5276,
+      "buffersVerified": 5,
+      "sha256": "90511ee536a44c8f0212e88f08a87af8c421c31655d25369853fc7c10b689edf"
+    },
+    {
+      "file": "rock-ledge-a.glb",
+      "rawBytes": 771352,
+      "packedBytes": 351404,
+      "buffersVerified": 5,
+      "sha256": "f3614f6baba62bf09a5d1cb0f2408721840126e55cfb49a9b46c81b1af0cb303"
+    },
+    {
+      "file": "rock-ledge-a-lod1.glb",
+      "rawBytes": 366948,
+      "packedBytes": 124608,
+      "buffersVerified": 5,
+      "sha256": "fdb850dce11b03b951089f4435da46d81bde3a941e26243d0445460847d47606"
+    },
+    {
+      "file": "rock-ledge-a-collision.glb",
+      "rawBytes": 5812,
+      "packedBytes": 5288,
+      "buffersVerified": 5,
+      "sha256": "7f4790ccd4480afbb8cc74869fc788492c2e65cb7e8368721c5a8907de88d624"
+    },
+    {
+      "file": "rock-ledge-b.glb",
+      "rawBytes": 777276,
+      "packedBytes": 356636,
+      "buffersVerified": 5,
+      "sha256": "ce0f45c77de903ac485a927e3ceb34c11e8b9b096240aad76dd77852cdb7482d"
+    },
+    {
+      "file": "rock-ledge-b-lod1.glb",
+      "rawBytes": 367712,
+      "packedBytes": 124860,
+      "buffersVerified": 5,
+      "sha256": "b4fcf2592ad0882c71badff1e448f4f963303e0ae6435c4d0053ee0b06e367ac"
+    },
+    {
+      "file": "rock-ledge-b-collision.glb",
+      "rawBytes": 5928,
+      "packedBytes": 5500,
+      "buffersVerified": 5,
+      "sha256": "c899f481538d3093dabdd859fdc3eb285f91fcb0474905e9941b246a9a2231f3"
+    },
+    {
+      "file": "rock-rubble.glb",
+      "rawBytes": 190936,
+      "packedBytes": 17852,
+      "buffersVerified": 5,
+      "sha256": "03da68d8edaea90494cd5b9f7502db530673d7a793c4531f91587b878d529e12"
+    },
+    {
+      "file": "rock-rubble-lod1.glb",
+      "rawBytes": 175472,
+      "packedBytes": 8840,
+      "buffersVerified": 5,
+      "sha256": "531345ee64dcc815aa30e80580815ab0304eeda920e27e2f04165a3822e7c50a"
+    },
+    {
+      "file": "rock-rubble-collision.glb",
+      "rawBytes": 6016,
+      "packedBytes": 5420,
+      "buffersVerified": 5,
+      "sha256": "2231461496bb68cd76bd4d84cef2a91fb4b6ad617ec549af6a2d585362d95555"
+    },
+    {
+      "file": "rope-coil.glb",
+      "rawBytes": 211876,
+      "packedBytes": 42696,
+      "buffersVerified": 5,
+      "sha256": "774df7ad945e46523a193646f658dd0ef230441fc6a622f33bce1d01ac8e9890"
+    },
+    {
+      "file": "rope-fender.glb",
+      "rawBytes": 432224,
+      "packedBytes": 166124,
+      "buffersVerified": 5,
+      "sha256": "b0441f77c55ce9071fe4b517220d79b1ac370b23e08ce0889b0927d3f1b1ad03"
+    },
+    {
+      "file": "sea-stairs.glb",
+      "rawBytes": 202264,
+      "packedBytes": 26340,
+      "buffersVerified": 5,
+      "sha256": "568e815891c3306d4312092bb1f84963504d18a78606e944ef60d51e96ac1397"
+    },
+    {
+      "file": "timber-beam.glb",
+      "rawBytes": 226724,
+      "packedBytes": 5340,
+      "buffersVerified": 5,
+      "sha256": "0c80d79a39dd8d117bbc85c2222d53ef864fd0baea86feea7a1bff9508c625bf"
+    },
+    {
+      "file": "timber-bench.glb",
+      "rawBytes": 262920,
+      "packedBytes": 21696,
+      "buffersVerified": 10,
+      "sha256": "0bbf3a6004f23bcc383d767fb663ea206fe1cb2eae8e4f7be6381cbf252c505f"
+    },
+    {
+      "file": "warehouse.glb",
+      "rawBytes": 8853744,
+      "packedBytes": 3500244,
+      "buffersVerified": 55,
+      "sha256": "4cfeda76959334cb4a68f90ee358e210552a5ece1cf5f9d6add834f919452aca"
+    },
+    {
+      "file": "wicker-basket.glb",
+      "rawBytes": 776132,
+      "packedBytes": 234036,
+      "buffersVerified": 10,
+      "sha256": "9920489adc28e476107d3e1dfc200ae5e4d3b0f7fd8b393e7782362ca568cf21"
+    }
+  ],
+  "textures": {
+    "tile_normal-9254b2280cf1.png": {
+      "bytes": 2277382,
+      "sha256": "9254b2280cf12da209f74d62a5e92583d2a4716c27c6c0103a7bb80aee2be036"
+    },
+    "tile_color-d6f256e76b98.jpg": {
+      "bytes": 30854,
+      "sha256": "d6f256e76b982f73699582a005df3150147cca61eddd266549489578f474741a"
+    },
+    "tile_rough-d9bd6cca9a4b.jpg": {
+      "bytes": 32735,
+      "sha256": "d9bd6cca9a4bb6a39e763b33cc45063b20fb27d6fbdc54a000eeae848438305a"
+    },
+    "cloth_normal-27ea69830b10.png": {
+      "bytes": 629506,
+      "sha256": "27ea69830b10e257023785ec9c8bffa01727cd521be39a0ced1ba4d9b89b3f19"
+    },
+    "cloth_color-db99470ef89e.jpg": {
+      "bytes": 17583,
+      "sha256": "db99470ef89ece56863f2739d584f2c8ae385e438f01247b99eb865fad198316"
+    },
+    "cloth_rough-6949834bde6e.jpg": {
+      "bytes": 17026,
+      "sha256": "6949834bde6e445f1960d2262b9be55f629e5400529ec9edc70a40cc470ecfee"
+    },
+    "wood_normal-48e2de82a2f9.png": {
+      "bytes": 2113391,
+      "sha256": "48e2de82a2f93ea2f9007ebe67d63162e42f70ae526fd02fd307444de5cbe821"
+    },
+    "wood_color-97f31cf5fe3a.jpg": {
+      "bytes": 53502,
+      "sha256": "97f31cf5fe3ac9b121f3a5e0dfdf48ec8ff34362ed459c2753240934f724fd04"
+    },
+    "wood_rough-b31ff81584f9.jpg": {
+      "bytes": 19539,
+      "sha256": "b31ff81584f994ca71b288f5ae29b4df04b7accb40caee020411d0d4003bf294"
+    },
+    "rope_normal-805d6e3f0a45.png": {
+      "bytes": 1617622,
+      "sha256": "805d6e3f0a45d699b96cf73978c6e38f67e719284c3711ffdb236b0adb55544a"
+    },
+    "rope_color-a4a39197a6b2.jpg": {
+      "bytes": 36725,
+      "sha256": "a4a39197a6b21b1910d428b8633214a348c8bff7a6d106ca725fa510e4df98c1"
+    },
+    "rope_rough-f94f25865cd1.jpg": {
+      "bytes": 32276,
+      "sha256": "f94f25865cd1b16a008f5d4adf68323e05de6c244d0343765817eecc6a0f9352"
+    },
+    "limestone_normal-0ab66eee7141.png": {
+      "bytes": 1610921,
+      "sha256": "0ab66eee7141165253b3f3e568abf0731ba514d9c436cea433ed66c1f8fe6827"
+    },
+    "limestone_color-4b43524326d3.jpg": {
+      "bytes": 38864,
+      "sha256": "4b43524326d39fb25075d3a785172393720160674164098c70a04817b28d01b0"
+    },
+    "limestone_rough-6f6f6dcdb60e.jpg": {
+      "bytes": 32740,
+      "sha256": "6f6f6dcdb60ef504bc18bc008b31ade0892bf8623080154ca92bc93841b8363a"
+    },
+    "paving_normal-464e4e5b6408.png": {
+      "bytes": 1612800,
+      "sha256": "464e4e5b6408b091b73891f2c50af51f3ebf5918bf18f2f0f98c795ebe7170b3"
+    },
+    "paving_color-8f7a2f1d7f7c.jpg": {
+      "bytes": 38865,
+      "sha256": "8f7a2f1d7f7c46e01ccba5dd27a8d23dd4844e107b03a74ac52f7e4460a83c9f"
+    },
+    "paving_rough-aaaaa5f2055b.jpg": {
+      "bytes": 32641,
+      "sha256": "aaaaa5f2055b56d49f4421a03be0993ad1a234102cff6303fcfbd32494630252"
+    },
+    "plaster_normal-cad2a9a66bec.png": {
+      "bytes": 1730236,
+      "sha256": "cad2a9a66bec70f744f911c9641cce94efcd32354ca940377f528ee0eabc7480"
+    },
+    "plaster_color-8aa9076f6d27.jpg": {
+      "bytes": 23025,
+      "sha256": "8aa9076f6d27e003fe9b305ebcdaabd58924294e5247a4c71bb8c7588ac22cdd"
+    },
+    "plaster_rough-d6272d57a64d.jpg": {
+      "bytes": 32796,
+      "sha256": "d6272d57a64d729f88977866cf1f27d12b4220507410c66df899e52d82c60c17"
+    },
+    "rock_normal-7adcf4c5d83e.png": {
+      "bytes": 1734684,
+      "sha256": "7adcf4c5d83ebf71b5f3a77e7a4fb3292740866da08fedd6456cb5f69999d197"
+    },
+    "rock_color-a02cab11434a.jpg": {
+      "bytes": 35809,
+      "sha256": "a02cab11434a1997553529c52e265e9417e13405ce517df727b8bf88e87ea42b"
+    },
+    "rock_rough-b6945e5f2dba.jpg": {
+      "bytes": 27954,
+      "sha256": "b6945e5f2dba314498585aa69857c06dca94b566b2420e0900f054ae12e7abf7"
+    }
+  },
+  "totals": {
+    "rawModelBytes": 46048544,
+    "packedModelBytes": 16809140,
+    "sharedTextureBytes": 13829476
+  }
+}

@@ -417,7 +417,9 @@ export class SkySystem {
     this.environmentSourceVersion++;
     const m = this.sky.material as THREE.ShaderMaterial;
     Object.assign(m.uniforms, clouds.uniforms, {
-      uCloudOn: { value: 1 },
+      // CloudPass composites the visible clouds once. Environment captures enable their
+      // independent copy in captureEnvironment so reflections and lighting stay cloudy.
+      uCloudOn: { value: 0 },
     });
     clouds.uniforms.uCloudHazeSky.value = this.environment.previous.clear.texture;
     clouds.uniforms.uCloudHazeSkyNext.value = this.environment.nextBundle.clear.texture;

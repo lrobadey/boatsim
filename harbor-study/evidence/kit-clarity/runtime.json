@@ -1,0 +1,6 @@
+{
+  "instances": "423",
+  "batches": "71",
+  "metrics": "{\"fps\":120,\"frameMs\":8.333103448275882,\"drawCalls\":448,\"triangles\":6685373,\"textures\":36}",
+  "errors": "[]"
+}

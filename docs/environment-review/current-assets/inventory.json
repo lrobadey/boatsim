@@ -1,0 +1,73 @@
+[
+  {
+    "asset": "house_a",
+    "triangles": 1074,
+    "materials": [
+      "fire",
+      "plaster",
+      "stone",
+      "wood_dark"
+    ]
+  },
+  {
+    "asset": "house_b",
+    "triangles": 1484,
+    "materials": [
+      "fire",
+      "plaster",
+      "roof_tile",
+      "stone",
+      "wood_dark"
+    ]
+  },
+  {
+    "asset": "house_c",
+    "triangles": 998,
+    "materials": [
+      "fire",
+      "plaster",
+      "stone",
+      "wood_dark"
+    ]
+  },
+  {
+    "asset": "quay_segment",
+    "triangles": 1748,
+    "materials": [
+      "stone",
+      "wood"
+    ]
+  },
+  {
+    "asset": "quay_head",
+    "triangles": 2540,
+    "materials": [
+      "bronze",
+      "stone",
+      "wood"
+    ]
+  },
+  {
+    "asset": "bollard",
+    "triangles": 194,
+    "materials": [
+      "stone"
+    ]
+  },
+  {
+    "asset": "fender",
+    "triangles": 240,
+    "materials": [
+      "rope"
+    ]
+  },
+  {
+    "asset": "gangplank",
+    "triangles": 188,
+    "materials": [
+      "rope",
+      "wood",
+      "wood_dark"
+    ]
+  }
+]

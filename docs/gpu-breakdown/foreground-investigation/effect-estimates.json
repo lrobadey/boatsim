@@ -1,0 +1,45 @@
+{
+  "gpuEffects": [
+    {
+      "scale": 1.3,
+      "pairedMeanSavingMs": 0.028247106250000008,
+      "bootstrap95MeanMs": [
+        0.022857956250000012,
+        0.03392393749999999
+      ],
+      "note": "Resamples paired draws within this frozen scene, not hardware/weather/generalization uncertainty."
+    },
+    {
+      "scale": 2,
+      "pairedMeanSavingMs": 0.040727368749999986,
+      "bootstrap95MeanMs": [
+        0.03444694374999999,
+        0.045669043750000006
+      ],
+      "note": "Resamples paired draws within this frozen scene, not hardware/weather/generalization uncertainty."
+    }
+  ],
+  "pacingEpisodes": [
+    {
+      "blocks": [
+        0,
+        3
+      ],
+      "oldMeanIntervalMs": 22.76392694063842,
+      "candidateMeanIntervalMs": 22.565306122446444,
+      "savedMs": 0.1986208181919764,
+      "fpsGainPercent": 0.880204403672602
+    },
+    {
+      "blocks": [
+        4,
+        7
+      ],
+      "oldMeanIntervalMs": 22.54411764705461,
+      "candidateMeanIntervalMs": 22.2698660714294,
+      "savedMs": 0.2742515756252075,
+      "fpsGainPercent": 1.231491804870144
+    }
+  ],
+  "note": "Only two balanced ABBA episodes; do not use per-frame sample count as thousands of independent experimental replications. Performance result also depends on whether image output is accepted."
+}

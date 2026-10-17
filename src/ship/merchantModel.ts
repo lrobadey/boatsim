@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { patchMaterial } from '../gfx/shared';
+import { patchMaterial, shared } from '../gfx/shared';
 import { LAYER_REFRACT } from '../core/pipeline';
 import { makeSailTexture } from '../gfx/textures';
 import type { SurfaceMaps } from '../gfx/assets';
@@ -31,6 +31,9 @@ const mat = (p: THREE.MeshStandardMaterialParameters, key = '') => patchMaterial
  */
 export class MerchantModel implements ShipVisual {
   readonly group = new THREE.Group();
+  /** Hull, deck, cap rails and posts only; moving and interactive parts stay game-owned. */
+  readonly staticShell = new THREE.Group();
+  private authoredShell: THREE.Object3D | null = null;
   private oars: THREE.InstancedMesh[] = [];
   private slots: readonly OarSlot[];
   private instanceIds: Int16Array;
@@ -80,6 +83,7 @@ export class MerchantModel implements ShipVisual {
   constructor(planks: SurfaceMaps, slots: readonly OarSlot[], models: ModelKit, readonly design: ShipDesign) {
     const hull = design.hull, deck = design.deck, rig = design.rig;
     const g = this.group;
+    g.add(this.staticShell);
     // The scan's grain runs vertically. Hull UVs run lengthwise in U; deck UVs run lengthwise in V.
     const hullMaps = [planks.color, planks.normal, planks.roughness].map((source) => {
       const tex = source.clone();
@@ -95,14 +99,14 @@ export class MerchantModel implements ShipVisual {
     hullMesh.castShadow = true;
     hullMesh.receiveShadow = true;
     hullMesh.layers.enable(LAYER_REFRACT);
-    g.add(hullMesh);
+    this.staticShell.add(hullMesh);
 
     // ---------- deck ----------
     const deckMat = mat({ map: planks.color, normalMap: planks.normal, roughnessMap: planks.roughness, normalScale: new THREE.Vector2(0.45, 0.45), roughness: 1, color: new THREE.Color().setRGB(1.25, 1.14, 1.02) }, 'deck_merchant');
     const deckMesh = new THREE.Mesh(this.deckGeometry(), deckMat);
     deckMesh.receiveShadow = true;
     deckMesh.castShadow = true;
-    g.add(deckMesh);
+    this.staticShell.add(deckMesh);
 
     // wood and rope are shared by the rails, stem, sternpost and rigging below
     const woodDark = mat({ color: 0x6e4c32, roughness: 0.7 }, 'wooddark');
@@ -117,11 +121,11 @@ export class MerchantModel implements ShipVisual {
       }
       const rail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 96, 0.045, 6, false), woodDark);
       rail.castShadow = true;
-      g.add(rail);
+      this.staticShell.add(rail);
     }
 
     // ---------- stem & sternpost ----------
-    g.add(
+    this.staticShell.add(
       this.curvedPiece(
         [
           [0, -hull.keelDepth(0.02), hull.zOf(0.02)],
@@ -134,7 +138,7 @@ export class MerchantModel implements ShipVisual {
         woodDark,
       ),
     );
-    g.add(
+    this.staticShell.add(
       this.curvedPiece(
         [
           [0, -hull.keelDepth(0.97), hull.zOf(0.97)],
@@ -189,6 +193,19 @@ export class MerchantModel implements ShipVisual {
     this.yard.add(yardMesh);
     const sailTex = makeSailTexture();
     const sailMat = new THREE.MeshStandardMaterial({ map: sailTex, side: THREE.DoubleSide, roughness: 0.9 });
+    const sailDeformation = `vec3 transformed = vec3(position);
+             // The cloth spans the shared rig width and deploys downward from the yard.
+             float u = transformed.x / ${ (rig.width / 2).toFixed(1) };
+             float v = -transformed.y / ${ rig.height.toFixed(1) }; // 0 top .. 1 foot
+             float h = ${ rig.height.toFixed(1) } * (1.0 - uFurl);
+             transformed.y = -v * h;
+             float belly = (1.0 - u * u) * sin(3.14159 * clamp(v * 0.85 + 0.1, 0.0, 1.0));
+             float flap = sin(transformed.x * 1.3 + uTime * 7.0 + v * 4.0) * sin(v * 3.14159) * uFlutter;
+             transformed.z += (uBillow * 1.6 * belly) * (1.0 - uFurl) + flap * 0.35;
+             // folds when brailed
+             // brailed-up cloth: a rounded bundle under the yard with irregular folds
+             transformed.z += uFurl * (0.28 * sin(3.14159 * v) + sin(v * 40.0 + u * 3.0) * 0.08) * (1.0 - 0.3 * u * u);
+             transformed.y -= uFurl * 0.08 * sin(u * 9.0) * v;`;
     patchMaterial(
       sailMat,
       (sh) => {
@@ -202,20 +219,7 @@ export class MerchantModel implements ShipVisual {
           )
           .replace(
             '#include <begin_vertex>',
-            `vec3 transformed = vec3(position);
-             // The cloth spans the shared rig width and deploys downward from the yard.
-             float u = transformed.x / ${ (rig.width / 2).toFixed(1) };
-             float v = -transformed.y / ${ rig.height.toFixed(1) }; // 0 top .. 1 foot
-             float h = ${ rig.height.toFixed(1) } * (1.0 - uFurl);
-             transformed.y = -v * h;
-             float belly = (1.0 - u * u) * sin(3.14159 * clamp(v * 0.85 + 0.1, 0.0, 1.0));
-             float flap = sin(transformed.x * 1.3 + uTime * 7.0 + v * 4.0) * sin(v * 3.14159) * uFlutter;
-             transformed.z += (uBillow * 1.6 * belly) * (1.0 - uFurl) + flap * 0.35;
-             // folds when brailed
-             // brailed-up cloth: a rounded bundle under the yard with irregular folds
-             transformed.z += uFurl * (0.28 * sin(3.14159 * v) + sin(v * 40.0 + u * 3.0) * 0.08) * (1.0 - 0.3 * u * u);
-             transformed.y -= uFurl * 0.08 * sin(u * 9.0) * v;
-             vSailShade = belly;`,
+            sailDeformation + '\n vSailShade = belly;',
           )
           .replace(
             '#include <beginnormal_vertex>',
@@ -244,6 +248,18 @@ export class MerchantModel implements ShipVisual {
     const sailGeo = new THREE.PlaneGeometry(rig.width, rig.height, 24, 18).translate(0, -rig.height / 2, 0);
     this.sailMesh = new THREE.Mesh(sailGeo, sailMat);
     this.sailMesh.position.set(0, -rig.clothTopDrop, rig.clothOffsetZ);
+    // The shadow silhouette must furl and billow with the visible cloth.
+    for (const depth of [new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide}), new THREE.MeshDistanceMaterial({side: THREE.DoubleSide})]) {
+      depth.onBeforeCompile = shader => {
+        Object.assign(shader.uniforms, this.sailUniforms, {uTime: shared.uTime});
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nuniform float uBillow; uniform float uFurl; uniform float uFlutter; uniform float uTime;')
+          .replace('#include <begin_vertex>', sailDeformation);
+      };
+      depth.customProgramCacheKey = () => 'merchant-sail-shadow-' + rig.width + '-' + rig.height;
+      if (depth instanceof THREE.MeshDepthMaterial) this.sailMesh.customDepthMaterial = depth;
+      else this.sailMesh.customDistanceMaterial = depth;
+    }
     this.sailMesh.castShadow = true;
     this.sailMesh.frustumCulled = false;
     this.yard.add(this.sailMesh);
@@ -319,6 +335,37 @@ export class MerchantModel implements ShipVisual {
     g.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).receiveShadow = true;
     });
+  }
+
+  /** Change linen maps while retaining the existing furl, billow and wind-tell shader. */
+  setSailSurface(surface: SurfaceMaps) {
+    // Quiet thin linen: avoid self-shadow interference while retaining its animated cast shadow.
+    this.sailMesh.receiveShadow = false;
+    const material = this.sailMesh.material as THREE.MeshStandardMaterial;
+    material.map = surface.color;
+    material.normalMap = surface.normal;
+    material.roughnessMap = surface.roughness;
+    material.normalScale.set(0.12, 0.12);
+    material.needsUpdate = true;
+  }
+
+  /** Install a metre-scale, Y-up shell at the design waterline. No physics or joint state changes.
+   * Caller owns imported resources and must apply the game's material patch before installation.
+   * Passing null restores the original procedural shell without reloading the vessel.
+   */
+  setAuthoredShell(shell: THREE.Object3D | null) {
+    if (this.authoredShell) this.group.remove(this.authoredShell);
+    this.authoredShell = shell;
+    this.staticShell.visible = !shell;
+    if (shell) {
+      shell.traverse(o => {
+        if (o instanceof THREE.Mesh) {
+          o.castShadow = o.receiveShadow = true;
+          o.layers.enable(LAYER_REFRACT);
+        }
+      });
+      this.group.add(shell);
+    }
   }
 
   /**

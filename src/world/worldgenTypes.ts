@@ -7,6 +7,8 @@ export interface WorldGenRequest {
   worldSize: number; // metres
   windFrom: number; // prevailing wind bearing (radians)
   vegetationDensity: number;
+  /** Reserve and grade the authored starting harbor before physical-world bakes. */
+  authoredHarbour?: boolean;
 }
 
 export interface IslandInfo {
@@ -66,6 +68,8 @@ export interface HarbourSite {
   /** sea-state detail region index (1-based into the bake's maps) */
   detail: number;
   profile: PortProfile;
+  /** the authored harbour plan graded into this world (ormosLayout PLANS), decided once by the worker */
+  plan?: 'ormos' | 'kormakos';
 }
 
 export interface WorldGenResult {

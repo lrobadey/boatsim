@@ -2,7 +2,10 @@
 // throw and work where localStorage is missing (headless tests return false / null).
 
 import type { EconomySnapshot } from './economy';
+import { GOOD_IDS } from './goods';
+import { restoreJob, type Units } from './job';
 import type { VoyageState } from './voyage';
+import type { PriceRecord } from './news';
 
 export interface SaveClock {
   dayCount: number;
@@ -21,6 +24,8 @@ export interface SaveData {
   berth: { id: number; bowOut: boolean };
   voyage: VoyageState;
   economy: EconomySnapshot;
+  /** traders (optional; older saves have none): the price news heard at each port and each trader's note on you */
+  talk?: { news: PriceRecord[]; notes: Record<string, string> };
 }
 
 export const SAVE_VERSION = 1;
@@ -39,6 +44,7 @@ export function buildSave(o: {
   berth: { id: number; bowOut: boolean };
   voyage: VoyageState;
   economy: EconomySnapshot;
+  talk?: SaveData['talk'];
   savedAt?: number;
 }): SaveData {
   return {
@@ -51,6 +57,7 @@ export function buildSave(o: {
     berth: { ...o.berth },
     voyage: o.voyage,
     economy: o.economy,
+    ...(o.talk ? { talk: o.talk } : {}),
   };
 }
 
@@ -68,6 +75,10 @@ function shapeOk(d: Record<string, unknown>): boolean {
   if (!isObj(b) || !isNum(b.id) || typeof b.bowOut !== 'boolean') return false;
   if (!isObj(v) || !isNum(v.purse) || !isObj(v.manifest) || !Array.isArray(v.notebook)) return false;
   if (v.job !== null && !isObj(v.job)) return false;
+  if ('hatchUntil' in v && v.hatchUntil !== null && !isNum(v.hatchUntil)) return false;
+  for (const [id, count] of Object.entries(v.manifest)) {
+    if (!(GOOD_IDS as readonly string[]).includes(id) || !Number.isSafeInteger(count) || (count as number) < 0) return false;
+  }
   if (!isObj(e) || !isNum(e.T) || !Array.isArray(e.stocks) || !Array.isArray(e.shipments)) return false;
   if (!Array.isArray(e.fleetBusyUntil) || !isNum(e.frac)) return false;
   return true;
@@ -96,7 +107,12 @@ export function parseSave(json: string, seed: number, heightmapSize: number): Sa
       console.warn('voyage save ignored: malformed');
       return null;
     }
-    return d as unknown as SaveData;
+    const voyage = d.voyage as Record<string, unknown>;
+    const normalized = { ...voyage } as unknown as VoyageState;
+    if (voyage.job !== null) {
+      normalized.job = restoreJob(voyage.job, (d.economy as Record<string, unknown>).T as number, voyage.manifest as Units);
+    }
+    return { ...d, voyage: normalized } as unknown as SaveData;
   } catch (err) {
     console.warn('voyage save ignored: unreadable', err);
     return null;

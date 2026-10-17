@@ -26,6 +26,8 @@
 .ledger-table .r { text-align: right; }
 .ledger-table td.nm { font-weight: 500; }
 .ledger-goods { display: table; }
+.aboard-physical, .aboard-committed { display: block; }
+.aboard-committed { margin-top: 2px; font: 400 11px/1.2 var(--f-ui); color: var(--t3); }
 .ledger-nb { display: none; }
 
 /* selected row: a terracotta rule at its left edge (trade mode only, set by the panel) */
@@ -52,12 +54,17 @@
 .lo-val.out { color: var(--caution); }
 .lo-fig { font: 500 14px/1.2 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
 .lo-fig b { font-weight: 500; color: var(--t1); }
+.lo-handling:has(b:empty) { display: none; }
 .lo-read { display: none; font: 500 15px/1.3 var(--f-ui); color: var(--t2); }
+.lo-error { display: none; margin-top: 8px; font: 500 12px/1.3 var(--f-ui); color: var(--caution); }
+.lo-error.on { display: block; }
 
 /* purse and hold figures, always shown; a refused amount pulses one of them */
 .ledger-funds { display: flex; flex-wrap: wrap; gap: 6px 26px; margin-top: 14px; font: 500 14px/1.3 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
 .ledger-funds span { color: var(--t2); }
 .ledger-funds .lf-purse { color: var(--t1); }
+.ledger-funds .lf-forecast { color: var(--bronze); }
+.lf-forecast:empty { display: none; }
 
 /* the Hold book: wages and the cargo job */
 .ledger-extra { display: none; flex-wrap: wrap; gap: 6px 26px; margin-top: 8px; font: 500 14px/1.3 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
@@ -74,6 +81,7 @@
 .ledger[data-mode="read"] .lo-main { display: none; }
 .ledger[data-mode="read"] .ledger-order { display: block; }
 .ledger[data-mode="read"] .lo-read { display: block; }
+.ledger[data-mode="read"][data-view="goods"] .ledger-extra:has(.lx-job:not(:empty)) { display: flex; }
 /* Hold book: no market columns; the Aboard column carries count and mass; wages and job show */
 .ledger[data-mode="hold"] .c-market, .ledger[data-mode="hold"] .c-order { display: none; }
 .ledger[data-mode="hold"] .ledger-extra { display: flex; }
@@ -101,3 +109,11 @@
 /* ---------- HUD readout (hud.ts): draft and freeboard beside the speed, full density, merchant only ---------- */
 .hull-read { display: none; flex-direction: column; gap: 3px; padding-bottom: 6px; font: 500 13px/1.2 var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hud.full .hull-read.on { display: flex; }
+
+/* Dockside handling status: two restrained readout lines plus the existing key hint. */
+.cargo-status { display: none; position: absolute; left: max(20px, env(safe-area-inset-left)); bottom: calc(env(safe-area-inset-bottom) + 190px);
+  max-width: calc(100vw - 40px); pointer-events: none; color: var(--t2); font: 500 13px/1.25 var(--f-ui); text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.hud.full .cargo-status.on, .hud.minimal .cargo-status.on { display: block; }
+.cargo-status > :first-child { color: var(--t1); font-size: 14px; }
+.cargo-status > :nth-child(2) { margin-top: 2px; font-variant-numeric: tabular-nums; }
+.cargo-status > :last-child { margin-top: 5px; color: var(--t1); font-size: 13px; }

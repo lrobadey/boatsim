@@ -1,3 +1,4 @@
+import type {OrmosHarbour} from './world/ormosHarbour';
 import * as THREE from 'three';
 import { Pipeline, LAYER_REFRACT, LAYER_NOREFLECT } from './core/pipeline';
 import { Quality } from './core/quality';
@@ -118,6 +119,8 @@ export class Game {
   private waveRetarget = 0;
   /** wave size by place (docs/sea-state-spec.md); null when the world has no sea state bake */
   seaState: SeaStateField | null = null;
+  /** Optional fixed inspection camera; production controls never set this. */
+  reviewCamera: {position:THREE.Vector3;target:THREE.Vector3}|null=null;
   running = false;
   /** title-screen camera orbit; gameplay input disabled */
   cinematic = false;
@@ -142,7 +145,7 @@ export class Game {
     return best;
   }
 
-  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit, readonly design: ShipDesign = TRIREME) {
+  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit, readonly design: ShipDesign = TRIREME, ormos?:OrmosHarbour) {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 60000);
     this.pipeline = new Pipeline(canvas, this.scene, this.camera, quality);
     this.input = new Input(canvas);
@@ -234,7 +237,7 @@ export class Game {
     this.ocean.uniforms.uOarCenter.value = this.oarWater.center;
     this.scene.add(this.oarWater.spray);
 
-    this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets, this.models);
+    this.props = new Props(gen, this.terrain, this.waves, noise, quality, assets, this.models,ormos);
     this.scene.add(this.props.group);
     this.birds = new Birds(gen);
     this.scene.add(this.birds.group);
@@ -242,15 +245,16 @@ export class Game {
     T('props');
     this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew, design);
     this.model = design.kind === 'merchant'
-      ? new MerchantModel(assets.planks, this.ship.rowing.slots, this.models, design)
+      ? new MerchantModel(ormos?.wood??assets.planks, this.ship.rowing.slots, this.models, design)
       : new Trireme(assets.planks, this.ship.rowing.slots, this.models);
+    if(ormos && this.model instanceof MerchantModel){this.model.setAuthoredShell(ormos.shell);this.model.setSailSurface(ormos.linen);}
     this.scene.add(this.model.group);
     this.crewAnimator = design.oars.system === 'crew' && design.oars.crew?.animated && this.ship.rowing instanceof CrewRowing
       ? new CrewAnimator(this.models, this.model.group, this.ship.rowing, design)
       : null;
     this.crewSolids = this.crewAnimator ? new CrewSolids(this.shipSolids, design) : null;
     this.gen = gen;
-    this.harbourLayouts = buildHarbours(gen, this.terrain);
+    this.harbourLayouts = buildHarbours(gen, this.terrain,!!ormos);
     this.ship.mooring.setHarbours(this.harbourLayouts);
     this.walk = new WalkGeometry(this.terrain);
     for (const l of this.harbourLayouts) for (const sol of l.solids) this.walk.add(sol);
@@ -258,7 +262,7 @@ export class Game {
     this.buildShipSolids();
     this.shipPose = { origin: new THREE.Vector3(), quat: new THREE.Quaternion(), cgWorld: new THREE.Vector3(), vel: new THREE.Vector3(), angVel: new THREE.Vector3(), plank: null, solids: this.shipSolids };
     this.harbourRig = new HarbourRig(design);
-    this.harbourRig.setPlankModel(this.models.get('gangplank'), 3);
+    this.harbourRig.setPlankModel(ormos && design.kind==='merchant' ? ormos.plank : this.models.get('gangplank'),ormos && design.kind==='merchant' ? 3.1 : 3,!!ormos && design.kind==='merchant');
     this.harbourRig.setAnchorModel(this.models.get('anchor'));
     this.scene.add(this.harbourRig.group);
     this.berthMarker = new BerthMarker(this.harbourLayouts, design);
@@ -379,15 +383,25 @@ export class Game {
     return m.linePhase === 'docked' || m.anchorPhase === 'holding';
   }
 
+  /** Change the game's time multiplier through the same mooring gate used by the time keys. */
+  changeTimeSpeed(factor: number) {
+    if (!this.timeSkipAllowed) {
+      this.hud.showToast('Speed up time when docked or at anchor');
+      return false;
+    }
+    this.clock.timeScale = Math.min(480, Math.max(1, this.clock.timeScale * factor));
+    return true;
+  }
+
   /** the ledger owns the keyboard */
   get ledgerOpen() {
     return !!this.trade?.ledgerOpen;
   }
 
   /** cargo and ports for a merchant: continue this world's saved voyage or start a new one docked at home */
-  initTrade(world: { seed: number; heightmapSize: number }): 'continue' | 'new' | null {
+  initTrade(world: { seed: number; heightmapSize: number },review=false): 'continue' | 'new' | null {
     if (!this.design.cargo || !this.gen.sites.harbours?.length) return null;
-    this.trade = new TradeLayer(this, this.gen, this.harbourLayouts, world);
+    this.trade = new TradeLayer(this, this.gen, this.harbourLayouts, world,review);
     return this.trade.init();
   }
 
@@ -449,12 +463,16 @@ export class Game {
         setEnvironmentShaderBlend(blending);
         for (const layerMask of renderLayerMasks) {
           this.camera.layers.mask = layerMask;
+          renderer.domElement.dataset.shaderWarmup=`scene:${blending}:${layerMask}`;
           await renderer.compileAsync(this.scene, this.camera);
         }
         this.camera.layers.mask = cameraLayerMask;
+        renderer.domElement.dataset.shaderWarmup=`reflection:${blending}`;
         await this.reflection.compileEnvironmentVariant(renderer, this.scene, this.camera);
+        renderer.domElement.dataset.shaderWarmup=`clouds:${blending}`;
         await this.clouds.compileEnvironmentVariant(renderer);
       }
+      renderer.domElement.dataset.shaderWarmup='ready';
     } finally {
       setEnvironmentShaderBlend(false);
       this.camera.layers.mask = cameraLayerMask;
@@ -500,20 +518,17 @@ export class Game {
     if (inp.hit('F3') || inp.hit('Backquote')) this.hud.toggleDebug();
     if (inp.hit('KeyN')) this.audio.toggleMute();
     // time-skip only while docked or lying to the anchor (merchant plan §11.6)
-    const skipOk = this.timeSkipAllowed;
-    if (inp.hit('BracketRight') || inp.hit('BracketLeft') || inp.hit('KeyT')) {
-      if (!skipOk) this.hud.showToast('Speed up time when docked or at anchor');
+    if (inp.hit('BracketRight')) this.changeTimeSpeed(2);
+    if (inp.hit('BracketLeft')) this.changeTimeSpeed(0.5);
+    if (inp.hit('KeyT')) {
+      if (!this.timeSkipAllowed) this.hud.showToast('Speed up time when docked or at anchor');
       else {
-        if (inp.hit('BracketRight')) this.clock.timeScale = Math.min(480, this.clock.timeScale * 2);
-        if (inp.hit('BracketLeft')) this.clock.timeScale = Math.max(1, this.clock.timeScale / 2);
-        if (inp.hit('KeyT')) {
           // jump to the next of dawn / midday / dusk / night; time only ever runs forward
           const marks = [5.6, 12.5, 19.3, 23.0];
           const h = this.clock.hours;
           const next = marks.find((m) => m > h + 0.05) ?? marks[0] + 24;
           this.clock.advanceHours(next - h);
           this.lightingJump = true;
-        }
       }
     }
     this.trade?.handleInput();
@@ -788,6 +803,7 @@ export class Game {
     sp.plank = this.ship.mooring.plank;
     if (this.crewSolids && this.ship.rowing instanceof CrewRowing) this.crewSolids.update(this.ship.rowing.crewView, this.ship.rowing);
     this.player.update(dt, sp, this.walk, this.terrain, this.waves, this.ship.time);
+    if(this.reviewCamera){this.camera.position.copy(this.reviewCamera.position);this.camera.lookAt(this.reviewCamera.target);this.camera.updateMatrixWorld(true);}
     if (!this.paused) {
       this.updateMooring(dt);
       this.trade?.update();
@@ -832,12 +848,13 @@ export class Game {
     if (this.clouds.enabled) {
       this.clouds.renderShadow(this.pipeline.renderer, this.camera.position);
     }
-    if (this.reflection.enabled) {
-      const r = this.pipeline.reflectSize;
-      if (r.x !== this.reflection.target.width || r.y !== this.reflection.target.height) this.reflection.target.setSize(r.x, r.y);
-      this.reflection.render(this.pipeline.renderer, this.scene, this.camera, [this.ocean.group, this.sky.group]);
-    }
-    this.pipeline.render(dt, () => {});
+    this.pipeline.render(dt, () => {}, () => {
+      if (this.reflection.enabled) {
+        const r = this.pipeline.reflectSize;
+        if (r.x !== this.reflection.target.width || r.y !== this.reflection.target.height) this.reflection.target.setSize(r.x, r.y);
+        this.reflection.render(this.pipeline.renderer, this.scene, this.camera, [this.ocean.group, this.sky.group]);
+      }
+    });
     if (timed) this.pipeline.endGpuTimer();
 
     // audio & UI

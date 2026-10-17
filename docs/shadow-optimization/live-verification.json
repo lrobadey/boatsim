@@ -1,0 +1,61 @@
+{
+  "ormos": {
+    "frames": 10572,
+    "view": "court",
+    "hour": 14.760775000000011,
+    "port": "Serrothos",
+    "pier": {
+      "length": 96,
+      "width": 6,
+      "mid": 72
+    },
+    "assets": {
+      "loadedFiles": 30,
+      "sharedMaterials": 13,
+      "sharedTextures": 24,
+      "geometries": 166
+    },
+    "gpuMs": 0,
+    "environment": 43,
+    "merchantShell": true,
+    "sail": {
+      "deployment": 0,
+      "yardAngle": 0,
+      "fill": -0.9935681602020295,
+      "pressure": 0,
+      "flutter": 0
+    },
+    "phase": "none",
+    "lines": 0,
+    "plank": {
+      "length": 3.1,
+      "width": 0.7,
+      "resting": false
+    },
+    "walker": {
+      "frame": "ship",
+      "position": [
+        0,
+        0.6949543568464729,
+        1.6534440000000004
+      ],
+      "grounded": true,
+      "swimming": false
+    },
+    "market": {
+      "x": 1661.4075598983945,
+      "z": -980.9762491257511,
+      "y": 1.8,
+      "yaw": -2.7925268031909263,
+      "side": 1
+    },
+    "camera": [
+      1702.0717204730427,
+      4,
+      -992.0521709726785
+    ],
+    "finite": true
+  },
+  "cameraReady": "true",
+  "console": []
+}

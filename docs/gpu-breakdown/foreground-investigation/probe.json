@@ -1,0 +1,118 @@
+{
+  "kind": "offline-geometric-and-depth-packing-probe",
+  "source": "src/gfx/cloudModel.ts",
+  "earthRadius": 6360000,
+  "cloudBase": 1400,
+  "proposedGuardMetres": 8,
+  "checked": 168000,
+  "eligible": 40703,
+  "unsafeEligibleRays": 0,
+  "packedDepthTapChecks": 814060,
+  "unsafeAcceptedDepthTaps": 0,
+  "maximumHalfDepthUnderestimateMetres": 0.9764951933175325,
+  "byHeight": [
+    {
+      "height": -20,
+      "checked": 12000,
+      "eligible": 6696
+    },
+    {
+      "height": 0,
+      "checked": 12000,
+      "eligible": 6686
+    },
+    {
+      "height": 7,
+      "checked": 12000,
+      "eligible": 6716
+    },
+    {
+      "height": 100,
+      "checked": 12000,
+      "eligible": 6660
+    },
+    {
+      "height": 800,
+      "checked": 12000,
+      "eligible": 6122
+    },
+    {
+      "height": 1300,
+      "checked": 12000,
+      "eligible": 5057
+    },
+    {
+      "height": 1390,
+      "checked": 12000,
+      "eligible": 2766
+    },
+    {
+      "height": 1395,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 1399,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 1400,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 1500,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 1600,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 3600,
+      "checked": 12000,
+      "eligible": 0
+    },
+    {
+      "height": 4000,
+      "checked": 12000,
+      "eligible": 0
+    }
+  ],
+  "boundaryCases": [
+    {
+      "name": "sky/no foreground",
+      "value": false,
+      "want": false
+    },
+    {
+      "name": "guard boundary",
+      "value": false,
+      "want": false
+    },
+    {
+      "name": "inside cloud",
+      "value": false,
+      "want": false
+    },
+    {
+      "name": "above cloud",
+      "value": false,
+      "want": false
+    },
+    {
+      "name": "near mast",
+      "value": true,
+      "want": true
+    },
+    {
+      "name": "near water",
+      "value": true,
+      "want": true
+    }
+  ],
+  "note": "Synthetic deterministic coverage, not actual screen coverage or GPU performance. Sphere reference uses double precision, not execution of compiled GLSL. The 8m margin is a conservative candidate for current camera heights and depth metadata; visual/GPU verification remains required."
+}

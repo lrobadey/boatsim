@@ -1,0 +1,104 @@
+{
+  "book": {
+    "clock": {
+      "totalHours": 7.67581666666665,
+      "hours": 7.67581666666665,
+      "timeScale": 2
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 17678.520949468068,
+      "payloadMass": 585
+    },
+    "manifest": {
+      "wine": 70
+    },
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 10
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 10
+      },
+      "active": {
+        "good": "honey",
+        "direction": "load",
+        "workKg": 10.32666666665989
+      },
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "good": "honey",
+      "units": 10,
+      "remainingKg": 239.6733333333401,
+      "hours": 0.5991833333333503
+    },
+    "pendingUnits": 10,
+    "physicalHoldUse": {
+      "volume": 5.25,
+      "tonnes": 2.94
+    },
+    "committedHoldUse": {
+      "volume": 5.65,
+      "capacity": 20.510402717845505
+    },
+    "ledgerOpen": true,
+    "status": "Hold book open"
+  },
+  "ready": {
+    "clock": {
+      "totalHours": 8.428616666666649,
+      "hours": 8.428616666666649,
+      "timeScale": 0
+    },
+    "mooring": {
+      "linePhase": "docked",
+      "berth": 0
+    },
+    "ship": {
+      "mass": 17928.520949468068,
+      "payloadMass": 585
+    },
+    "manifest": {
+      "wine": 70,
+      "honey": 10
+    },
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {},
+      "outgoing": {},
+      "quay": {},
+      "active": null,
+      "cartAt": 9.275
+    },
+    "jobSummary": {
+      "phase": null,
+      "good": null,
+      "units": 0,
+      "remainingKg": 0,
+      "hours": 0
+    },
+    "pendingUnits": 0,
+    "physicalHoldUse": {
+      "volume": 5.65,
+      "tonnes": 3.19
+    },
+    "committedHoldUse": {
+      "volume": 5.65,
+      "capacity": 20.510402717845505
+    },
+    "ledgerOpen": false,
+    "status": "Advanced 15 minutes · 8.429 game hours"
+  },
+  "console": []
+}

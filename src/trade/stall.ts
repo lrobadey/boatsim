@@ -1,4 +1,4 @@
-// The trade stall's interaction (cargo-trade-spec §8). One Interactable per harbour: a 'Trade' prompt at the
+// The trade stall's interaction (cargo-trade-spec §8). One Interactable per harbour: a 'Talk' prompt at the
 // trader's figure, enabled on a merchant design and only while the player is on foot on the quay. Pure
 // apart from the Interactable's THREE position; no Game import (the lead passes getters).
 
@@ -29,11 +29,11 @@ export const STALL_CHEST_HEIGHT = 1.4;
 /** Reach of the prompt (m), from the eye. */
 export const STALL_RADIUS = 3.5;
 
-/** One 'Trade' interactable per stall point. Their ids are 'trade-{port}'. */
+/** One 'Talk' interactable per stall point (the ledger is reached from the conversation). Their ids are 'trade-{port}'. */
 export function createStallInteractions(opts: StallOptions): Interactable[] {
   return opts.stalls.map((s) => ({
     id: `trade-${s.port}`,
-    label: 'Trade',
+    label: 'Talk',
     frame: 'world' as const,
     pos: new THREE.Vector3(s.x, s.y + STALL_CHEST_HEIGHT, s.z),
     radius: STALL_RADIUS,

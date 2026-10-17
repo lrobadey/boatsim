@@ -1,4 +1,5 @@
 import './ledger.css';
+import { formatHandlingDuration } from '../trade/handlingStatus';
 
 /**
  * The ledger (cargo spec §9): a centred panel for one port's goods (trade, or read-only when the ship
@@ -24,8 +25,10 @@ export interface LedgerRow {
   buy: number;
   /** bid: what the player gets per unit at the current stock */
   sell: number;
-  /** units aboard: manifest plus pending in, minus pending out (never below 0) */
+  /** units physically aboard in the manifest */
   aboard: number;
+  /** units aboard after all confirmed handling, when different from the physical manifest */
+  committed?: number;
   /** mass of one unit, kg */
   massKg: number;
   /** hold volume of one unit including broken stowage, m³ (added: the clamp needs it) */
@@ -37,6 +40,8 @@ export interface LedgerQuote {
   total: number;
   duty: number;
   porters: number;
+  /** proposed cargo work only, in game hours */
+  handlingHours?: number;
 }
 
 /**
@@ -56,7 +61,7 @@ export interface LedgerNotebook {
   ports: string[];
   /** index into ports of the port the ledger is open at; its column always reads 'now' */
   current: number;
-  rows: { name: string; cells: ({ ask: number; bid: number; ageHours: number } | null)[] }[];
+  rows: { name: string; cells: ({ ask: number; bid: number; ageHours: number; heard?: boolean } | null)[] }[];
 }
 
 /**
@@ -70,6 +75,9 @@ export interface LedgerSource {
   portName: string;
   /** the game clock as shown, e.g. 'Day 3 · 14:20' */
   timeLabel: string;
+  /** optional live multiplier and callback to the game's gated time-speed action */
+  timeScale?: number;
+  changeTimeSpeed?(factor: number): void;
   /** the goods in table order; called every frame while open */
   rows(): LedgerRow[];
   /** the signed net of the orders (+ = money in), with duty and porterage; empty orders are never quoted */
@@ -79,10 +87,12 @@ export interface LedgerSource {
   /** the purse, centidrachmas (may be negative: wages owed) */
   purse: number;
   /**
-   * The hold now: `used` is Σ aboard × stowM3 and `tonnes` is Σ aboard × massKg / 1000, both without the
-   * ledger's pending order; capacity is the hold's volume, m³. The ledger adds the order on top.
+   * The physical hold now: `used` is Σ physical aboard × stowM3 and `tonnes` is Σ physical aboard × massKg / 1000;
+   * capacity is the hold's volume, m³.
    */
   hold: { tonnes: number; used: number; capacity: number };
+  /** committed hold projection; omitted by static/fake sources */
+  committedHold?: { tonnes: number; used: number; capacity: number };
   /** wages, centidrachmas per game day (shown in the Hold book) */
   wagesPerDay: number;
   /** the cargo job line, e.g. 'Loading · 23 left' or 'Unloading · 12 left', or null when no job runs. Shown in trade and Hold book. */
@@ -163,9 +173,9 @@ const GOODS_HEAD: [string, string][] = [
 ];
 const COL_CLASS = ['nm', 'r c-market', 'r c-market', 'r c-market', 'r', 'r c-order'];
 
-function nbCell(c: { ask: number; bid: number; ageHours: number } | null, now: boolean): string {
+function nbCell(c: { ask: number; bid: number; ageHours: number; heard?: boolean } | null, now: boolean): string {
   if (!c) return '<td class="r nb-none">' + NONE + '</td>';
-  const age = now ? 'now' : ageText(c.ageHours);
+  const age = now ? 'now' : (c.heard ? 'heard ' : '') + ageText(c.ageHours);
   return '<td class="r"><div class="nb-p">' + fmtPrice(c.ask) + ' / ' + fmtPrice(c.bid) + '</div><div class="nb-a">' + age + '</div></td>';
 }
 
@@ -188,8 +198,11 @@ export class Ledger {
   private readonly totalEl = el('b', 'lo-val');
   private readonly dutyEl = el('b');
   private readonly portersEl = el('b');
+  private readonly handlingEl = el('b');
+  private readonly errorEl = el('div', 'lo-error');
   private readonly purseEl = el('span', 'lf-purse');
   private readonly holdEl = el('span', 'lf-hold');
+  private readonly forecastEl = el('span', 'lf-forecast');
   private readonly wagesEl = el('span', 'lx-wages');
   private readonly jobEl = el('span', 'lx-job');
   private readonly keysEl = el('div', 'ledger-keys');
@@ -198,6 +211,7 @@ export class Ledger {
   private view: View = 'goods';
   private sel = 0;
   private orders: Record<string, number> = {};
+  private inlineError = '';
   private rows: LedgerRow[] = [];
   private cache = new Map<string, string>();
   private lastPulse = new Map<HTMLElement, number>();
@@ -225,12 +239,14 @@ export class Ledger {
     dutyFig.append('Duty ', this.dutyEl);
     const porterFig = el('span', 'lo-fig');
     porterFig.append('Porters ', this.portersEl);
-    orderLine.append(totalLabel, dutyFig, porterFig);
+    const handlingFig = el('span', 'lo-fig lo-handling');
+    handlingFig.append('Added handling ', this.handlingEl);
+    orderLine.append(totalLabel, dutyFig, porterFig, handlingFig);
     const readLine = el('div', 'lo-read', "Your ship isn't at this quay");
-    this.orderBox.append(orderLine, readLine);
+    this.orderBox.append(orderLine, readLine, this.errorEl);
 
     const funds = el('div', 'ledger-funds');
-    funds.append(this.purseEl, this.holdEl);
+    funds.append(this.purseEl, this.holdEl, this.forecastEl);
     const extra = el('div', 'ledger-extra');
     extra.append(this.wagesEl, this.jobEl);
 
@@ -262,6 +278,7 @@ export class Ledger {
     this.view = 'goods';
     this.sel = 0;
     this.orders = {};
+    this.inlineError = '';
     this.root.classList.add('on');
     window.addEventListener('keydown', this.onKeyDown, true);
     src.opened?.();
@@ -273,6 +290,7 @@ export class Ledger {
     if (!this.src) return;
     this.src = null;
     this.orders = {};
+    this.inlineError = '';
     this.root.classList.remove('on');
     window.removeEventListener('keydown', this.onKeyDown, true);
   }
@@ -289,7 +307,8 @@ export class Ledger {
     this.put('mode', mode, (v) => (this.panel.dataset.mode = v));
     this.put('view', notebook ? 'notebook' : 'goods', (v) => (this.panel.dataset.view = v));
     this.put('title', notebook ? 'Notebook' : hold ? 'Hold' : s.portName, (v) => (this.title.textContent = v));
-    this.put('time', s.timeLabel, (v) => (this.time.textContent = v));
+    const timeLabel = s.timeScale == null ? s.timeLabel : `${s.timeLabel} · Time ×${s.timeScale}`;
+    this.put('time', timeLabel, (v) => (this.time.textContent = v));
 
     this.rows = s.rows();
     if (this.rows.length !== this.rowEls.length) this.buildRows(this.rows.length);
@@ -312,37 +331,63 @@ export class Ledger {
         : r.aboard > 0
           ? countText(r.aboard)
           : '—';
-      this.put('ab' + i, aboard, (v) => (cells[4].textContent = v));
+      this.put('ab' + i, aboard, (v) => ((cells[4].firstChild as HTMLElement).textContent = v));
+      const committed = r.committed == null || r.committed === r.aboard ? '' : countText(r.committed) + ' after handling';
+      this.put('committed' + i, committed, (v) => ((cells[4].lastChild as HTMLElement).textContent = v));
       const oText = o === 0 ? '—' : (o > 0 ? '+' : MINUS) + Math.abs(o);
       this.put('o' + i, oText, (v) => (cells[5].textContent = v));
       this.put('oc' + i, o > 0 ? 'buy' : o < 0 ? 'sell' : '', (v) => (cells[5].className = 'r c-order ' + v));
     }
 
-    // order footer and the purse and hold figures (the hold includes the pending order)
-    const quote = trade && Object.keys(this.orders).length > 0 ? s.quote(this.orders) : ZERO_QUOTE;
-    let used = s.hold.used;
-    let tonnes = s.hold.tonnes;
+    // Orders settle financially now; physical cargo changes only as handling completes.
+    let quote = ZERO_QUOTE;
+    let quoteError = false;
+    if (trade && Object.keys(this.orders).length > 0) {
+      try {
+        quote = s.quote(this.orders);
+      } catch (error) {
+        if (!(error instanceof RangeError)) throw error;
+        quoteError = true;
+        if (!this.inlineError) this.inlineError = 'Review order: market stock changed.';
+      }
+    }
+    let orderUsed = s.committedHold?.used ?? s.hold.used;
+    let orderTonnes = s.committedHold?.tonnes ?? s.hold.tonnes;
     for (const r of this.rows) {
       const o = this.orders[r.id] ?? 0;
       if (o !== 0) {
-        used += o * r.stowM3;
-        tonnes += (o * r.massKg) / 1000;
+        orderUsed += o * r.stowM3;
+        orderTonnes += (o * r.massKg) / 1000;
       }
     }
-    this.put('tot', fmtDr(quote.total, true), (v) => (this.totalEl.textContent = v));
-    this.put('totc', quote.total > 0 ? 'in' : quote.total < 0 ? 'out' : '', (v) => (this.totalEl.className = 'lo-val ' + v));
-    this.put('duty', fmtDr(quote.duty), (v) => (this.dutyEl.textContent = v));
-    this.put('porters', fmtDr(quote.porters), (v) => (this.portersEl.textContent = v));
+    this.put('tot', quoteError ? NONE : fmtDr(quote.total, true), (v) => (this.totalEl.textContent = v));
+    this.put('totc', quoteError ? '' : quote.total > 0 ? 'in' : quote.total < 0 ? 'out' : '', (v) => (this.totalEl.className = 'lo-val ' + v));
+    this.put('duty', quoteError ? NONE : fmtDr(quote.duty), (v) => (this.dutyEl.textContent = v));
+    this.put('porters', quoteError ? NONE : fmtDr(quote.porters), (v) => (this.portersEl.textContent = v));
+    this.put('handling', quoteError || quote.handlingHours == null ? '' : formatHandlingDuration(quote.handlingHours), (v) => (this.handlingEl.textContent = v));
     this.put('purse', 'Purse ' + fmtDr(s.purse), (v) => (this.purseEl.textContent = v));
-    const holdText = 'Hold ' + tonnes.toFixed(1) + ' t · ' + used.toFixed(1) + ' of ' + s.hold.capacity.toFixed(1) + ' m³';
+    const holdText = 'Hold ' + s.hold.tonnes.toFixed(1) + ' t · ' + s.hold.used.toFixed(1) + ' of ' + s.hold.capacity.toFixed(1) + ' m³';
     this.put('hold', holdText, (v) => (this.holdEl.textContent = v));
+    const committed = s.committedHold;
+    const differs = !!committed && (Math.abs(committed.tonnes - s.hold.tonnes) > 1e-9 || Math.abs(committed.used - s.hold.used) > 1e-9);
+    let forecastText = '';
+    if (trade && Object.keys(this.orders).length > 0) {
+      forecastText = 'After orders ' + orderTonnes.toFixed(1) + ' t · ' + orderUsed.toFixed(1) + ' of ' + s.hold.capacity.toFixed(1) + ' m³';
+    } else if (differs) {
+      forecastText = 'After handling ' + committed!.tonnes.toFixed(1) + ' t · ' + committed!.used.toFixed(1) + ' of ' + committed!.capacity.toFixed(1) + ' m³';
+    }
+    this.put('forecast', forecastText, (v) => (this.forecastEl.textContent = v));
+    this.put('inlineError', this.inlineError, (v) => {
+      this.errorEl.textContent = v;
+      this.errorEl.classList.toggle('on', v !== '');
+    });
     this.put('wages', 'Wages ' + fmtDr(s.wagesPerDay) + ' a day', (v) => (this.wagesEl.textContent = v));
     this.put('job', s.jobLine ?? '', (v) => (this.jobEl.textContent = v));
 
     if (notebook) this.putNotebook(s.notebook());
 
     const keys = notebook
-      ? hints([[['Tab'], hold ? 'Hold' : 'Goods'], [['Esc'], 'Close']])
+      ? hints([[['Tab'], hold ? 'Hold' : 'Goods'], ...(s.changeTimeSpeed ? [[['[', ']'], 'Time speed'] as Hint] : []), [['Esc'], 'Close']])
       : trade
         ? hints([
             [['↑', '↓'], 'Select'],
@@ -350,9 +395,10 @@ export class Ledger {
             [['Shift'], '×10'],
             [['Enter'], 'Confirm'],
             [['Tab'], 'Notebook'],
+            ...(s.changeTimeSpeed ? [[['[', ']'], 'Time speed'] as Hint] : []),
             [['Esc'], 'Close'],
           ])
-        : hints([[['Tab'], 'Notebook'], [['Esc'], 'Close']]);
+        : hints([[['Tab'], 'Notebook'], ...(s.changeTimeSpeed ? [[['[', ']'], 'Time speed'] as Hint] : []), [['Esc'], 'Close']]);
     this.put('keys', keys, (v) => (this.keysEl.innerHTML = v));
   }
 
@@ -378,6 +424,7 @@ export class Ledger {
     for (let i = 0; i < n; i++) {
       const tr = el('tr') as HTMLTableRowElement;
       const cells = COL_CLASS.map((cls) => el('td', cls));
+      cells[4].append(el('span', 'aboard-physical'), el('span', 'aboard-committed'));
       tr.append(...cells);
       tr.addEventListener('click', () => {
         this.sel = i;
@@ -404,14 +451,31 @@ export class Ledger {
     if (!r) return;
     const cur = this.orders[r.id] ?? 0;
     const want = cur + d;
-    const lim = s.limits(this.orders, r.id);
+    let lim: LedgerLimit;
+    try {
+      lim = s.limits(this.orders, r.id);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      this.inlineError = 'Review order: market stock changed.';
+      if (cur > 0 && d < 0) {
+        const reduced = Math.max(0, cur + d);
+        if (reduced !== cur) {
+          if (reduced === 0) delete this.orders[r.id];
+          else this.orders[r.id] = reduced;
+          this.inlineError = '';
+        }
+      }
+      return;
+    }
     const next = Math.min(Math.max(want, lim.min), lim.max);
     if (want > lim.max && (lim.limitedBy === 'purse' || lim.limitedBy === 'hold')) {
-      this.pulse(lim.limitedBy === 'purse' ? this.purseEl : this.holdEl);
+      const forecastVisible = this.forecastEl.textContent !== '';
+      this.pulse(lim.limitedBy === 'purse' ? this.purseEl : forecastVisible ? this.forecastEl : this.holdEl);
     }
     if (next === cur) return;
     if (next === 0) delete this.orders[r.id];
     else this.orders[r.id] = next;
+    this.inlineError = '';
   }
 
   /** Enter: every non-zero row settles (the source does the money); one toast line per line the source returns */
@@ -420,8 +484,17 @@ export class Ledger {
     if (!s || s.mode !== 'trade' || this.view !== 'goods') return;
     if (Object.keys(this.orders).length === 0) return;
     const orders = { ...this.orders };
+    let lines: string[];
+    try {
+      lines = s.confirm(orders);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      this.inlineError = 'Order changed with time. Review amounts and confirm again.';
+      this.update();
+      return;
+    }
     this.orders = {};
-    const lines = s.confirm(orders);
+    this.inlineError = '';
     for (const line of lines) this.onToast?.(line);
     this.update();
   }
@@ -429,6 +502,13 @@ export class Ledger {
   private handleKey(e: KeyboardEvent): void {
     const s = this.src;
     if (!s || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (s.changeTimeSpeed && (e.code === 'BracketLeft' || e.code === 'BracketRight' || e.key === '[' || e.key === ']')) {
+      s.changeTimeSpeed(e.code === 'BracketLeft' || e.key === '[' ? 0.5 : 2);
+      e.preventDefault();
+      e.stopPropagation();
+      this.update();
+      return;
+    }
     const goods = this.view === 'goods';
     const trade = s.mode === 'trade' && goods;
     const last = Math.max(0, this.rows.length - 1);

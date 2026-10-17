@@ -1,0 +1,208 @@
+// The stall traders' voice (docs/kormakos-and-traders-spec.md, part B). Pure: builds the persona, the facts,
+// the instructions and the reply schema the model is held to, and reads the reply back. The economy is the
+// only source of numbers; the model chooses words, never prices.
+
+import { GOODS, GOOD_IDS, type GoodId } from './goods';
+import type { Heard } from './news';
+
+export interface Persona {
+  name: string;
+  /** who they are: written as a person, in the second person */
+  life: string;
+  /** how they sound */
+  voice: string;
+}
+
+/**
+ * The three stall traders, written as people. Harbour 0 is the busy main harbour; 1 and 2 are the smaller
+ * islands. Their lives are their own to talk about; anything about trade comes only from the facts.
+ */
+const CHARACTERS: readonly Persona[] = [
+  {
+    name: 'Damaris',
+    life:
+      "You're in your fifties. You took over this stall when your husband died twelve years ago, and you've run it better than he did. You know every regular by face and remember exactly who paid late. Your elder son rows on a grain ship and is away for weeks at a time; the younger one mends nets and won't go to sea, which suits you fine. Your knee aches on the quay steps in the mornings. You can't stand porters who drop jars.",
+    voice: 'Brisk, gets to the point first. Dry. Warmer with people who come back, and uses their name once you know it.',
+  },
+  {
+    name: 'Philon',
+    life:
+      "You're twenty-six. You sell for your family and three neighbouring farms, so half your mind is always on the fields and the weather up top. Your uncle checks the tally every evening and you don't want to get a price wrong. You walk down to the harbour before dawn and back up after dark. You're proud of what the island grows and a bit shy with strangers until they've talked with you a while.",
+    voice: 'Friendly, slightly unsure, thinks out loud ("I think", "let me see"). Opens up about the farm and the weather once he likes someone.',
+  },
+  {
+    name: 'Myrto',
+    life:
+      "You're in your sixties. You cooked on trading ships for thirty years and have seen every harbour in these waters, so very little impresses you. You settled here because it's quiet. You keep a cat at the stall called Pitch, after the stuff that got on everything when she was a kitten. You know news goes stale fast out here and you say so.",
+    voice: 'Dry, unhurried, a little teasing. Short sentences. Says exactly what you heard and how old it is, no more.',
+  },
+];
+
+/** The trader at a harbour: a written character per harbour slot, stable for every world. */
+export function personaFor(seed: number, port: number): Persona {
+  void seed;
+  return CHARACTERS[((port % CHARACTERS.length) + CHARACTERS.length) % CHARACTERS.length];
+}
+
+/** The part of a market the facts read. */
+export interface FactsMarket {
+  ask(): number;
+  bid(): number;
+  S: number;
+  S_ref: number;
+}
+
+export interface FactsInput {
+  persona: Persona;
+  port: number;
+  portName: string;
+  portNames: Record<number, string>;
+  /** absolute game hours */
+  now: number;
+  market: (good: GoodId) => FactsMarket;
+  /** what this port has heard about each other port, or null when no ship has brought news */
+  heard: { port: number; news: Heard | null }[];
+  /** the trader's saved note about this customer ('' the first time) */
+  memory: string;
+  shipHere: boolean;
+}
+
+const dr = (c: number) => (c / 100).toFixed(1) + ' dr';
+
+function stockWord(S: number, ref: number): string {
+  const r = ref > 0 ? S / ref : 1;
+  return r < 0.5 ? 'very short' : r < 0.8 ? 'short' : r < 1.25 ? 'normal' : r < 2 ? 'plenty' : 'more than we can sell';
+}
+
+/** how long ago, the way people say it at a quay */
+function agoWords(hours: number): string {
+  const d = hours / 24;
+  if (d < 0.75) return 'earlier today';
+  if (d < 1.25) return 'yesterday';
+  if (d < 1.75) return 'a day and a half ago';
+  if (d < 2.5) return 'two days ago';
+  if (d < 3.5) return 'three days ago';
+  if (d < 6.5) return `${Math.round(d)} days ago`;
+  return d < 10 ? 'about a week ago' : 'a while back';
+}
+
+function clockWords(T: number): string {
+  const h = ((T % 24) + 24) % 24;
+  const part = h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night';
+  return `day ${Math.floor(T / 24) + 1}, ${String(Math.floor(h)).padStart(2, '0')}:${String(Math.floor((h % 1) * 60)).padStart(2, '0')} (${part})`;
+}
+
+/** The facts block: everything the trader may say, with every number already formatted. */
+export function traderFacts(o: FactsInput): string {
+  const unit = (id: GoodId) => GOODS.find((g) => g.id === id)!.unit[0];
+  const name = (id: GoodId) => GOODS.find((g) => g.id === id)!.name;
+  const facts = {
+    time: clockWords(o.now),
+    your_stall: GOOD_IDS.map((id) => {
+      const m = o.market(id);
+      return { good: name(id), per: unit(id), you_sell_at: dr(m.ask()), you_buy_at: dr(m.bid()), your_stock: stockWord(m.S, m.S_ref) };
+    }),
+    news_from_ships: o.heard.map(({ port, news }) =>
+      news
+        ? {
+            port: o.portNames[port],
+            heard: `${agoWords(o.now - news.T)}, from a ship in from ${o.portNames[port]}`,
+            prices_there: GOOD_IDS.map((id) => ({ good: name(id), they_sell_at: dr(news.ask[id]), they_buy_at: dr(news.bid[id]) })),
+          }
+        : { port: o.portNames[port], heard: 'nothing: no ship in from there lately' },
+    ),
+    this_customer: {
+      your_note: o.memory || 'first time you have spoken',
+      their_ship: o.shipHere ? 'tied up at your quay' : 'not at your quay',
+    },
+  };
+  return JSON.stringify(facts);
+}
+
+/** The system instructions. Kept short: who they are, how they talk, what they know, what they never do. */
+export function traderInstructions(p: Persona, portName: string, facts: string): string {
+  return `You are ${p.name}, who runs the trading stall on the quay at ${portName}, an island harbour in the ancient Aegean. You buy and sell wine, olive oil, wheat, almonds, salt fish, honey, firewood and pitch. You're talking with the master of a merchant ship who trades between the islands.
+
+Who you are
+${p.life}
+
+How you talk
+- ${p.voice}
+- Plain, modern, everyday English, the way someone talks across a counter. One to three short sentences.
+- You're a person, not a price board: answer what was asked, and small talk is fine. Bring up your own life only now and then, when it fits.
+- No old-fashioned or mock-ancient wording, no exclamation marks, no emoji, no stage directions.
+- Drop "dr" when it's obvious ("nine-twenty a jar" or "9.2 a jar" both work). Say how long ago you heard something in your own words.
+
+What you know
+- About trade, only what is in FACTS below: never invent a price, a ship, a shortage or a piece of news. Your own life is yours to talk about, within what's written above and ordinary everyday detail.
+- Your own prices and stock. Your prices are today's prices: if they push for a deal, turn it down your own way.
+- Other ports only through news_from_ships, and you always say it's what a ship brought and roughly when.
+- If you don't know something, say so the way a person would.
+
+Stay out of their business
+- Never tell them what to buy, where to sell or where prices are going, and never explain why a price moved. If they ask, deflect like a trader would: that's their trade, not yours. You can still say what you have plenty of or what's short.
+- Never mention facts, data, games or AI.
+
+Sounds like
+- "Kormakos had wheat at about 4 a sack, but that was a ship in yesterday."
+- "That's the price. Wine's the same for one jar or forty."
+
+Reply fields
+- say: what you say.
+- told: every price from another port that you stated in say, as {port, good}. Empty if none.
+- note: your private note about this customer (not about yourself), under 300 characters: their name if given, what they ask about and trade, how they deal with you. Keep what still matters from your_note.
+
+FACTS
+${facts}`;
+}
+
+/** The strict JSON schema the reply must follow (OpenAI Structured Outputs). */
+export function replySchema(otherPorts: string[]): object {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['say', 'told', 'note'],
+    properties: {
+      say: { type: 'string' },
+      told: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['port', 'good'],
+          properties: {
+            port: { type: 'string', enum: otherPorts.length ? otherPorts : ['none'] },
+            good: { type: 'string', enum: GOODS.map((g) => g.name) },
+          },
+        },
+      },
+      note: { type: 'string' },
+    },
+  };
+}
+
+export interface TraderReply {
+  say: string;
+  told: { port: number; good: GoodId }[];
+  note: string;
+}
+
+/** Reads a reply back. Unknown ports or goods in `told` are dropped; text is trimmed and capped. */
+export function parseReply(raw: unknown, portNames: Record<number, string>): TraderReply | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.say !== 'string' || !r.say.trim()) return null;
+  const byName = new Map(Object.entries(portNames).map(([id, n]) => [n, Number(id)]));
+  const told: TraderReply['told'] = [];
+  if (Array.isArray(r.told))
+    for (const t of r.told) {
+      const port = byName.get((t as { port?: string })?.port ?? '');
+      const good = GOODS.find((g) => g.name === (t as { good?: string })?.good)?.id;
+      if (port !== undefined && good && !told.some((x) => x.port === port && x.good === good)) told.push({ port, good });
+    }
+  return {
+    say: r.say.trim().slice(0, 600),
+    told,
+    note: typeof r.note === 'string' ? r.note.trim().slice(0, 300) : '',
+  };
+}

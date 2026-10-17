@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-15",
+  "browser": "Codex in-app browser",
+  "fixtureUrl": "http://127.0.0.1:5173/cargo-review.html",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "finalState": {
+    "port": "Serrothos",
+    "clock": "Day 101 · 08:15",
+    "absoluteHour": 2408.25,
+    "purse": 82102,
+    "manifest": {
+      "wine": 70,
+      "honey": 4
+    },
+    "committedCounts": {
+      "wine": {
+        "physical": 70,
+        "committed": 70
+      },
+      "honey": {
+        "physical": 4,
+        "committed": 10
+      }
+    },
+    "job": {
+      "version": 2,
+      "port": 0,
+      "berth": 0,
+      "incoming": {
+        "honey": 6
+      },
+      "outgoing": {},
+      "quay": {
+        "honey": 6
+      },
+      "active": null,
+      "cartAt": null
+    },
+    "jobSummary": {
+      "phase": "load",
+      "units": 6,
+      "remainingKg": 150,
+      "hours": 0.375
+    },
+    "physicalCargoMassKg": 3040,
+    "staticLoadDeltaKg": 39.999999999997875,
+    "pendingUnits": 6,
+    "hatchesOpen": true,
+    "lastEvent": "Saved and restored through buildSave / parseSave / Economy.restore",
+    "status": "Save restored · in-memory only"
+  },
+  "checks": {
+    "opposingWineOrders": {
+      "incoming": 10,
+      "outgoing": 10,
+      "workKg": 840,
+      "hours": 2.1,
+      "purseBeforePorterage": 99053,
+      "purseAfterPorterage": 98833,
+      "porterFees": 220,
+      "finalWine": 70,
+      "earlyCastOff": "refused",
+      "completedCastOff": "accepted",
+      "restoredActiveUnloadWorkKg": 16
+    },
+    "normalKeyboardOrder": {
+      "good": "honey",
+      "quantity": 10,
+      "handlingLabel": "38 min",
+      "physicalAtConfirm": 0,
+      "committedAtConfirm": 10
+    },
+    "notebookTab": "passed",
+    "gameHoldKey": "I opens, Escape closes without pause",
+    "fixtureConsoleWarningsOrErrors": [],
+    "gameConsoleWarningsOrErrors": [],
+    "responsiveLayout": "Hold and Trade checked at both viewports; fixture overlap corrected"
+  },
+  "limits": [
+    "No full sailing trade route performed",
+    "No frame-time benchmark; no rendering changes made",
+    "Fixture operates in memory without localStorage writes"
+  ]
+}

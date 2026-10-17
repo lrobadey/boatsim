@@ -3,15 +3,21 @@
 import { GOOD_IDS, type Good, type GoodId } from './goods';
 import type { EconEvent } from './economy';
 
-/** The cargo job (§6.2). src/cargo/job.ts implements its behaviour; the type lives here so the save holds it. */
+/** The cargo job schema. src/trade/job.ts implements its behaviour; the save holds it. */
 export interface CargoJob {
-  port: number; berth: number;
-  /** signed units still to move per good: + = coming aboard, − = going ashore */
-  pending: Partial<Record<GoodId, number>>;
-  /** units on the quay right now per good (the stack's contents) */
+  version: 2;
+  port: number;
+  berth: number;
+  /** Confirmed units still to come aboard. */
+  incoming: Partial<Record<GoodId, number>>;
+  /** Confirmed units still to go ashore. */
+  outgoing: Partial<Record<GoodId, number>>;
+  /** Units physically on the quay right now. */
   quay: Partial<Record<GoodId, number>>;
-  /** fractional progress toward the next unit */
-  carry: number;
+  /** Work already done on the current physical unit, in kg. */
+  active: { good: GoodId; direction: 'load' | 'unload'; workKg: number } | null;
+  /** Absolute game hour at which the cart clears the quay. */
+  cartAt: number | null;
 }
 
 /** Latest prices seen at a port for one good. T is the absolute game hour seen. Prices are centidrachmas. */
@@ -21,6 +27,8 @@ export interface NotebookEntry {
   ask: number;
   bid: number;
   T: number;
+  /** true when a trader passed the price on (heard from a ship), not seen in person */
+  heard?: boolean;
 }
 
 export interface VoyageState {
@@ -31,15 +39,14 @@ export interface VoyageState {
   /** latest per (port, good) */
   notebook: NotebookEntry[];
   job: CargoJob | null;
+  /** Absolute game hour until which the hatches remain open after the cart. */
+  hatchUntil?: number | null;
 }
 
 /** Start of a new voyage: 300.0 dr. */
 export const START_PURSE = 30000;
 /** Porterage per kilogram, per unit moved, rounded up to whole centidrachmas. */
 export const PORTER_FEE_PER_KG = 0.25;
-/** Units per game hour the cargo job moves, shared by all pending goods. */
-export const LOAD_RATE = 10;
-
 /** A new voyage: purse 300.0 dr, seventy jars of wine in the hold, empty notebook, no job. */
 export function newVoyage(): VoyageState {
   return { purse: START_PURSE, manifest: { wine: 70 }, notebook: [], job: null };

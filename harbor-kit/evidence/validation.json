@@ -1,0 +1,204 @@
+{
+  "assets": [
+    {
+      "id": "amphora-large",
+      "triangles": 4684,
+      "lods": 1,
+      "anchors": 0
+    },
+    {
+      "id": "amphora-small",
+      "triangles": 4684,
+      "lods": 1,
+      "anchors": 0
+    },
+    {
+      "id": "cargo-boat",
+      "triangles": 120688,
+      "lods": 1,
+      "anchors": 5
+    },
+    {
+      "id": "coastal-shrub",
+      "triangles": 5236,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "gangplank",
+      "triangles": 704,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "house-courtyard",
+      "triangles": 13756,
+      "lods": 1,
+      "anchors": 3
+    },
+    {
+      "id": "house-tower",
+      "triangles": 13228,
+      "lods": 1,
+      "anchors": 3
+    },
+    {
+      "id": "house-workshop",
+      "triangles": 17668,
+      "lods": 1,
+      "anchors": 3
+    },
+    {
+      "id": "linen-canopy",
+      "triangles": 2018,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "merchant-gangplank",
+      "triangles": 660,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "merchant-shell",
+      "triangles": 79824,
+      "lods": 1,
+      "anchors": 3
+    },
+    {
+      "id": "mooring-stone",
+      "triangles": 1036,
+      "lods": 1,
+      "anchors": 1
+    },
+    {
+      "id": "olive-a",
+      "triangles": 30116,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "olive-b",
+      "triangles": 30116,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "packing-rack",
+      "triangles": 968,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "quay-corner",
+      "triangles": 5412,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "quay-straight-a",
+      "triangles": 2948,
+      "lods": 1,
+      "anchors": 4
+    },
+    {
+      "id": "quay-straight-b",
+      "triangles": 3168,
+      "lods": 1,
+      "anchors": 4
+    },
+    {
+      "id": "quay-straight-c",
+      "triangles": 3036,
+      "lods": 1,
+      "anchors": 4
+    },
+    {
+      "id": "retaining-wall",
+      "triangles": 1100,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "rock-boulder",
+      "triangles": 4235,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "rock-ledge-a",
+      "triangles": 22352,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "rock-ledge-b",
+      "triangles": 22352,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "rock-rubble",
+      "triangles": 759,
+      "lods": 2,
+      "anchors": 0
+    },
+    {
+      "id": "rope-coil",
+      "triangles": 2156,
+      "lods": 1,
+      "anchors": 0
+    },
+    {
+      "id": "rope-fender",
+      "triangles": 9512,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "sea-stairs",
+      "triangles": 440,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "timber-beam",
+      "triangles": 44,
+      "lods": 1,
+      "anchors": 2
+    },
+    {
+      "id": "timber-bench",
+      "triangles": 452,
+      "lods": 1,
+      "anchors": 1
+    },
+    {
+      "id": "warehouse",
+      "triangles": 201336,
+      "lods": 1,
+      "anchors": 3
+    },
+    {
+      "id": "wicker-basket",
+      "triangles": 11550,
+      "lods": 1,
+      "anchors": 0
+    }
+  ],
+  "checks": [
+    "runtime decoder",
+    "finite attributes",
+    "index bounds",
+    "geometry bounds",
+    "texture paths",
+    "source paths",
+    "anchor coordinates",
+    "LOD reduction",
+    "snap transforms",
+    "upright rigid spans"
+  ],
+  "files": 42,
+  "result": "pass"
+}

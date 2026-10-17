@@ -1,0 +1,982 @@
+[
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "baseline",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.69999999925494,
+      "p95": 67.79999999888241,
+      "p99": 71.29999999888241
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 256,
+      "p95": 256,
+      "p99": 256
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 4492692,
+      "p95": 4492692,
+      "p99": 4492692
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.8999999985098839,
+      "p95": 1.099999999627471,
+      "p99": 1.199999999254942
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 4.945498000000001,
+      "p95": 6.521373,
+      "p99": 7.220791
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "baseline",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 2,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "shared",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.69999999925494,
+      "p95": 67.79999999888241,
+      "p99": 70.09999999962747
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 165,
+      "p95": 165,
+      "p99": 165
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 3445390,
+      "p95": 3445390,
+      "p99": 3445390
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.6999999992549419,
+      "p95": 1.3999999985098839,
+      "p99": 1.900000000372529
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 1.927499,
+      "p95": 2.117375,
+      "p99": 2.205958
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "shared",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 2,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "shared",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.69999999925494,
+      "p95": 67.70000000111759,
+      "p99": 71
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 165,
+      "p95": 165,
+      "p99": 165
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 3445390,
+      "p95": 3445390,
+      "p99": 3445390
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.6999999992549419,
+      "p95": 1.199999999254942,
+      "p99": 1.5
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 1.921625,
+      "p95": 2.175499,
+      "p99": 2.325666
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "shared",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 2,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "baseline",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.69999999925494,
+      "p95": 67.69999999925494,
+      "p99": 69.80000000074506
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 256,
+      "p95": 256,
+      "p99": 256
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 4492692,
+      "p95": 4492692,
+      "p99": 4492692
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.8000000007450581,
+      "p95": 1.0999999977648258,
+      "p99": 1.199999999254942
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 5.140249,
+      "p95": 6.582873,
+      "p99": 7.152875
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "baseline",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 2,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "baseline",
+    "view": "court",
+    "hour": 18.2,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.60000000149012,
+      "p95": 67.80000000074506,
+      "p99": 68.69999999925494
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 277,
+      "p95": 277,
+      "p99": 277
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 5121380,
+      "p95": 5121380,
+      "p99": 5121380
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.8999999985098839,
+      "p95": 1.200000001117587,
+      "p99": 1.300000000745058
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 6.185207,
+      "p95": 7.847082,
+      "p99": 8.519374
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "baseline",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1702.0717204730427,
+        4,
+        -992.0521709726785
+      ],
+      "cameraQuaternion": [
+        -0.01986238498030428,
+        0.5371505860797102,
+        0.012653734779661278,
+        0.8431575277095282
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 3,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "shared",
+    "view": "court",
+    "hour": 18.2,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.5,
+      "p95": 68.10000000149012,
+      "p99": 74.59999999962747
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 176,
+      "p95": 176,
+      "p99": 176
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 3759784,
+      "p95": 3759784,
+      "p99": 3759784
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.7999999988824129,
+      "p95": 1.5,
+      "p99": 2.099999999627471
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 2.025374,
+      "p95": 2.121874,
+      "p99": 2.263416
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "shared",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1702.0717204730427,
+        4,
+        -992.0521709726785
+      ],
+      "cameraQuaternion": [
+        -0.01986238498030428,
+        0.5371505860797102,
+        0.012653734779661278,
+        0.8431575277095282
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 3,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "shared",
+    "view": "boat",
+    "hour": 22,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.59999999962747,
+      "p95": 68.70000000111759,
+      "p99": 71.69999999925494
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 193,
+      "p95": 193,
+      "p99": 193
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 4412110,
+      "p95": 4412110,
+      "p99": 4412110
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.7999999988824129,
+      "p95": 1.300000000745058,
+      "p99": 1.699999999254942
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 2.510124,
+      "p95": 2.775333,
+      "p99": 3.155124
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "shared",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 4,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "shadow",
+    "policy": "baseline",
+    "view": "boat",
+    "hour": 22,
+    "live": false,
+    "cap": 15,
+    "intervalsMs": {
+      "count": 240,
+      "median": 66.60000000149012,
+      "p95": 67.69999999925494,
+      "p99": 68.19999999925494
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 302,
+      "p95": 302,
+      "p99": 302
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 5486420,
+      "p95": 5486420,
+      "p99": 5486420
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.900000000372529,
+      "p95": 1.199999999254942,
+      "p99": 1.300000000745058
+    },
+    "shadowGpuMs": {
+      "count": 240,
+      "median": 5.65529,
+      "p95": 6.651375,
+      "p99": 7.435791
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": true,
+    "state": {
+      "policy": "baseline",
+      "cap": 15,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 4,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/paired.json",
+    "mode": "frame",
+    "policy": "baseline",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 60,
+    "intervalsMs": {
+      "count": 240,
+      "median": 35.90000000037253,
+      "p95": 40.5,
+      "p99": 42.09999999962747
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 256,
+      "p95": 256,
+      "p99": 256
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 4492692,
+      "p95": 4492692,
+      "p99": 4492692
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.5,
+      "p95": 0.6999999992549419,
+      "p99": 0.8000000007450581
+    },
+    "shadowGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "wholeFrameGpuMs": {
+      "count": 240,
+      "median": 138.5785,
+      "p95": 161.943375,
+      "p99": 171.727124
+    },
+    "pairedShadowQueriesComplete": null,
+    "state": {
+      "policy": "baseline",
+      "cap": 60,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 5,
+      "revision": "paired"
+    }
+  },
+  {
+    "file": "docs/shadow-optimization/cadence.json",
+    "mode": "cadence",
+    "policy": "baseline",
+    "view": "boat",
+    "hour": 12.5,
+    "live": false,
+    "cap": 60,
+    "intervalsMs": {
+      "count": 240,
+      "median": 35.5,
+      "p95": 45,
+      "p99": 119
+    },
+    "shadowUpdates": {
+      "count": 240,
+      "median": 2,
+      "p95": 2,
+      "p99": 2
+    },
+    "shadowDraws": {
+      "count": 240,
+      "median": 256,
+      "p95": 256,
+      "p99": 256
+    },
+    "shadowTriangles": {
+      "count": 240,
+      "median": 4492692,
+      "p95": 4492692,
+      "p99": 4492692
+    },
+    "shadowCpuMs": {
+      "count": 240,
+      "median": 0.6999999992549419,
+      "p95": 0.900000000372529,
+      "p99": 1
+    },
+    "shadowGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "wholeFrameGpuMs": {
+      "count": 0,
+      "median": null,
+      "p95": null,
+      "p99": null
+    },
+    "pairedShadowQueriesComplete": null,
+    "state": {
+      "policy": "baseline",
+      "cap": 60,
+      "quality": "ultra",
+      "scale": 2,
+      "viewport": [
+        1512,
+        693
+      ],
+      "drawingBuffer": [
+        3024,
+        1386
+      ],
+      "shadowMap": [
+        4096,
+        4096
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Pro, Unspecified Version)",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "timerQueryAvailable": true,
+      "camera": [
+        1722.6861990686514,
+        7,
+        -909.1001169159454
+      ],
+      "cameraQuaternion": [
+        -0.12077131365524475,
+        0.6037209140374107,
+        0.09318259051555944,
+        0.7824655599939396
+      ],
+      "ship": [
+        1706.7883736344436,
+        -0.362872901745669,
+        -912.8885307934065
+      ],
+      "shipQuaternion": [
+        0.0008394380735676298,
+        -0.9847980400569162,
+        0.0003755072569605139,
+        0.1737008193362295
+      ],
+      "shipTime": 3.9999999999999885,
+      "environment": 2,
+      "revision": "cadence"
+    }
+  }
+]

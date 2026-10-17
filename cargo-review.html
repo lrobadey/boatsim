@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cargo handling review · Trieres</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/ui/style.css" />
+    <link rel="stylesheet" href="/src/ui/ledger.css" />
+    <style>
+      body.cargo-review { overflow: auto; min-height: 100%; }
+      .cargo-review #ui { position: relative; min-height: 100vh; height: 100vh; overflow: auto; pointer-events: none; }
+      .cargo-review-controls { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px;
+        width: min(1040px, calc(100vw - 24px)); margin: 12px auto 0; padding: 9px 11px; pointer-events: auto;
+        color: var(--t1); background: var(--glass-strong); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+        border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--lift); }
+      .cargo-review-title { flex-basis: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+        margin: 0 2px 3px; font: 500 20px/1.1 var(--f-name); }
+      .cargo-review-title small { font: 500 11px/1.2 var(--f-ui); letter-spacing: .08em; color: var(--t3); }
+      .cargo-review-controls button { min-height: 30px; padding: 5px 9px; color: var(--t1); font: 500 12px/1.2 var(--f-ui);
+        background: rgba(243, 238, 228, .06); border: 1px solid var(--hair); border-radius: 5px; cursor: pointer; }
+      .cargo-review-controls button:hover, .cargo-review-controls button:focus-visible { outline: none; background: rgba(208, 105, 62, .2); border-color: var(--terra); }
+      #cargo-review-status { flex-basis: 100%; min-height: 16px; margin: 1px 2px 0; color: var(--t2); font: 400 11px/1.35 var(--f-ui); }
+      #cargo-review-state { position: relative; z-index: 2; width: min(1040px, calc(100vw - 24px)); max-height: 135px; overflow: auto;
+        margin: 7px auto 0; padding: 8px 10px; pointer-events: auto; color: var(--t2); background: rgba(10, 16, 24, .78);
+        border: 1px solid var(--hair); border-radius: var(--radius-s); font: 400 10px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+      .cargo-review .ledger-root { position: relative; inset: auto; z-index: 1; height: auto; margin: 16px auto; }
+      .cargo-review .ledger { position: relative; left: auto; top: auto; transform: none; margin: 0 auto; max-height: calc(100vh - 32px); }
+      @media (max-width: 720px) {
+        .cargo-review-controls { justify-content: flex-start; }
+        .cargo-review-title small { text-align: right; }
+        .cargo-review .ledger { width: calc(100vw - 16px); padding: 13px 10px 12px; }
+        #cargo-review-state { max-height: 105px; }
+      }
+    </style>
+  </head>
+  <body class="cargo-review">
+    <div id="ui">
+      <section class="cargo-review-controls" aria-label="Cargo handling review controls">
+        <h1 class="cargo-review-title">Cargo handling <small>development review · 400 kg/game h</small></h1>
+        <button type="button" data-action="trade">Trade</button>
+        <button type="button" data-action="hold">Hold</button>
+        <button type="button" data-action="sell">Sell 10 wine</button>
+        <button type="button" data-action="wine">Buy 10 wine</button>
+        <button type="button" data-action="honey">Buy 10 honey</button>
+        <button type="button" data-action="advance15">Advance 15 min</button>
+        <button type="button" data-action="advance60">Advance 1 h</button>
+        <button type="button" data-action="restore">Save and restore</button>
+        <button type="button" data-action="castoff">Cast off</button>
+        <button type="button" data-action="reset">Reset</button>
+        <output id="cargo-review-status" aria-live="polite">Starting the cargo review…</output>
+      </section>
+      <pre id="cargo-review-state" aria-live="polite"></pre>
+    </div>
+    <script type="module" src="/src/cargoReview.ts"></script>
+  </body>
+</html>
