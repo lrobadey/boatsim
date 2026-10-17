@@ -273,7 +273,7 @@ replace the earlier estimates.
   - Wages are 36 dr. The commission is 37.72 dr on a 188.64 dr venture profit.
   - The player ends at 635.79 dr, up from 300. Damaris nets 366.92 dr, against 220.45 dr for selling
     at home.
-- **Reading:** the player's own wine and the return cargo are the main profit, and the commission
+- **Reading (accepted by the user on October 16, 2026):** the player's own wine and the return cargo are the main profit, and the commission
   roughly pays the wages, as intended. The cutoff (hour 408) is far off. The opening works without
   tuning.
 
