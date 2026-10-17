@@ -21,7 +21,11 @@ to the user. It writes no feature code, though it may make small fixes after an 
 If the named agent types aren't loaded in the session (definitions load at session start), spawn
 `general-purpose` with the same `model` and tell it to read and follow `.claude/agents/<role>.md`.
 
-Writers run with `isolation: "worktree"`, in the background. Two writers never touch the same file.
+Writers run in the background in their own worktree. Two writers never touch the same file.
+`isolation: "worktree"` cuts the worktree from `main`, not from the pass branch, so an agent that needs
+the pass's earlier commits (the contract, the golden) gets a worktree the lead makes by hand:
+`git worktree add .claude/worktrees/<name> -b <branch> <pass-branch>`, plus a `node_modules` symlink.
+Bring self-contained work from a `main`-based worktree over with `git cherry-pick`, not a merge.
 
 ## Sequence for one pass
 
@@ -49,6 +53,10 @@ Writers run with `isolation: "worktree"`, in the background. Two writers never t
 
 ## Standing rules every brief repeats
 
+- Test proportionately (the user's rule): test only what the pass needs in order to work. That means
+  the golden for "no behaviour change", plus a short file for what the golden can't see. Don't write
+  exhaustive permutation or negative-case suites. Audits report bugs that would actually bite, not
+  coverage gaps.
 - Stop and report ambiguity; never improvise around the spec.
 - Gates are commands. Never re-record a golden or change an expected value without a stated reason.
   From 1b on, re-recording needs the user's approval.
