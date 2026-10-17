@@ -1,7 +1,8 @@
 # Expectations MVP — integration design
 
 Status: design decisions settled with the user on October 16, 2026 (section 8). Pass 1a (lots, receipts,
-save v2) implemented and gated on October 16, 2026 (docs/pass-1a-contract.md); 1b and 1c not started.
+save v2) implemented and gated on October 16, 2026 (docs/pass-1a-contract.md). Pass 1b (calendar, land
+use, characters, celebration) implemented and gated the same day (docs/pass-1b-plan.md). 1c not started.
 Known follow-up: receipts grow by about 110 bytes per handled unit, so saves need compaction or a size
 policy before long play reaches the browser storage limit.
 
@@ -249,13 +250,32 @@ Philon's numbers (decided October 16, 2026). All are world facts; none is a pric
   of the requirement locally at or under his limit. The earmark is his choice; the remainder is simulated.
 - Fallback 3 days before the cutoff (day 13), so NPC ships have time to refill the market for him.
 
-Rough opening economics with these rules. These are estimates, to be replaced by the executable
-round-trip budget in the 1b gate:
-- Damaris's valuation (decided: her own home sale quote at proposal time) is about 215 dr.
-- Philon pays about 8.5–10 dr per jar, so the commission is roughly 25–40 dr.
-- Wages for a round trip of about 3–4 game days are about 40 dr.
-- The player's own cheap home wine, in the rest of a hold of about 267 jars, is the main profit.
-- The introduction to Philon and Damaris's trust are the longer-term reward.
+Measured opening economics (gate 1b, October 16, 2026; `node scripts/budget-opening.mjs`). These
+replace the earlier estimates.
+- **World at the fresh start:**
+  - Home wine bid/ask 5.65/6.00 dr, stock 149% of reference, P/D 1.83.
+  - Kormakos wine bid/ask 8.44/8.96 dr, P/D 0.
+  - Over 60 days the Kormakos ask ranges 7.8–10.5 dr, and 142-jar NPC loads arrive every 4–17 days.
+- **Crossing:** the merchant's physics speed under the default wind and waves is 4.05 m/s out and
+  3.51 m/s back. Over the pier distance × 1.25, that's 14 h out and 16 h back.
+- **Philon on his own:**
+  - 66 jars in the pre-run and 96 on day 1, all at or under 10.20 dr.
+  - 421.88 dr is left for the 40 earmarked jars.
+  - With no delivery, his fallback buys 40 at 9.31 dr. He consumes 202 with no shortfall.
+- **The plain round trip,** about 3.1 days:
+  - At home: 42 own jars for 258.48 dr.
+  - At Kormakos:
+    - Philon pays 421.88 dr for the consignment. That's his market quote capped by his wallet,
+      10.55 dr/jar.
+    - The own wine sells for 403.42 dr.
+    - 86 wheat are bought for 423.13 dr.
+  - Back home, the wheat sells for 630.10 dr.
+  - Wages are 36 dr. The commission is 37.72 dr on a 188.64 dr venture profit.
+  - The player ends at 635.79 dr, up from 300. Damaris nets 366.92 dr, against 220.45 dr for selling
+    at home.
+- **Reading:** the player's own wine and the return cargo are the main profit, and the commission
+  roughly pays the wages, as intended. The cutoff (hour 408) is far off. The opening works without
+  tuning.
 
 Default-world authoring must not
 assume Kormakos exists in other worlds. The opening chooses its destination from simulated land use,
