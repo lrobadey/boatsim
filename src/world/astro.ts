@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DEFAULT_EPOCH, type CalendarEpoch } from './calendar';
 
 /**
  * Astronomical clock. Time is in hours of local solar time; the date advances with each day.
@@ -20,6 +21,13 @@ export class AstroClock {
   moonPhase = 0.43;
   /** local sidereal rotation angle for stars (radians) */
   siderealAngle = 0;
+  /** start values the calendar and the moon phase are computed from (saved with the voyage) */
+  epoch: CalendarEpoch = { ...DEFAULT_EPOCH };
+
+  /** the fresh-game start: day 0 at 07:24, midsummer, the default epoch */
+  resetToStart() {
+    throw new Error('not implemented');
+  }
 
   update(dt: number) {
     this.hours += (dt * this.timeScale) / this.secondsPerHour;
