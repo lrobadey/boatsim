@@ -72,7 +72,14 @@ hold the display's refresh rate.
   lee, and droplet erosion. Harbours, temples, villages and piers are placed by terrain analysis, and
   vegetation by biome rules.
 
-`PLAN.md` holds the original design and scope.
+## Project direction
+
+The long-term ambition is a persistent maritime world whose physical, economic, and social systems
+support both first-person life aboard a vessel and growing organizational influence. See
+[the expanded vision and design philosophy](docs/vision.md) for guiding principles, aspirations,
+and open questions. This is strategic context, not an approved implementation roadmap.
+
+`PLAN.md` holds the original vertical-slice design and scope.
 
 The trireme's crew rowing is described in [docs/trireme-crew-plan.md](docs/trireme-crew-plan.md); run
 `npm run test:trireme-crew` for its timing, speed, sprint, hold, turning, shipping, sea and CPU checks, and
