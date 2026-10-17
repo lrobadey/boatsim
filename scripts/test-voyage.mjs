@@ -340,10 +340,10 @@ test('save: a mismatched seed, heightmap or version is ignored with a warning, n
     assert.ok(parseSave(json, 1729, 2048), 'the matching save is refused');
     assert.equal(parseSave(json, 1, 2048), null, 'seed mismatch');
     assert.equal(parseSave(json, 1729, 1024), null, 'heightmap mismatch');
-    assert.equal(parseSave(json.replace('"v":1', '"v":2'), 1729, 2048), null, 'version mismatch');
+    assert.equal(parseSave(json.replace('"v":2', '"v":3'), 1729, 2048), null, 'version mismatch');
     assert.equal(parseSave('{not json', 1729, 2048), null, 'corrupt');
     assert.equal(parseSave('[]', 1729, 2048), null, 'not an object');
-    assert.equal(parseSave('{"v":1,"seed":1729,"heightmapSize":2048}', 1729, 2048), null, 'malformed');
+    assert.equal(parseSave('{"v":2,"seed":1729,"heightmapSize":2048}', 1729, 2048), null, 'malformed');
   } finally {
     console.warn = orig;
   }
@@ -392,7 +392,7 @@ test('save: storage absent or a stub, so write and delete report false and read 
     if (desc) Object.defineProperty(globalThis, 'localStorage', desc);
     else delete globalThis.localStorage;
   }
-  assert.equal(saveKey(1729, 2048), 'trieres.voyage.v1.1729.2048');
+  assert.equal(saveKey(1729, 2048), 'trieres.voyage.v2.1729.2048');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
