@@ -147,10 +147,12 @@ test('an unreadable save is kept aside byte for byte and never deleted; loading 
   const l = loadSave(SEED, SIZE);
   assert.equal(l.status === 'ok' && l.from, 'v1');
   assert.equal(m.get(legacySaveKey(SEED, SIZE)), v1Text(), 'v1 stays until a v2 write is confirmed');
+  // an unreadable v2 beside a readable v1: the v2 is kept aside and the v1 voyage loads
   m.set(saveKey(SEED, SIZE), 'garbage');
   const g = loadSave(SEED, SIZE);
-  assert.equal(g.status, 'rejected');
-  assert.equal(m.get(g.key), 'garbage');
+  assert.equal(g.status === 'ok' && g.from, 'v1');
+  assert.ok([...m.entries()].some(([k, v]) => k.startsWith('trieres.voyage.rejected.') && v === 'garbage'), 'garbage kept aside');
+  assert.equal(m.has(saveKey(SEED, SIZE)), false);
 });
 
 test('writeSave removes v1 only after v2 reads back; deleteSave removes v2 and v1', () => {
