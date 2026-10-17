@@ -18,3 +18,8 @@ is a dated historical snapshot, not a current implementation or validation repor
 
 [PLAN.md](PLAN.md) records the original vertical-slice plan. [handoff.md](handoff.md) contains
 development handoffs; check entry dates and verify current repository state before relying on them.
+
+When executing a spec pass or other sizeable work with several agents, follow
+[.claude/skills/execute-spec/SKILL.md](.claude/skills/execute-spec/SKILL.md): compose the smallest team
+the task's real risks justify. The lead designs, cheaper models implement clearly scoped briefs, and
+reviews go where mistakes are costly. Test only what the change needs.
