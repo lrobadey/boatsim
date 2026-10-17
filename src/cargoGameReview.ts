@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Game } from './game';
 import { GOODS, type GoodId } from './trade/goods';
 import { jobSummary } from './trade/job';
+import { resetBooks } from './trade/books';
 import type { Berth } from './world/harbour';
 
 /** Dev-only controls for reviewing cargo handling in the real merchant voyage. */
@@ -99,8 +100,7 @@ export function installCargoGameReview(game: Game): void {
   act('Advance 1 day', () => advance(1440));
   act('Empty hold', () => {
     trade.newVoyage();
-    trade.voyage.manifest = {};
-    trade.voyage.purse = 100000;
+    resetBooks(trade.voyage, { purse: 100000, cargo: {}, T: trade.economy.now });
     game.clock.timeScale = 0;
     trade.update();
     setStatus('Empty-hold inspection fixture · real voyage reset, manifest cleared, purse set to 100000');

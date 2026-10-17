@@ -284,6 +284,7 @@ async function boot() {
       <div class="sub">${design.subtitle}</div>
       ${MEANDER_SVG}
       ${shipSeg()}
+      ${voyage === 'rejected' ? '<div class="load-status save-note">Your saved voyage could not be read. It has been kept aside.</div>' : ''}
       <div class="actions">
         ${voyage === 'continue' ? '<button class="pill primary board">Continue voyage</button><button class="pill ghost new-voyage">New voyage</button>' : '<button class="pill primary board">Set sail</button>'}
         <button class="pill ghost open-settings">Settings</button>

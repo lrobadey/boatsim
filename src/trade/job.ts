@@ -1,7 +1,9 @@
-// Cargo handling work (cargo-handling-spec). Pure: acts on a CargoJob and VoyageState.
+// Cargo handling work (cargo-handling-spec). Pure: acts on a CargoJob and VoyageState; the cargo lots,
+// manifest and purse move through books.ts.
 
 import { GOODS, GOOD_IDS, goodById, type GoodId } from './goods';
 import { porterFeePerUnit, type CargoJob, type VoyageState } from './voyage';
+import { landUnit, recordPorterage, stowUnit } from './books';
 
 export const CARGO_WORK_KG_PER_HOUR = 400;
 /** Hours from the last unit landing or stowing to the quay being cleared (§6.2). */
@@ -79,11 +81,15 @@ export function jobSummary(job: CargoJob): JobSummary {
   };
 }
 
-/** Advance physical work; a unit crosses only after its entire mass has been handled. */
-export function stepJob(job: CargoJob, voyage: VoyageState, hours: number): StepResult {
+/**
+ * Advance physical work; a unit crosses only after its entire mass has been handled. Each unit moved pays
+ * its porterage: one receipt per lot moved from, at T (the start of this step).
+ */
+export function stepJob(job: CargoJob, voyage: VoyageState, hours: number, T: number): StepResult {
   if (!Number.isFinite(hours) || hours < 0) throw new RangeError(`invalid cargo time step: ${hours}`);
   const delta: Partial<Record<GoodId, number>> = {};
   if (pendingUnits(job) === 0 || hours === 0) return { moved: [], done: null, usedHours: 0 };
+  const porterage = new Map<string, { lot: string; good: GoodId; qty: number; fee: number }>();
   let budget = hours * CARGO_WORK_KG_PER_HOUR;
   let workedKg = 0;
   let done: StepResult['done'] = null;
@@ -103,27 +109,30 @@ export function stepJob(job: CargoJob, voyage: VoyageState, hours: number): Step
     if (active.workKg + 1e-10 < good.mass) break;
 
     const id = active.good;
+    let lot: string;
     if (active.direction === 'unload') {
       job.outgoing[id] = (job.outgoing[id] ?? 0) - 1;
       job.quay[id] = (job.quay[id] ?? 0) + 1;
-      voyage.manifest[id] = (voyage.manifest[id] ?? 0) - 1;
+      lot = landUnit(voyage, job, id);
       delta[id] = (delta[id] ?? 0) - 1;
       done = 'landed';
     } else {
       job.incoming[id] = (job.incoming[id] ?? 0) - 1;
       job.quay[id] = (job.quay[id] ?? 0) - 1;
-      voyage.manifest[id] = (voyage.manifest[id] ?? 0) + 1;
+      lot = stowUnit(voyage, id);
       delta[id] = (delta[id] ?? 0) + 1;
       done = 'stowed';
     }
     clean(job.outgoing, id);
     clean(job.incoming, id);
     clean(job.quay, id);
-    clean(voyage.manifest, id);
-    voyage.purse -= porterFeePerUnit(good);
+    const paid = porterage.get(lot);
+    if (paid) paid.qty++;
+    else porterage.set(lot, { lot, good: id, qty: 1, fee: porterFeePerUnit(good) });
     job.active = null;
     if (pendingUnits(job) === 0) break;
   }
+  recordPorterage(voyage, job.port, T, porterage.values());
   const moved = GOOD_IDS.filter((id) => (delta[id] ?? 0) !== 0).map((id) => ({ good: id, delta: delta[id]! }));
   return { moved, done: pendingUnits(job) === 0 ? done : null, usedHours: pendingUnits(job) === 0 ? workedKg / CARGO_WORK_KG_PER_HOUR : 0 };
 }

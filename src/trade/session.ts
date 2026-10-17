@@ -5,6 +5,7 @@ import type { Economy } from './economy';
 import { GOOD_IDS, goodById, type GoodId } from './goods';
 import { applyWages, noteOpened as writeNotebook, porterFeePerUnit, type VoyageState } from './voyage';
 import { addOrder, CART_AFTER_JOB, newJob, pendingUnits as countPending, restoreJob, stepJob, type Units } from './job';
+import { checkBooks, recordPurchase, recordSale, releaseLanded } from './books';
 
 /** Signed units per good: + buy, − sell. */
 export type Orders = Partial<Record<GoodId, number>>;
@@ -47,6 +48,7 @@ export class TradeSession {
     }
     if (o.voyage.hatchUntil === undefined) o.voyage.hatchUntil = null;
     else if (o.voyage.hatchUntil !== null && !Number.isFinite(o.voyage.hatchUntil)) throw new RangeError('malformed hatch time');
+    checkBooks(o.voyage);
   }
 
   /** manifest + pending incoming − pending outgoing (units) */
@@ -156,7 +158,9 @@ export class TradeSession {
 
   /**
    * Settles the order now: sells first, then buys, at current stock; the purse moves by the quoted
-   * totals. Units enter the job (created if needed). The manifest changes only as units move, in tick().
+   * totals, as receipts at the economy's time. Sold units pass to the market while still aboard; bought
+   * units wait on the quay. Units enter the job (created if needed). The manifest changes only as units
+   * move, in tick().
    * Throws if the order breaks a limit (the caller clamps first).
    */
   confirm(port: number, berth: number, orders: Orders): { sold: Line[]; bought: Line[] } {
@@ -186,7 +190,7 @@ export class TradeSession {
       const v = orders[id] ?? 0;
       if (v >= 0) continue;
       const q = this.economy.market(port, id).sell(-v);
-      this.voyage.purse += q.total;
+      recordSale(this.voyage, { port, good: id, qty: -v, total: q.total, duty: q.duty, T: this.economy.now });
       sold.push({ good: id, qty: -v, total: q.total });
       soldUnits[id] = -v;
     }
@@ -194,7 +198,7 @@ export class TradeSession {
       const v = orders[id] ?? 0;
       if (v <= 0) continue;
       const q = this.economy.market(port, id).buy(v);
-      this.voyage.purse -= q.total;
+      recordPurchase(this.voyage, { port, berth, good: id, qty: v, total: q.total, duty: q.duty, T: this.economy.now });
       bought.push({ good: id, qty: v, total: q.total });
       boughtUnits[id] = v;
     }
@@ -225,7 +229,7 @@ export class TradeSession {
     const raw = this.economy.drainEvents();
     let days = 0;
     for (const e of raw) if (e.type === 'wages') days += e.days;
-    const amount = applyWages(this.voyage, raw);
+    const amount = applyWages(this.voyage, raw, T);
     if (days > 0) events.push({ type: 'wages', days, amount });
     for (const e of raw) {
       if (e.type === 'arrival') events.push({ type: 'arrival', port: e.port, good: e.good, qty: e.qty });
@@ -243,7 +247,7 @@ export class TradeSession {
       if (cartAt !== null && cartAt > t && cartAt < next) next = cartAt;
       const j = this.voyage.job;
       if (handlingAllowed && j && countPending(j) > 0) {
-        const r = stepJob(j, this.voyage, next - t);
+        const r = stepJob(j, this.voyage, next - t, t);
         for (const m of r.moved) delta[m.good] = (delta[m.good] ?? 0) + m.delta;
         if (r.done) {
           events.push({ type: 'job-done', kind: r.done });
@@ -273,11 +277,13 @@ export class TradeSession {
   /** Cast off: closes the hatches at once. Refused (throws) while units are pending. */
   castOff(): void {
     if (this.pendingUnits > 0) throw new Error(`cargo still moving: ${this.pendingUnits} left`);
+    releaseLanded(this.voyage);
     this.voyage.job = null;
     this.voyage.hatchUntil = null;
   }
 
   private endJob(t: number): void {
+    releaseLanded(this.voyage);
     this.voyage.job = null;
     this.voyage.hatchUntil = t + HATCH_AFTER_JOB;
   }

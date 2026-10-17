@@ -399,7 +399,7 @@ export class Game {
   }
 
   /** cargo and ports for a merchant: continue this world's saved voyage or start a new one docked at home */
-  initTrade(world: { seed: number; heightmapSize: number },review=false): 'continue' | 'new' | null {
+  initTrade(world: { seed: number; heightmapSize: number },review=false): 'continue' | 'new' | 'rejected' | null {
     if (!this.design.cargo || !this.gen.sites.harbours?.length) return null;
     this.trade = new TradeLayer(this, this.gen, this.harbourLayouts, world,review);
     return this.trade.init();

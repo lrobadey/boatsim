@@ -2,6 +2,7 @@
 
 import { GOOD_IDS, type Good, type GoodId } from './goods';
 import type { EconEvent } from './economy';
+import { recordWages, resetBooks, type CargoLot, type Receipt } from './books';
 
 /** The cargo job schema. src/trade/job.ts implements its behaviour; the save holds it. */
 export interface CargoJob {
@@ -32,10 +33,16 @@ export interface NotebookEntry {
 }
 
 export interface VoyageState {
-  /** centidrachmas, may go negative (wages owed) */
+  /** centidrachmas, may go negative (wages owed). Maintained by books.ts: the sum of the receipts. */
   purse: number;
-  /** whole units aboard */
+  /** whole units aboard, any owner. Maintained by books.ts: the lots aboard per good. */
   manifest: Partial<Record<GoodId, number>>;
+  /** cargo lots with owner and custody (books.ts) */
+  lots: CargoLot[];
+  /** every money movement, in order (books.ts) */
+  receipts: Receipt[];
+  /** the next lot or receipt id number (one counter for both) */
+  nextId: number;
   /** latest per (port, good) */
   notebook: NotebookEntry[];
   job: CargoJob | null;
@@ -49,7 +56,9 @@ export const START_PURSE = 30000;
 export const PORTER_FEE_PER_KG = 0.25;
 /** A new voyage: purse 300.0 dr, seventy jars of wine in the hold, empty notebook, no job. */
 export function newVoyage(): VoyageState {
-  return { purse: START_PURSE, manifest: { wine: 70 }, notebook: [], job: null };
+  const v: VoyageState = { purse: 0, manifest: {}, lots: [], receipts: [], nextId: 1, notebook: [], job: null };
+  resetBooks(v, { purse: START_PURSE, cargo: { wine: 70 }, T: 0 });
+  return v;
 }
 
 /** Porterage for one unit moved, centidrachmas: ceil(0.25 · mass). */
@@ -79,12 +88,12 @@ export function noteOpened(v: VoyageState, src: PriceSource, port: number, T: nu
 }
 
 /**
- * Charges the wages paid at midnights: purse −= the sum of the wages events. Mutates voyage.purse and
- * returns the total charged (centidrachmas), for the caller's toast.
+ * Charges the wages paid at midnights: one wages receipt for the sum of the wages events, at T. Moves
+ * voyage.purse through the books and returns the total charged (centidrachmas), for the caller's toast.
  */
-export function applyWages(voyage: VoyageState, events: readonly EconEvent[]): number {
+export function applyWages(voyage: VoyageState, events: readonly EconEvent[], T = 0): number {
   let total = 0;
   for (const e of events) if (e.type === 'wages') total += e.amount;
-  voyage.purse -= total;
+  recordWages(voyage, total, T);
   return total;
 }
