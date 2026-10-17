@@ -25,6 +25,7 @@
     "test:build": "node scripts/test-build.mjs",
     "test:merchant": "node scripts/test-merchant.mjs",
     "test:golden": "node scripts/test-golden.mjs",
+    "test:trade-golden": "node scripts/test-trade-golden.mjs",
     "test:seakeeping": "node scripts/test-seakeeping.mjs",
     "test:sea-state": "node scripts/test-sea-state.mjs",
     "test:market": "node scripts/test-market.mjs",
