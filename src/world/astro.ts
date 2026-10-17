@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DEFAULT_EPOCH, type CalendarEpoch } from './calendar';
+import { DEFAULT_EPOCH, moonPhaseOn, type CalendarEpoch } from './calendar';
 
 /**
  * Astronomical clock. Time is in hours of local solar time; the date advances with each day.
@@ -26,7 +26,12 @@ export class AstroClock {
 
   /** the fresh-game start: day 0 at 07:24, midsummer, the default epoch */
   resetToStart() {
-    throw new Error('not implemented');
+    this.dayCount = 0;
+    this.hours = 7.4;
+    this.dayOfYear = 172;
+    this.epoch = { ...DEFAULT_EPOCH };
+    this.moonPhase = moonPhaseOn(this.epoch, 0);
+    this.compute();
   }
 
   update(dt: number) {
@@ -35,7 +40,7 @@ export class AstroClock {
       this.hours -= 24;
       this.dayOfYear = (this.dayOfYear + 1) % 365;
       this.dayCount++;
-      this.moonPhase = (this.moonPhase + 1 / 29.53) % 1;
+      this.moonPhase = moonPhaseOn(this.epoch, this.dayCount);
     }
     this.compute();
   }
@@ -53,7 +58,7 @@ export class AstroClock {
       this.hours -= 24;
       this.dayOfYear = (this.dayOfYear + 1) % 365;
       this.dayCount++;
-      this.moonPhase = (this.moonPhase + 1 / 29.53) % 1;
+      this.moonPhase = moonPhaseOn(this.epoch, this.dayCount);
     }
     this.compute();
   }
