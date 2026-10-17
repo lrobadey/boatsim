@@ -9,6 +9,7 @@ const { TradeSession } = await import('../src/trade/session.ts');
 const { newVoyage, porterFeePerUnit, START_PURSE } = await import('../src/trade/voyage.ts');
 const { CARGO_WORK_KG_PER_HOUR } = await import('../src/trade/job.ts');
 const { buildSave, parseSave, writeSave, readSave, deleteSave, saveKey } = await import('../src/trade/save.ts');
+const { rebuildBooks } = await import('../src/trade/books.ts');
 
 let passed = 0;
 let failed = 0;
@@ -48,6 +49,7 @@ function setup({ hands = 0, startT = T0, purse, manifest, cap = HOLD } = {}) {
   const voyage = newVoyage();
   if (purse !== undefined) voyage.purse = purse;
   if (manifest !== undefined) voyage.manifest = manifest;
+  rebuildBooks(voyage);
   const session = new TradeSession({ economy, voyage, holdCapacity: cap });
   return { economy, voyage, session };
 }

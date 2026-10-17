@@ -8,6 +8,7 @@ const { TradeSession } = await import('../src/trade/session.ts');
 const { newVoyage } = await import('../src/trade/voyage.ts');
 const { CARGO_WORK_KG_PER_HOUR, CART_AFTER_JOB, jobSummary, pendingUnits, restoreJob } = await import('../src/trade/job.ts');
 const { buildSave, parseSave } = await import('../src/trade/save.ts');
+const { rebuildBooks } = await import('../src/trade/books.ts');
 
 let passed = 0;
 let failed = 0;
@@ -26,6 +27,7 @@ function setup({ manifest = { wine: 70 }, cap = 100, startT = T0, hands = 0 } = 
   const voyage = newVoyage();
   voyage.manifest = { ...manifest };
   voyage.purse = 1e9;
+  rebuildBooks(voyage);
   const session = new TradeSession({ economy, voyage, holdCapacity: cap });
   return { economy, voyage, session, cap };
 }
@@ -323,6 +325,7 @@ test('strict restore rejects malformed v2 and legacy jobs and inconsistent save 
   assert.doesNotThrow(() => restoreJob(v2({ wheat: 1 }, { wine: 1 }, { wheat: 1 }), T0, { wine: 1 }));
   const s = setup();
   s.voyage.job = { version: 2, port: 0, berth: 0, incoming: { wheat: 2 }, outgoing: {}, quay: { wheat: 1 }, active: null, cartAt: null };
+  rebuildBooks(s.voyage);
   const save = buildSave({ seed: 173, heightmapSize: 16, clock: { dayCount: 0, hours: 0, dayOfYear: 0, moonPhase: 0 }, windTime: 0, berth: { id: 0, bowOut: false }, voyage: s.voyage, economy: s.economy.snapshot() });
   const warnings = [];
   const oldWarn = console.warn;
@@ -339,6 +342,7 @@ test('restoring an active load must preserve its admitted physical slot', () => 
     incoming: { honey: 1 }, outgoing: { wine: 1 }, quay: { honey: 1 },
     active: { good: 'honey', direction: 'load', workKg: 1 }, cartAt: null,
   };
+  rebuildBooks(s.voyage);
   assert.ok(s.session.holdUse().volume < s.cap, 'outgoing commitment makes the forecast fit');
   assert.throws(() => new TradeSession({ economy: s.economy, voyage: s.voyage, holdCapacity: s.cap }), /active load exceeds physical hold/);
 });

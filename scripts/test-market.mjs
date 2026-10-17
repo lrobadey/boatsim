@@ -9,6 +9,7 @@ const { formatDr } = await import('../src/trade/money.ts');
 const { Market, SPREAD, DUTY } = await import('../src/trade/market.ts');
 const { Economy, referenceFlows, POP_PER_HOUSE } = await import('../src/trade/economy.ts');
 const { newVoyage, applyWages, porterFeePerUnit, START_PURSE } = await import('../src/trade/voyage.ts');
+const { rebuildBooks } = await import('../src/trade/books.ts');
 
 let passed = 0;
 let failed = 0;
@@ -411,6 +412,7 @@ test('economy: first move, a Kormakos wheat round trip from 300 dr is profitable
   const v = newVoyage();
   v.purse = START_PURSE;
   v.manifest = {};
+  rebuildBooks(v);
   const toIslet = T_START + 24; // one day out
   const toHome = toIslet + 24; // one day back
   // Sail out: wages from the midnight hook.

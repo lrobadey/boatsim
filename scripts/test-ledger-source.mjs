@@ -9,6 +9,7 @@ const { newVoyage } = await import('../src/trade/voyage.ts');
 const { addOrder, newJob } = await import('../src/trade/job.ts');
 const { handlingStatus } = await import('../src/trade/handlingStatus.ts');
 const { tradeLedgerSource } = await import('../src/ui/ledgerSource.ts');
+const { rebuildBooks } = await import('../src/trade/books.ts');
 
 let TradeSession;
 try {
@@ -138,6 +139,7 @@ test('jobLine uses shared paused and ready status', () => {
   pausedVoyage.job = newJob(0, 0);
   addOrder(pausedVoyage.job, {}, { honey: 1 });
   pausedVoyage.job.active = { good: 'honey', direction: 'load', workKg: 5 };
+  rebuildBooks(pausedVoyage);
   const pausedSession = new TradeSession({ economy, voyage: pausedVoyage, holdCapacity: 21.8 });
   const context = { connected: false, portName: 'Serrothos' };
   const pausedSource = make({ session: pausedSession, handlingContext: () => context });
@@ -148,6 +150,7 @@ test('jobLine uses shared paused and ready status', () => {
   const readyVoyage = newVoyage();
   readyVoyage.job = newJob(0, 0);
   readyVoyage.job.cartAt = T + 1;
+  rebuildBooks(readyVoyage);
   const readySession = new TradeSession({ economy, voyage: readyVoyage, holdCapacity: 21.8 });
   const readySource = make({ session: readySession });
   const ready = handlingStatus(readyVoyage.job, T, readyVoyage.hatchUntil, { connected: true, portName: 'Serrothos' });
@@ -202,6 +205,7 @@ test('jobLine names the scheduler-selected good and shows the pending count', ()
   honeyVoyage.job.active = { good: 'honey', direction: 'load', workKg: 0 };
   honeyVoyage.manifest.wheat = 1;
   honeyVoyage.job.outgoing.wheat = 1;
+  rebuildBooks(honeyVoyage);
   const honeySession = new TradeSession({ economy, voyage: honeyVoyage, holdCapacity: 21.8 });
   assert.equal(make({ session: honeySession }).jobLine, 'Loading honey · 2 left · 65 kg to handle · 10 min');
 });
