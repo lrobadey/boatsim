@@ -7,7 +7,7 @@ import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
 import { personaFor, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
 import { Talk, type TalkLine } from './ui/talk';
-import { buildSave, readSave, writeSave, deleteSave, type SaveData } from './trade/save';
+import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, traderId, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
 import { createStallInteractions } from './trade/stall';
 import { Hold } from './cargo/hold';
@@ -174,21 +174,38 @@ export class TradeLayer {
     });
   }
 
-  /** at boot: continue the saved voyage for this world, or set up a new one docked at the main harbour */
-  init(): 'continue' | 'new' {
-    const save = this.review ? null : readSave(this.world.seed, this.world.heightmapSize);
-    if (save && this.applySave(save)) return 'continue';
-    this.newVoyage();
-    return 'new';
+  /**
+   * at boot: continue the saved voyage for this world, or set up a new one docked at the main harbour.
+   * 'rejected': a save was there but could not be read or restored; it has been kept aside (never deleted)
+   * and a new voyage starts.
+   */
+  init(): 'continue' | 'new' | 'rejected' {
+    if (this.review) {
+      this.startVoyage();
+      return 'new';
+    }
+    const { seed, heightmapSize } = this.world;
+    const loaded = loadSave(seed, heightmapSize);
+    if (loaded.status === 'ok') {
+      if (this.applySave(loaded.data)) return 'continue';
+      keepSaveAside(seed, heightmapSize, loaded.from);
+    }
+    this.startVoyage();
+    return loaded.status === 'none' ? 'new' : 'rejected';
   }
 
   get hasSave() {
     return !this.review && readSave(this.world.seed, this.world.heightmapSize) !== null;
   }
 
-  /** a fresh voyage: start purse and 70 jars of wine, docked bow out at berth 0 of the main harbour */
+  /** New voyage: deletes this world's saved voyage (v2 and v1; saves kept aside stay), then starts a fresh one */
   newVoyage() {
     if(!this.review)deleteSave(this.world.seed, this.world.heightmapSize);
+    this.startVoyage();
+  }
+
+  /** a fresh voyage: start purse and 70 jars of wine, docked bow out at berth 0 of the main harbour */
+  private startVoyage() {
     this.economy = this.buildEconomy(this.g.clock.totalHours);
     this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity });
     this.news = this.pastNews(this.economy.now);
@@ -215,7 +232,11 @@ export class TradeLayer {
       this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity });
       this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
       this.notes = {};
-      for (const [k, v] of Object.entries(s.talk?.notes ?? {})) if (typeof v === 'string' && this.portNames[Number(k)] !== undefined) this.notes[Number(k)] = v.slice(0, 300);
+      // notes are saved under each port's trader id ('trader:{port}')
+      for (const [k, v] of Object.entries(s.talk?.notes ?? {})) {
+        const port = /^trader:(0|[1-9]\d*)$/.exec(k);
+        if (port && typeof v === 'string' && this.portNames[Number(port[1])] !== undefined) this.notes[Number(port[1])] = v.slice(0, 300);
+      }
       this.talkLines.clear();
       this.placeDocked(berth, s.berth.bowOut);
       return true;
@@ -273,7 +294,7 @@ export class TradeLayer {
       berth: { id: b.id, bowOut },
       voyage: this.session.voyage,
       economy: this.economy.snapshot(),
-      talk: { news: this.news.snapshot(), notes: { ...this.notes } },
+      talk: { news: this.news.snapshot(), notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])) },
     });
     writeSave(this.world.seed, this.world.heightmapSize, data);
   }

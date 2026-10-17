@@ -5,6 +5,7 @@ import { jobSummary } from './trade/job';
 import { TradeSession } from './trade/session';
 import { buildSave, parseSave } from './trade/save';
 import { newVoyage } from './trade/voyage';
+import { resetBooks } from './trade/books';
 import { MERCHANT } from './ship/design';
 import { Ledger } from './ui/ledger';
 import { tradeLedgerSource } from './ui/ledgerSource';
@@ -123,8 +124,7 @@ function reset() {
   T = T0;
   economy = makeEconomy(T0);
   voyage = newVoyage();
-  voyage.purse = START_PURSE;
-  voyage.manifest = { wine: 70 };
+  resetBooks(voyage, { purse: START_PURSE, cargo: { wine: 70 }, T: T0 });
   session = new TradeSession({ economy, voyage, holdCapacity: HOLD.capacity });
   saveJson = null;
   lastEvent = 'Reset to initial in-memory state';
