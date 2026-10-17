@@ -54,7 +54,8 @@ No code outside books.ts assigns `voyage.purse`, `voyage.manifest`, `lots` or `r
 | New voyage | `opening` +30000 at T | player, aboard, wine 70, origin `opening` |
 | Confirm, sell n of g | `sale` +(q.total + q.duty), `duty` −q.duty | n units move from player aboard lots (lowest id first) to a lot owned `market:{port}`, aboard, origin = the sale receipt id |
 | Confirm, buy n of g | `purchase` −(q.total − q.duty), `duty` −q.duty | new player lot, custody quay {port, berth}, origin = the purchase receipt id |
-| One unit lands | `porterage` −fee (may be summed per lot per tick sub-step) | −1 from the oldest `market:*` aboard lot of g; the unit leaves the books |
+| One unit lands | `porterage` −fee (may be summed per lot per tick sub-step) | −1 from the oldest `market:*` aboard lot of g; +1 to a `market:{port}` lot with custody quay {port, berth} and the same origin |
+| The cart clears (job ends) | — | `market:*` quay lots are removed: the buyer has taken them |
 | One unit stowed | `porterage` −fee (same) | −1 from the oldest player quay lot of g; +1 to the player aboard lot with the same origin (created if absent) |
 | Wages at midnight | `wages` −amount, one per tick that pays | — |
 
@@ -69,7 +70,8 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
 
 - `checkBooks(v: VoyageState): void` — throws `RangeError` naming the first broken invariant:
   purse equals the receipt sum; manifest equals aboard lots; per good, player quay lots equal
-  `job.quay` and `market:*` aboard lots equal `job.outgoing` (both 0 with no job); every qty a
+  `job.incoming`, `market:*` quay lots equal `job.quay − job.incoming` (landed units waiting for the
+  cart), and `market:*` aboard lots equal `job.outgoing` (all 0 with no job); every qty a
   positive safe integer; ids unique; `nextId` greater than every numeric id suffix.
 - `resetBooks(v: VoyageState, o: { purse: number; cargo: Units; T?: number }): void` — clears lots,
   receipts and the job; one `opening` receipt for `purse`; one player aboard lot per good in `cargo`,
@@ -78,7 +80,8 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
 - `rebuildBooks(v: VoyageState, T = 0): void` — replaces lots, receipts and `nextId` from the
   legacy fields as they stand (`purse`, `manifest`, `job`), using the v1 mapping in §4 with origin
   `migrated`. Never throws and never validates: player aboard per good = max(0, manifest − outgoing),
-  `market:{job.port}` aboard = min(outgoing, manifest), player quay = job.quay. `migrateV1` uses it.
+  `market:{job.port}` aboard = min(outgoing, manifest), player quay = min(job.incoming, job.quay),
+  `market:{job.port}` quay = job.quay − that. `migrateV1` uses it.
   Existing tests that build `manifest`, `purse` or a job by hand call it once after doing so. That
   is the only change allowed to existing tests.
 - `newVoyage()` (voyage.ts) returns books equal to `resetBooks(…, { purse: 30000, cargo: { wine: 70 }, T: 0 })`.
@@ -98,7 +101,8 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
   on the parsed voyage and rejects on failure.
 - `migrateV1(d: unknown): SaveData` — throws on a malformed v1. Mapping (spec §7):
   player aboard lot per good = manifest − job.outgoing; `market:{job.port}` aboard lot = job.outgoing;
-  player quay lot = job.quay at the job's port and berth; one `opening` receipt = purse at
+  player quay lot = job.incoming (bought units waiting) and `market:{job.port}` quay lot =
+  job.quay − job.incoming (landed units waiting for the cart), both at the job's port and berth; one `opening` receipt = purse at
   `economy.T`; origin `migrated`; notebook, economy, news kept; notes re-keyed to `trader:{port}`.
   The opening (Damaris, consignment) is never injected.
 - `parseAnySave(json, seed, size): SaveData | null` — v2 via parseSave, else v1 via migrateV1.
