@@ -55,7 +55,7 @@ No code outside books.ts assigns `voyage.purse`, `voyage.manifest`, `lots` or `r
 | Confirm, sell n of g | `sale` +(q.total + q.duty), `duty` −q.duty | n units move from player aboard lots (lowest id first) to a lot owned `market:{port}`, aboard, origin = the sale receipt id |
 | Confirm, buy n of g | `purchase` −(q.total − q.duty), `duty` −q.duty | new player lot, custody quay {port, berth}, origin = the purchase receipt id |
 | One unit lands | `porterage` −fee (may be summed per lot per tick sub-step) | −1 from the oldest `market:*` aboard lot of g; +1 to a `market:{port}` lot with custody quay {port, berth} and the same origin |
-| The cart clears (job ends) | — | `market:*` quay lots are removed: the buyer has taken them |
+| The job ends (the cart clears, or cast-off with nothing pending) | — | `market:*` quay lots are removed: the buyer has taken them |
 | One unit stowed | `porterage` −fee (same) | −1 from the oldest player quay lot of g; +1 to the player aboard lot with the same origin (created if absent) |
 | Wages at midnight | `wages` −amount, one per tick that pays | — |
 
