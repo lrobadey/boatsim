@@ -297,9 +297,10 @@ function keepAside(s: Storage, key: string, raw: string, seed: number, heightmap
 }
 
 /**
- * Loads the save for this world at boot: the v2 save if present, otherwise the v1 save, migrated. A
- * present but unreadable save is copied to its rejected key and removed from its own key; nothing else
- * is moved or deleted. Never throws.
+ * Loads the save for this world at boot: the v2 save if present and readable, otherwise the v1 save,
+ * migrated (the v1 key stays until a v2 save reads back). A present but unreadable save is copied to its
+ * rejected key and removed from its own key; nothing else is moved or deleted. 'rejected' only when no
+ * save could be read, naming the first save kept aside. Never throws.
  */
 export function loadSave(seed: number, heightmapSize: number): LoadResult {
   try {
@@ -309,14 +310,16 @@ export function loadSave(seed: number, heightmapSize: number): LoadResult {
       { key: saveKey(seed, heightmapSize), from: 'v2' as const, parse: parseSave },
       { key: legacySaveKey(seed, heightmapSize), from: 'v1' as const, parse: parseLegacy },
     ];
+    let rejected: string | null = null;
     for (const slot of slots) {
       const raw = getRaw(s, slot.key);
       if (raw === null) continue;
       const data = slot.parse(raw, seed, heightmapSize);
       if (data) return { status: 'ok', data, from: slot.from };
-      return { status: 'rejected', key: keepAside(s, slot.key, raw, seed, heightmapSize) ?? slot.key };
+      const aside = keepAside(s, slot.key, raw, seed, heightmapSize) ?? slot.key;
+      rejected ??= aside;
     }
-    return { status: 'none' };
+    return rejected === null ? { status: 'none' } : { status: 'rejected', key: rejected };
   } catch {
     return { status: 'none' };
   }
