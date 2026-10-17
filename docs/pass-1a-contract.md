@@ -75,7 +75,15 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
   receipts and the job; one `opening` receipt for `purse`; one player aboard lot per good in `cargo`,
   origin `opening`. Used by test setup and the dev review modes in place of assigning
   `voyage.purse` / `voyage.manifest`.
+- `rebuildBooks(v: VoyageState, T = 0): void` — replaces lots, receipts and `nextId` from the
+  legacy fields as they stand (`purse`, `manifest`, `job`), using the v1 mapping in §4 with origin
+  `migrated`. Never throws and never validates: player aboard per good = max(0, manifest − outgoing),
+  `market:{job.port}` aboard = min(outgoing, manifest), player quay = job.quay. `migrateV1` uses it.
+  Existing tests that build `manifest`, `purse` or a job by hand call it once after doing so. That
+  is the only change allowed to existing tests.
 - `newVoyage()` (voyage.ts) returns books equal to `resetBooks(…, { purse: 30000, cargo: { wine: 70 }, T: 0 })`.
+- The `TradeSession` constructor keeps today's checks first, in today's order, with today's messages
+  (restoreJob, active-load hold check, hatchUntil), and only then runs `checkBooks`.
 
 ## 4. Save v2 (src/trade/save.ts)
 
@@ -111,7 +119,16 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
   "Your saved voyage could not be read. It has been kept aside." (see the plain UI text rule).
 - `newVoyage()` from the title screen's New voyage button still deletes the v2 and v1 saves.
 
-## 6. Out of scope for 1a
+## 6. File ownership
+
+- Implementer: src/trade/books.ts (new), voyage.ts, job.ts, session.ts, save.ts, src/tradeLayer.ts,
+  src/main.ts (rejected line only), src/cargoReview.ts, src/cargoGameReview.ts (use `resetBooks`).
+- Gate-test author: scripts/test-books.mjs and scripts/test-save-v2.mjs (new).
+- Gate runner: the `rebuildBooks` insertions in existing scripts/test-*.mjs, and the `test:trade`
+  script in package.json.
+- Recorder (done first): scripts/test-trade-golden.mjs, scripts/golden/trade*.
+
+## 7. Out of scope for 1a
 
 Characters, wallets, consignments, agreements, the calendar, land use. No owner other than
 `player` and `market:{port}`. No new UI beyond the rejected-save line.
