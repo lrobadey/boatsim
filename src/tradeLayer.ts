@@ -7,7 +7,7 @@ import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
 import { personaFor, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
 import { Talk, type TalkLine } from './ui/talk';
-import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, traderId, type SaveData } from './trade/save';
+import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, saveKey, legacySaveKey, traderId, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
 import { createStallInteractions } from './trade/stall';
 import { Hold } from './cargo/hold';
@@ -43,6 +43,8 @@ export class TradeLayer {
   /** what each port has heard about the others, and each trader's note on the player (saved) */
   private news = new PriceNews();
   private notes: Record<number, string> = {};
+  /** true when an unreadable save could not be moved aside: no save is written until New voyage */
+  private savesHeld = false;
   /** the conversation at each stall this session (not saved) */
   private talkLines = new Map<number, TalkLine[]>();
   private readonly cargoStatus = document.createElement('div');
@@ -188,7 +190,10 @@ export class TradeLayer {
     const loaded = loadSave(seed, heightmapSize);
     if (loaded.status === 'ok') {
       if (this.applySave(loaded.data)) return 'continue';
-      keepSaveAside(seed, heightmapSize, loaded.from);
+      // a save that could not be copied aside stays at its key: hold saving so it is not overwritten
+      if (keepSaveAside(seed, heightmapSize, loaded.from) === null) this.savesHeld = true;
+    } else if (loaded.status === 'rejected' && (loaded.key === saveKey(seed, heightmapSize) || loaded.key === legacySaveKey(seed, heightmapSize))) {
+      this.savesHeld = true;
     }
     this.startVoyage();
     return loaded.status === 'none' ? 'new' : 'rejected';
@@ -201,6 +206,7 @@ export class TradeLayer {
   /** New voyage: deletes this world's saved voyage (v2 and v1; saves kept aside stay), then starts a fresh one */
   newVoyage() {
     if(!this.review)deleteSave(this.world.seed, this.world.heightmapSize);
+    this.savesHeld = false;
     this.startVoyage();
   }
 
@@ -278,10 +284,11 @@ export class TradeLayer {
     return moor.linePhase === 'docked' && moor.berth?.port === job.port && moor.berth.id === job.berth;
   }
 
-  save() {
-    if(this.review)return;
+  /** Writes the save while docked. Returns whether it was written. */
+  save(): boolean {
+    if (this.review || this.savesHeld) return false;
     const moor = this.g.ship.mooring;
-    if (moor.linePhase !== 'docked' || !moor.berth) return;
+    if (moor.linePhase !== 'docked' || !moor.berth) return false;
     const b = moor.berth;
     const dh = this.g.ship.heading - Math.atan2(b.ax, -b.az);
     const bowOut = Math.cos(dh) > 0;
@@ -296,13 +303,12 @@ export class TradeLayer {
       economy: this.economy.snapshot(),
       talk: { news: this.news.snapshot(), notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])) },
     });
-    writeSave(this.world.seed, this.world.heightmapSize, data);
+    return writeSave(this.world.seed, this.world.heightmapSize, data);
   }
 
   /** the mooring reported `docked` */
   onDocked() {
-    this.save();
-    this.g.hud.showToast('Voyage saved');
+    if (this.save()) this.g.hud.showToast('Voyage saved');
   }
 
   /** R while on the lines: refuse while cargo is moving, else close the hatches and let the mooring cast off */

@@ -1,10 +1,13 @@
 # Expectations MVP — integration design
 
-Status: design decisions settled with the user on October 16, 2026 (section 8). Not yet implemented.
+Status: design decisions settled with the user on October 16, 2026 (section 8). Pass 1a (lots, receipts,
+save v2) implemented and gated on October 16, 2026 (docs/pass-1a-contract.md); 1b and 1c not started.
+Known follow-up: receipts grow by about 110 bytes per handled unit, so saves need compaction or a size
+policy before long play reaches the browser storage limit.
 
 This specification records the user's decisions and the implementation contracts that follow from them.
 The vision in `docs/vision.md` supplies direction; this document bounds the first integrated slice.
-No gameplay code has changed. Browser testing requires an explicit user request.
+Browser testing requires an explicit user request.
 
 ## 1. Experience and approved scope
 

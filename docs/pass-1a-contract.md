@@ -120,7 +120,10 @@ The handling job keeps its v2 count fields and per-unit timing exactly. It may a
 - `TradeLayer.init()` returns `'continue' | 'new' | 'rejected'` and uses `loadSave`. On
   `'rejected'` it starts a fresh voyage without calling `deleteSave`.
 - The title screen, on `'rejected'`, shows one plain line above the buttons:
-  "Your saved voyage could not be read. It has been kept aside." (see the plain UI text rule).
+  "Your saved voyage could not be read. It has not been deleted." (see the plain UI text rule).
+- If an unreadable save cannot be copied aside (storage full), it stays at its key and the trade layer
+  writes no save until the player chooses New voyage, so it is never overwritten. "Voyage saved" shows
+  only when the save was written.
 - `newVoyage()` from the title screen's New voyage button still deletes the v2 and v1 saves.
 
 ## 6. File ownership
