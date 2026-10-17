@@ -122,12 +122,30 @@ function normalizeVoyage(d: Record<string, unknown>): VoyageState {
   return normalized;
 }
 
-/** The world, when the save has one: its characters and lots, a numeric nextId, and a celebration or null. */
+const CHARACTER_IDS = ['damaris', 'philon', 'myrto'];
+const CELEBRATION_NUMS = ['port', 'day', 'cutoffT', 'fallbackT', 'requirement', 'rulerPrice', 'limit', 'earmark', 'consumed', 'shortfall'];
+
+/**
+ * The world and epoch, when the save has them: known characters with whole wallets, well-formed store
+ * lots, a numeric nextId, and a complete celebration (with Philon present) or null.
+ */
 function worldOk(d: Record<string, unknown>): boolean {
+  const e = (d.clock as Record<string, unknown>).epoch;
+  if (e !== undefined && (!isObj(e) || !isNum(e.moonPhase0) || !isNum(e.doy0) || e.version !== 1)) return false;
   if (d.world === undefined) return true;
   const w = d.world;
   if (!isObj(w) || !Array.isArray(w.characters) || !Array.isArray(w.lots) || !isNum(w.nextId)) return false;
-  return w.celebration === null || isObj(w.celebration);
+  for (const c of w.characters) {
+    if (!isObj(c) || !CHARACTER_IDS.includes(c.id as string) || !isNum(c.port) || !Number.isSafeInteger(c.wallet) || (c.wallet as number) < 0) return false;
+  }
+  for (const l of w.lots) {
+    if (!isObj(l) || !(GOOD_IDS as readonly string[]).includes(l.good as string) || !Number.isSafeInteger(l.qty) || (l.qty as number) <= 0) return false;
+    if (typeof l.id !== 'string' || typeof l.owner !== 'string' || typeof l.origin !== 'string' || !isObj(l.custody)) return false;
+  }
+  const c = w.celebration;
+  if (c === null) return true;
+  if (!isObj(c) || CELEBRATION_NUMS.some((k) => !isNum(c[k])) || typeof c.fallbackDone !== 'boolean' || typeof c.done !== 'boolean') return false;
+  return w.characters.some((x) => isObj(x) && x.id === 'philon');
 }
 
 /** World check shared by both versions; warns and returns false on a mismatch. */

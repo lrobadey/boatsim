@@ -204,6 +204,8 @@ export class TradeLayer {
     const loaded = loadSave(seed, heightmapSize);
     if (loaded.status === 'ok') {
       if (this.applySave(loaded.data)) return 'continue';
+      // a half-restored clock must not carry into the fresh voyage
+      this.g.clock.resetToStart();
       // a save that could not be copied aside stays at its key: hold saving so it is not overwritten
       if (keepSaveAside(seed, heightmapSize, loaded.from) === null) this.savesHeld = true;
     } else if (loaded.status === 'rejected' && (loaded.key === saveKey(seed, heightmapSize) || loaded.key === legacySaveKey(seed, heightmapSize))) {
@@ -259,6 +261,8 @@ export class TradeLayer {
       this.economy = this.buildEconomy(s.economy.T);
       this.economy.restore(s.economy);
       this.worldState = s.world ?? oldSaveWorld(this.econPorts());
+      const celebration = this.worldState.celebration;
+      if (celebration && !this.economy.ports.some((p) => p.id === celebration.port)) throw new RangeError('celebration port is not in this world');
       if (this.worldState.celebration && !this.worldState.celebration.done) this.economy.addActor(new CelebrationActor(this.worldState));
       this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity });
       this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
