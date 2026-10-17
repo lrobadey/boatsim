@@ -145,11 +145,12 @@ brief, a recorder, a Haiku implementer and one review, in about half the time. T
   writes purse, manifest, lots or receipts. Existing tests that build state by hand call
   `rebuildBooks`. `npm run test:trade` runs everything, including scripts/test-books.mjs and the golden.
   Open follow-up: receipts grow about 110 bytes per handled unit, so saves will need compaction.
-- **1b (likely shape, decide when you get there):**
-  - Calendar: independent, can run in parallel.
-  - World lane: land use, then wallets, then the celebration and Philon. These go in order, or to one
-    agent, because they share economy.ts. Behaviour changes on purpose: re-record the goldens with the
-    user's approval, giving the reason.
-  - Budget scenario: needs judgment. Report its result to the user before any tuning.
+- **1b (done):**
+  - Shape: the lead wrote the stubs; two Haiku lanes ran in parallel (calendar in under a minute, world
+    in about 5); the lead merged and wired; one Opus review found two small bugs, which the lead
+    fixed; the lead ran the budget.
+  - Philon's rule is in src/trade/world.ts (`CelebrationActor`, an economy actor run at midnight). The
+    budget is `npm run budget:opening`. The merchant's crossing speed came from a physics probe, about
+    100 s of compute.
 - **1c (likely shape):** many interacting rules. Set the interfaces for records, proposals and
   settlement first, then decide the lanes.
