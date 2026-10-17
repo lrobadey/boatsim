@@ -8,12 +8,16 @@ import { restoreJob, type Units } from './job';
 import type { VoyageState } from './voyage';
 import { checkBooks, rebuildBooks } from './books';
 import type { PriceRecord } from './news';
+import type { WorldState } from './world';
+import type { CalendarEpoch } from '../world/calendar';
 
 export interface SaveClock {
   dayCount: number;
   hours: number;
   dayOfYear: number;
   moonPhase: number;
+  /** the calendar's start values (older saves have none) */
+  epoch?: CalendarEpoch;
 }
 
 export interface SaveData {
@@ -29,6 +33,8 @@ export interface SaveData {
   economy: EconomySnapshot;
   /** traders (optional; older saves have none): the price news heard at each port and each trader's note on you, keyed 'trader:{port}' */
   talk?: { news: PriceRecord[]; notes: Record<string, string> };
+  /** the people and their money (optional; older saves have none): see oldSaveWorld */
+  world?: WorldState;
 }
 
 export const SAVE_VERSION = 2;
@@ -65,6 +71,7 @@ export function buildSave(o: {
   voyage: VoyageState;
   economy: EconomySnapshot;
   talk?: SaveData['talk'];
+  world?: WorldState;
   savedAt?: number;
 }): SaveData {
   return {
@@ -78,6 +85,7 @@ export function buildSave(o: {
     voyage: o.voyage,
     economy: o.economy,
     ...(o.talk ? { talk: o.talk } : {}),
+    ...(o.world ? { world: o.world } : {}),
   };
 }
 
@@ -114,6 +122,14 @@ function normalizeVoyage(d: Record<string, unknown>): VoyageState {
   return normalized;
 }
 
+/** The world, when the save has one: its characters and lots, a numeric nextId, and a celebration or null. */
+function worldOk(d: Record<string, unknown>): boolean {
+  if (d.world === undefined) return true;
+  const w = d.world;
+  if (!isObj(w) || !Array.isArray(w.characters) || !Array.isArray(w.lots) || !isNum(w.nextId)) return false;
+  return w.celebration === null || isObj(w.celebration);
+}
+
 /** World check shared by both versions; warns and returns false on a mismatch. */
 function sameWorld(d: Record<string, unknown>, seed: number, heightmapSize: number): boolean {
   if (d.seed === seed && d.heightmapSize === heightmapSize) return true;
@@ -138,7 +154,7 @@ export function parseSave(json: string, seed: number, heightmapSize: number): Sa
       return null;
     }
     if (!sameWorld(d, seed, heightmapSize)) return null;
-    if (!shapeOk(d) || !isNum((d.voyage as Record<string, unknown>).nextId)) {
+    if (!shapeOk(d) || !isNum((d.voyage as Record<string, unknown>).nextId) || !worldOk(d)) {
       console.warn('voyage save ignored: malformed');
       return null;
     }

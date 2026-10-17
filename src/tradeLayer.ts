@@ -1,11 +1,13 @@
 import type { Game } from './game';
 import type { WorldGenResult } from './world/worldgenTypes';
 import type { HarbourLayout, Berth } from './world/harbour';
-import { Economy } from './trade/economy';
+import { Economy, type EconActor } from './trade/economy';
+import { landUseProfile } from './trade/landUse';
+import { freshWorld, oldSaveWorld, characterAt, CelebrationActor, type WorldState } from './trade/world';
 import { TradeSession } from './trade/session';
 import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
-import { personaFor, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
+import { personaById, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
 import { Talk, type TalkLine } from './ui/talk';
 import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, saveKey, legacySaveKey, traderId, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
@@ -21,7 +23,11 @@ import { WAGE_PER_HAND_DAY } from './trade/economy';
 import { formatHandlingDuration, handlingStatus } from './trade/handlingStatus';
 import * as THREE from 'three';
 import type { CargoJob } from './trade/voyage';
+import { nextNewYearDay, LUNATION_DAYS } from './world/calendar';
+import { planOf } from './world/ormosLayout';
 
+
+const frac = (x: number) => x - Math.floor(x);
 
 /** what the conversation shows when no reply came back */
 const TALK_ERRORS: Record<string, string> = {
@@ -43,6 +49,8 @@ export class TradeLayer {
   /** what each port has heard about the others, and each trader's note on the player (saved) */
   private news = new PriceNews();
   private notes: Record<number, string> = {};
+  /** the people and their money: characters, store lots, the celebration (saved) */
+  private worldState!: WorldState;
   /** true when an unreadable save could not be moved aside: no save is written until New voyage */
   private savesHeld = false;
   /** the conversation at each stall this session (not saved) */
@@ -163,16 +171,22 @@ export class TradeLayer {
     return this.g.design.oars.crew?.hands ?? 0;
   }
 
-  private buildEconomy(startT: number) {
+  /** the harbours as the economy sees them: each profile with the world's land use for its plan */
+  private econPorts() {
     const sites = this.gen.sites.harbours ?? [];
+    return sites.map((s) => ({ id: s.id, profile: landUseProfile(s.profile, planOf(s)?.landUse), x: s.pier.x, z: s.pier.z }));
+  }
+
+  private buildEconomy(startT: number, actors: EconActor[] = []) {
     const clock = this.g.clock;
     const doy0 = clock.dayOfYear - clock.dayCount;
     return new Economy({
       seed: this.world.seed,
-      ports: sites.map((s) => ({ id: s.id, profile: s.profile, x: s.pier.x, z: s.pier.z })),
+      ports: this.econPorts(),
       doyAt: (T) => (((doy0 + Math.floor(T / 24)) % 365) + 365) % 365,
       hands: this.hands,
       startT,
+      actors,
     });
   }
 
@@ -207,12 +221,15 @@ export class TradeLayer {
   newVoyage() {
     if(!this.review)deleteSave(this.world.seed, this.world.heightmapSize);
     this.savesHeld = false;
+    this.g.clock.resetToStart();
     this.startVoyage();
   }
 
   /** a fresh voyage: start purse and 70 jars of wine, docked bow out at berth 0 of the main harbour */
   private startVoyage() {
-    this.economy = this.buildEconomy(this.g.clock.totalHours);
+    const ports = this.econPorts();
+    this.worldState = freshWorld({ ports, celebrationDay: nextNewYearDay(this.g.clock.epoch, this.g.clock.dayCount) });
+    this.economy = this.buildEconomy(this.g.clock.totalHours, this.worldState.celebration ? [new CelebrationActor(this.worldState)] : []);
     this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity });
     this.news = this.pastNews(this.economy.now);
     this.notes = {};
@@ -230,11 +247,18 @@ export class TradeLayer {
       c.hours = s.clock.hours;
       c.dayOfYear = s.clock.dayOfYear;
       c.moonPhase = s.clock.moonPhase;
+      c.epoch = s.clock.epoch ?? {
+        moonPhase0: frac(s.clock.moonPhase - s.clock.dayCount / LUNATION_DAYS),
+        doy0: (((s.clock.dayOfYear - s.clock.dayCount) % 365) + 365) % 365,
+        version: 1,
+      };
       c.compute();
       // wind and sea stay on the ship's clock (one clock); weather isn't on the game clock yet, so the
       // saved wind time is kept for later and not restored
       this.economy = this.buildEconomy(s.economy.T);
       this.economy.restore(s.economy);
+      this.worldState = s.world ?? oldSaveWorld(this.econPorts());
+      if (this.worldState.celebration && !this.worldState.celebration.done) this.economy.addActor(new CelebrationActor(this.worldState));
       this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity });
       this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
       this.notes = {};
@@ -296,12 +320,13 @@ export class TradeLayer {
     const data = buildSave({
       seed: this.world.seed,
       heightmapSize: this.world.heightmapSize,
-      clock: { dayCount: c.dayCount, hours: c.hours, dayOfYear: c.dayOfYear, moonPhase: c.moonPhase },
+      clock: { dayCount: c.dayCount, hours: c.hours, dayOfYear: c.dayOfYear, moonPhase: c.moonPhase, epoch: c.epoch },
       windTime: this.g.wind.time,
       berth: { id: b.id, bowOut },
       voyage: this.session.voyage,
       economy: this.economy.snapshot(),
       talk: { news: this.news.snapshot(), notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])) },
+      world: this.worldState,
     });
     return writeSave(this.world.seed, this.world.heightmapSize, data);
   }
@@ -390,7 +415,7 @@ export class TradeLayer {
   /** E at a stall: talk with its trader; Tab in the conversation opens the ledger */
   openTalk(port: number) {
     if (this.ledger.isOpen || this.talk.isOpen) return;
-    const persona = personaFor(this.world.seed, port);
+    const persona = personaById(characterAt(this.worldState, port));
     const lines = this.talkLines.get(port) ?? [];
     this.talkLines.set(port, lines);
     this.g.input.freeze(true);

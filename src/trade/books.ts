@@ -7,8 +7,8 @@ import { GOOD_IDS, type GoodId } from './goods';
 import type { Units } from './job';
 import type { CargoJob, VoyageState } from './voyage';
 
-export type OwnerId = 'player' | `market:${number}`;
-export type Custody = { at: 'aboard' } | { at: 'quay'; port: number; berth: number };
+export type OwnerId = 'player' | `market:${number}` | `char:${string}`;
+export type Custody = { at: 'aboard' } | { at: 'quay'; port: number; berth: number } | { at: 'store'; port: number };
 
 export interface CargoLot {
   /** 'L1', 'L2', … from voyage.nextId; never reused */
@@ -77,7 +77,7 @@ function takeFrom(v: VoyageState, lot: CargoLot, n: number): void {
 }
 
 const sameCustody = (a: Custody, b: Custody): boolean =>
-  a.at === 'aboard' ? b.at === 'aboard' : b.at === 'quay' && a.port === b.port && a.berth === b.berth;
+  a.at === 'aboard' ? b.at === 'aboard' : a.at === 'quay' && b.at === 'quay' && a.port === b.port && a.berth === b.berth;
 
 /** The lot with the lowest id among those that match. */
 function oldest(v: VoyageState, match: (l: CargoLot) => boolean): CargoLot | undefined {

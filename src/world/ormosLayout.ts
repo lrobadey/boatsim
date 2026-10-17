@@ -87,6 +87,8 @@ export interface HarborPlan {
   lamps: [number, number][];
   /** stacks of grain sacks: centre, columns × rows × layers, yaw */
   sacks?: { x: number; z: number; nx: number; nz: number; layers: number; yaw?: number }[];
+  /** land use scale per good id on this world (e.g. no vineyards) */
+  landUse?: Partial<Record<string, number>>;
 }
 
 export const ORMOS_PLAN: HarborPlan = {
@@ -139,6 +141,7 @@ export const KORMAKOS_PLAN: HarborPlan = {
   sacks: [
     {x:-4.5,z:8.6,nx:3,nz:3,layers:2},{x:9,z:8.6,nx:5,nz:3,layers:3},
   ],
+  landUse: { wine: 0 },
 };
 
 /** Authored plans by name; the worker decides which harbour gets which (HarbourSite.plan) and publishes it. */
