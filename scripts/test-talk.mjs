@@ -68,6 +68,17 @@ test('news: save round trip, malformed records dropped', () => {
   assert.ok(parseSave(JSON.stringify(old), 1, 64), 'a save without talk is refused');
 });
 
+test('news: a newer record missing the port falls back to an older one', () => {
+  const e = econ();
+  const older = recordOf(e, T0 - 48);
+  const newer = { T: T0 - 24, ports: older.ports.filter((p) => p.port !== 2) };
+  const news = new PriceNews();
+  news.add(older);
+  news.add(newer);
+  const h = news.heard(1, 2, T0 + 1000, () => 0);
+  assert.ok(h && h.T === older.T, 'older record with the port was not used');
+});
+
 test('facts: every price is a real ask or bid, formatted, and unknown news says so', () => {
   const e = econ();
   const news = new PriceNews();
@@ -123,6 +134,50 @@ test('reply: unknown ports and goods dropped, duplicates merged, text capped', (
   assert.equal(parseReply({ say: ' ', told: [], note: '' }, names), null);
   assert.equal(parseReply(null, names), null);
 });
+
+// The dev-server proxy: foreign pages must not reach the model with the user's key. Served on a real local socket
+// with no key, so an accepted request answers 'no-key' and nothing is sent to OpenAI.
+{
+  const { talkProxy, refusal } = await import('./talk-proxy.mjs');
+  const http = await import('node:http');
+  const os = await import('node:os');
+  const at = (headers, method = 'POST') => refusal({ method, headers: { host: '127.0.0.1:5173', ...headers } });
+  test('proxy: JSON content type required, same origin or none', () => {
+    assert.deepEqual(at({ 'content-type': 'application/json' }, 'GET'), [405, 'method']);
+    assert.deepEqual(at({ 'content-type': 'text/plain' }), [415, 'content-type']);
+    assert.deepEqual(at({}), [415, 'content-type']);
+    assert.equal(at({ 'content-type': 'application/json' }), null);
+    assert.equal(at({ 'content-type': 'Application/JSON; charset=utf-8', origin: 'http://127.0.0.1:5173' }), null);
+    assert.deepEqual(at({ 'content-type': 'application/json', origin: 'https://evil.example' }), [403, 'origin']);
+    assert.deepEqual(at({ 'content-type': 'application/json', origin: 'http://127.0.0.1:5174' }), [403, 'origin']);
+    assert.deepEqual(at({ 'content-type': 'application/json', origin: 'null' }), [403, 'origin']);
+  });
+
+  const savedKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  let handler;
+  talkProxy().configureServer({ config: { mode: 'test', root: os.tmpdir() }, middlewares: { use: (_path, fn) => { handler = fn; } } });
+  const server = http.createServer((req, res) => handler(req, res));
+  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const body = JSON.stringify({ instructions: 'x', messages: [{ role: 'user', content: 'hi' }], schema: { type: 'object' } });
+  const post = async (headers) => {
+    const r = await fetch(base, { method: 'POST', headers, body });
+    return [r.status, (await r.json()).error];
+  };
+  const cases = [
+    ['proxy: a text/plain post from a foreign page is refused', { 'Content-Type': 'text/plain', Origin: 'https://evil.example' }, [415, 'content-type']],
+    ['proxy: a JSON post from a foreign origin is refused', { 'Content-Type': 'application/json', Origin: 'https://evil.example' }, [403, 'origin']],
+    ['proxy: a same-origin JSON post goes through', { 'Content-Type': 'application/json', Origin: base }, [200, 'no-key']],
+    ['proxy: a JSON post without Origin goes through', { 'Content-Type': 'application/json' }, [200, 'no-key']],
+  ];
+  for (const [name, headers, want] of cases) {
+    const got = await post(headers);
+    test(name, () => assert.deepEqual(got, want));
+  }
+  server.close();
+  if (savedKey !== undefined) process.env.OPENAI_API_KEY = savedKey;
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

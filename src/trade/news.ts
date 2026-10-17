@@ -70,7 +70,7 @@ export class PriceNews {
       const r = this.records[i];
       if (r.T > latest) continue;
       const p = r.ports.find((x) => x.port === about);
-      if (!p) return null;
+      if (!p) continue;
       const ask = {} as Record<GoodId, number>;
       const bid = {} as Record<GoodId, number>;
       GOOD_IDS.forEach((g, k) => {

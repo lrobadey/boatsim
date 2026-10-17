@@ -4,6 +4,8 @@ import { GOODS, GOOD_IDS, goodById, type GoodId } from './goods';
 import { porterFeePerUnit, type CargoJob, type VoyageState } from './voyage';
 
 export const CARGO_WORK_KG_PER_HOUR = 400;
+/** Hours from the last unit landing or stowing to the quay being cleared (§6.2). */
+export const CART_AFTER_JOB = 1;
 export type Units = Partial<Record<GoodId, number>>;
 
 export interface StepResult {
@@ -140,8 +142,20 @@ function readCounts(raw: unknown): Partial<Record<GoodId, number>> {
   return out;
 }
 
-/** Validate a v2 job or migrate the legacy signed pending/carry representation. */
-export function restoreJob(raw: unknown, now: number): CargoJob {
+/**
+ * Validate a v2 job or migrate the legacy signed pending/carry representation, then check it against
+ * the physical cargo: incoming never exceeds what waits on the quay, outgoing never exceeds the manifest.
+ */
+export function restoreJob(raw: unknown, now: number, manifest: Units): CargoJob {
+  const job = readJob(raw, now);
+  for (const id of GOOD_IDS) {
+    if ((job.incoming[id] ?? 0) > (job.quay[id] ?? 0)) throw new RangeError(`incoming ${id} exceeds quay cargo`);
+    if ((job.outgoing[id] ?? 0) > (manifest[id] ?? 0)) throw new RangeError(`outgoing ${id} exceeds physical cargo`);
+  }
+  return job;
+}
+
+function readJob(raw: unknown, now: number): CargoJob {
   if (!isObj(raw) || !finite(now)) throw new RangeError('malformed cargo job');
   if (raw.version !== undefined && raw.version !== 2) throw new RangeError('unknown cargo job version');
   if (raw.version === 2) {
@@ -179,6 +193,6 @@ export function restoreJob(raw: unknown, now: number): CargoJob {
     if (!next) throw new RangeError('legacy carry has no pending unit');
     legacy.active = { ...next, workKg: carry * goodById(next.good).mass };
   }
-  if (pendingUnits(legacy) === 0) legacy.cartAt = now + 1;
+  if (pendingUnits(legacy) === 0) legacy.cartAt = now + CART_AFTER_JOB;
   return legacy;
 }

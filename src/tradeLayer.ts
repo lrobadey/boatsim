@@ -130,12 +130,15 @@ export class TradeLayer {
       this.quayKey = '';
     }
     if (job && !this.quayAnchorCaptured) {
-      if (this.isAtJobBerth(job)) {
-        const shoreWorld = moor.plank?.shoreWorld.clone() ?? null;
-        this.quayAnchorPlank = shoreWorld ? { shoreWorld } : null;
+      if (!this.isAtJobBerth(job)) {
+        // A restored job first seen away from its berth uses the berth face as its stable fallback.
+        this.quayAnchorCaptured = true;
+      } else if (moor.plank && moor.plank.deployed >= 0.999) {
+        // At the berth, wait for the plank to be fully down (it swings in from upright after docking);
+        // until then the stack uses the berth face, and re-lays out once at the plank foot.
+        this.quayAnchorPlank = { shoreWorld: moor.plank.shoreWorld.clone() };
+        this.quayAnchorCaptured = true;
       }
-      // A restored job first seen away from its berth uses the berth face as its stable fallback.
-      this.quayAnchorCaptured = true;
     }
     const berth = job ? this.berthById(job.berth) : null;
     const plank = this.quayAnchorPlank;

@@ -4,7 +4,7 @@
 import type { Economy } from './economy';
 import { GOOD_IDS, goodById, type GoodId } from './goods';
 import { applyWages, noteOpened as writeNotebook, porterFeePerUnit, type VoyageState } from './voyage';
-import { addOrder, newJob, pendingUnits as countPending, restoreJob, stepJob, type Units } from './job';
+import { addOrder, CART_AFTER_JOB, newJob, pendingUnits as countPending, restoreJob, stepJob, type Units } from './job';
 
 /** Signed units per good: + buy, − sell. */
 export type Orders = Partial<Record<GoodId, number>>;
@@ -24,8 +24,6 @@ export interface Limit {
 
 /** Hours the hatches stay open after a job ends (§6.2). */
 const HATCH_AFTER_JOB = 1;
-/** Hours from the last unit landing or stowing to the quay being cleared (§6.2). */
-const CART_AFTER_JOB = 1;
 
 export class TradeSession {
   readonly economy: Economy;
@@ -40,11 +38,7 @@ export class TradeSession {
     this.holdCapacity = o.holdCapacity;
     this.lastT = o.economy.now;
     if (o.voyage.job) {
-      o.voyage.job = restoreJob(o.voyage.job, this.lastT);
-      for (const id of GOOD_IDS) {
-        if ((o.voyage.job.incoming[id] ?? 0) > (o.voyage.job.quay[id] ?? 0)) throw new RangeError(`incoming ${id} exceeds quay cargo`);
-        if ((o.voyage.job.outgoing[id] ?? 0) > (o.voyage.manifest[id] ?? 0)) throw new RangeError(`outgoing ${id} exceeds physical cargo`);
-      }
+      o.voyage.job = restoreJob(o.voyage.job, this.lastT, o.voyage.manifest);
       const active = o.voyage.job.active;
       if (active?.direction === 'load') {
         const occupied = this.physicalHoldUse().volume + goodById(active.good).stow;

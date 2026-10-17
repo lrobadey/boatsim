@@ -6,7 +6,7 @@ const { GOODS, GOOD_IDS } = await import('../src/trade/goods.ts');
 const { Economy } = await import('../src/trade/economy.ts');
 const { TradeSession } = await import('../src/trade/session.ts');
 const { newVoyage } = await import('../src/trade/voyage.ts');
-const { CARGO_WORK_KG_PER_HOUR, jobSummary, pendingUnits, restoreJob } = await import('../src/trade/job.ts');
+const { CARGO_WORK_KG_PER_HOUR, CART_AFTER_JOB, jobSummary, pendingUnits, restoreJob } = await import('../src/trade/job.ts');
 const { buildSave, parseSave } = await import('../src/trade/save.ts');
 
 let passed = 0;
@@ -295,15 +295,15 @@ test('confirm at a different berth is rejected before any state mutation', () =>
 });
 
 test('legacy signed job migrates signs, quay, fractional effort, and empty-job cart delay', () => {
-  const legacy = restoreJob({ port: 2, berth: 4, pending: { wine: -2, wheat: 3 }, quay: { wheat: 3 }, carry: 0.25 }, T0);
+  const legacy = restoreJob({ port: 2, berth: 4, pending: { wine: -2, wheat: 3 }, quay: { wheat: 3 }, carry: 0.25 }, T0, { wine: 2 });
   assert.equal(legacy.version, 2);
   assert.equal(legacy.outgoing.wine, 2);
   assert.equal(legacy.incoming.wheat, 3);
   assert.equal(legacy.quay.wheat, 3);
   assert.deepEqual(legacy.active, { good: 'wine', direction: 'unload', workKg: 10.5 });
-  const empty = restoreJob({ port: 0, berth: 0, pending: {}, quay: {}, carry: 0 }, T0);
-  assert.equal(empty.cartAt, T0 + 1);
-  const noCarry = restoreJob({ port: 0, berth: 0, pending: { honey: 1 }, quay: { honey: 1 } }, T0);
+  const empty = restoreJob({ port: 0, berth: 0, pending: {}, quay: {}, carry: 0 }, T0, {});
+  assert.equal(empty.cartAt, T0 + CART_AFTER_JOB);
+  const noCarry = restoreJob({ port: 0, berth: 0, pending: { honey: 1 }, quay: { honey: 1 } }, T0, {});
   assert.equal(noCarry.active, null);
 });
 
@@ -316,7 +316,11 @@ test('strict restore rejects malformed v2 and legacy jobs and inconsistent save 
     { version: 2, port: 0, berth: 0, incoming: {}, outgoing: {}, quay: {}, active: null, cartAt: null },
     { port: 0, berth: 0, pending: { wine: 1 }, quay: {}, carry: 1 },
   ];
-  for (const raw of bad) assert.throws(() => restoreJob(raw, T0));
+  for (const raw of bad) assert.throws(() => restoreJob(raw, T0, {}));
+  const v2 = (incoming, outgoing, quay) => ({ version: 2, port: 0, berth: 0, incoming, outgoing, quay, active: null, cartAt: null });
+  assert.throws(() => restoreJob(v2({ wheat: 2 }, {}, { wheat: 1 }), T0, {}), /exceeds quay/);
+  assert.throws(() => restoreJob(v2({}, { wine: 2 }, {}), T0, { wine: 1 }), /exceeds physical/);
+  assert.doesNotThrow(() => restoreJob(v2({ wheat: 1 }, { wine: 1 }, { wheat: 1 }), T0, { wine: 1 }));
   const s = setup();
   s.voyage.job = { version: 2, port: 0, berth: 0, incoming: { wheat: 2 }, outgoing: {}, quay: { wheat: 1 }, active: null, cartAt: null };
   const save = buildSave({ seed: 173, heightmapSize: 16, clock: { dayCount: 0, hours: 0, dayOfYear: 0, moonPhase: 0 }, windTime: 0, berth: { id: 0, bowOut: false }, voyage: s.voyage, economy: s.economy.snapshot() });

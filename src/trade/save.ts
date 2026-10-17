@@ -2,8 +2,8 @@
 // throw and work where localStorage is missing (headless tests return false / null).
 
 import type { EconomySnapshot } from './economy';
-import { GOOD_IDS, type GoodId } from './goods';
-import { restoreJob } from './job';
+import { GOOD_IDS } from './goods';
+import { restoreJob, type Units } from './job';
 import type { VoyageState } from './voyage';
 import type { PriceRecord } from './news';
 
@@ -110,13 +110,7 @@ export function parseSave(json: string, seed: number, heightmapSize: number): Sa
     const voyage = d.voyage as Record<string, unknown>;
     const normalized = { ...voyage } as unknown as VoyageState;
     if (voyage.job !== null) {
-      const job = restoreJob(voyage.job, (d.economy as Record<string, unknown>).T as number);
-      const manifest = voyage.manifest as Partial<Record<GoodId, number>>;
-      for (const id of GOOD_IDS) {
-        if ((job.incoming[id] ?? 0) > (job.quay[id] ?? 0)) throw new RangeError(`incoming ${id} exceeds quay cargo`);
-        if ((job.outgoing[id] ?? 0) > (manifest[id] ?? 0)) throw new RangeError(`outgoing ${id} exceeds physical cargo`);
-      }
-      normalized.job = job;
+      normalized.job = restoreJob(voyage.job, (d.economy as Record<string, unknown>).T as number, voyage.manifest as Units);
     }
     return { ...d, voyage: normalized } as unknown as SaveData;
   } catch (err) {

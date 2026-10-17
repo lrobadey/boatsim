@@ -18,6 +18,10 @@ import { LAYER_REFRACT } from '../core/pipeline';
 const BLOCK = 1500;
 /** vegetation draw tile (m); divides BLOCK so tiles nest inside blocks */
 const VEG_TILE = 500;
+/** harbour lamp switch: night level (0..1) and camera distance (m) beyond the outermost lamp.
+ *  On/off thresholds differ so the light count, and with it the shader programs, changes rarely. */
+const LAMP_NIGHT_ON = 0.03, LAMP_NIGHT_OFF = 0.01;
+const LAMP_FADE_START = 180, LAMP_FAR_ON = 260, LAMP_FAR_OFF = 300;
 
 function colorize(g: THREE.BufferGeometry, c: THREE.Color, jitter: number, r: () => number, heightDarken = 0) {
   const n = g.attributes.position.count;
@@ -170,6 +174,12 @@ export class Props {
   /** blocking solids for people on the quay and village dock (world): props and standing figures */
   readonly solids: Solid[] = [];
   private harborLamps:THREE.PointLight[]=[];
+  /** lamp centroid (xz) and the farthest lamp from it, for the camera-distance switch */
+  private lampCenter=new THREE.Vector2();
+  private lampReach=0;
+  /** Lamps start lit so the startup shader warm-up compiles the lamp-on programs; update() then
+   *  switches all of them together (changing the light count recompiles every lit material). */
+  private lampsLit=true;
 
   constructor(gen: WorldGenResult, private terrain: Terrain, private waves: WaveField, noise: THREE.Texture, q: Quality, assets: VisualAssets, private models: ModelKit, ormos?:OrmosHarbour) {
     this.fireMat = models.material('fire');
@@ -204,6 +214,8 @@ export class Props {
       }
       this.solids.push({kind:'cyl',cx:site.x,cz:site.z,r:.3,y0:site.y,y1:site.y+1.8,surface:'wood',walkTop:false});
     }
+    for(const l of this.harborLamps)this.lampCenter.x+=l.position.x/this.harborLamps.length,this.lampCenter.y+=l.position.z/this.harborLamps.length;
+    for(const l of this.harborLamps)this.lampReach=Math.max(this.lampReach,Math.hypot(l.position.x-this.lampCenter.x,l.position.z-this.lampCenter.y));
     // beacon fire in front of the temple (east side)
     const t = gen.sites.temple;
     this.beaconMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff8a30, emissiveIntensity: 2, transparent: true, opacity: 0.9, depthWrite: false });
@@ -617,8 +629,8 @@ export class Props {
   }
 
   update(dt: number, time: number, camera: THREE.Camera, night: number) {
-    for(const l of this.harborLamps)l.intensity=night*20;
     const cp = camera.position;
+    this.updateLamps(cp,night);
     for (const b of this.blocks) {
       const d = Math.hypot(b.center.x - cp.x, b.center.z - cp.z);
       b.obj.visible = d < b.maxDist + BLOCK;
@@ -636,5 +648,19 @@ export class Props {
     this.beaconMat.emissiveIntensity = 3 + 4 * night * flick;
     this.flame.scale.set(1 + 0.1 * Math.sin(time * 9), 0.9 + 0.2 * flick, 1 + 0.1 * Math.cos(time * 7));
     this.fireMat.emissiveIntensity = night * 3;
+  }
+
+  /** Every point light in the scene is evaluated by every lit material, so the lamps leave the
+   *  scene by day and away from the harbour. They fade out with distance before the switch and the
+   *  on/off thresholds are apart, so the switch is invisible and happens only at dusk, dawn or on
+   *  crossing the harbour's range. */
+  private updateLamps(cp:THREE.Vector3,night:number){
+    if(!this.harborLamps.length)return;
+    const d=Math.max(0,Math.hypot(cp.x-this.lampCenter.x,cp.z-this.lampCenter.y)-this.lampReach);
+    const lit=this.lampsLit?night>LAMP_NIGHT_OFF&&d<LAMP_FAR_OFF:night>LAMP_NIGHT_ON&&d<LAMP_FAR_ON;
+    if(lit!==this.lampsLit){this.lampsLit=lit;for(const l of this.harborLamps)l.visible=lit;}
+    if(!lit)return;
+    const fade=1-THREE.MathUtils.smoothstep(d,LAMP_FADE_START,LAMP_FAR_ON);
+    for(const l of this.harborLamps)l.intensity=night*20*fade;
   }
 }

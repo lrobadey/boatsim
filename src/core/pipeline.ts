@@ -122,7 +122,12 @@ export class Pipeline {
   // A frame's GPU time can't run far past the frame interval for long, or frames would arrive that
   // slowly. Chrome on Metal reports ~60 ms elapsed while frames arrive every 16.7 ms: such a timer
   // is dropped and adaptation falls back to counting missed frames.
-  private recentFrameMs: number[] = [];
+  private recentFrameMs = new Float32Array(120); // ring buffer of the last 120 frame intervals
+  private frameMsScratch = new Float32Array(120); // sorted copy for the median, reused
+  private frameMsHead = 0;
+  private frameMsCount = 0;
+  private frameMsMedian = 0; // refreshed every 30 frames, not each one
+  private frameMsAge = 0;
   private timerImplausible = 0;
 
   constructor(canvas: HTMLCanvasElement, private scene: THREE.Scene, private camera: THREE.PerspectiveCamera, private quality: Quality) {
@@ -340,11 +345,17 @@ export class Pipeline {
 
   /** drop a GPU timer that reads well past the real frame interval for ~2 s straight */
   private checkGpuTimer(frameMs: number) {
-    this.recentFrameMs.push(frameMs);
-    if (this.recentFrameMs.length > 120) this.recentFrameMs.shift();
-    if (this.recentFrameMs.length < 120) return;
-    const median = [...this.recentFrameMs].sort((a, b) => a - b)[60];
-    this.timerImplausible = this.gpuMs > median * 1.5 ? this.timerImplausible + 1 : 0;
+    this.recentFrameMs[this.frameMsHead] = frameMs;
+    this.frameMsHead = (this.frameMsHead + 1) % 120;
+    if (this.frameMsCount < 120) this.frameMsCount++;
+    if (this.frameMsCount < 120) return;
+    if (this.frameMsAge === 0) {
+      this.frameMsScratch.set(this.recentFrameMs);
+      this.frameMsScratch.sort();
+      this.frameMsMedian = this.frameMsScratch[60];
+    }
+    this.frameMsAge = (this.frameMsAge + 1) % 30;
+    this.timerImplausible = this.gpuMs > this.frameMsMedian * 1.5 ? this.timerImplausible + 1 : 0;
     if (this.timerImplausible < 120) return;
     this.resetGpuSamples();
     this.timerExt = null;

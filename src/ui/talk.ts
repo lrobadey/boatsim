@@ -36,7 +36,8 @@ export class Talk {
   private readonly log = el('div', 'talk-log');
   private readonly input = el('input', 'talk-input');
   private src: TalkSource | null = null;
-  private pending = false;
+  /** conversations waiting on a reply, by their `lines` (the caller builds a new source on every opening) */
+  private readonly pending = new WeakSet<TalkLine[]>();
   private readonly onKeyDown = (e: KeyboardEvent) => this.handleKey(e);
   onClose?: () => void;
 
@@ -83,6 +84,7 @@ export class Talk {
   render(): void {
     const s = this.src;
     if (!s) return;
+    const waiting = this.pending.has(s.lines);
     this.log.replaceChildren(
       ...s.lines.map((l) => {
         const p = el('p', 'tl ' + l.who);
@@ -95,7 +97,7 @@ export class Talk {
         return p;
       }),
     );
-    if (this.pending) {
+    if (waiting) {
       const p = el('p', 'tl them wait');
       const n = el('span', 'tl-who');
       n.textContent = s.name;
@@ -103,24 +105,25 @@ export class Talk {
       this.log.append(p);
     }
     this.log.scrollTop = this.log.scrollHeight;
-    this.input.disabled = this.pending;
-    if (!this.pending && document.activeElement !== this.input) this.input.focus();
+    this.input.disabled = waiting;
+    if (!waiting && document.activeElement !== this.input) this.input.focus();
   }
 
   private async send(): Promise<void> {
     const s = this.src;
     const text = this.input.value.trim();
-    if (!s || this.pending || !text) return;
+    if (!s || this.pending.has(s.lines) || !text) return;
     this.input.value = '';
-    this.pending = true;
+    this.pending.add(s.lines);
     try {
       // say() appends your line before it waits, so the redraw shows it under the trader's pending '…'
       const answered = s.say(text);
       this.render();
       await answered;
     } finally {
-      this.pending = false;
-      if (this.src === s) this.render();
+      this.pending.delete(s.lines);
+      // the panel may have been closed and reopened meanwhile with a new source over the same lines
+      if (this.src) this.render();
     }
   }
 
