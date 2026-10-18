@@ -123,7 +123,7 @@ const purchase = (qty) => ({ qty, quantity: qty, jars: qty, good: 'wine', from: 
 const isNumeric = (p) => [p.type].flat().some((t) => t === 'integer' || t === 'number');
 /** citation: the line itself, or its 1-based number among the player's lines when the tool asks for a number */
 const promise = ({ claim, interpretation, line, lineNo, agreement = null, day }) =>
-  ({ claim, interpretation, citation: (p) => (isNumeric(p) ? lineNo : line), agreement, agreementId: agreement, expectDay: day, day, byDay: day });
+  ({ claim, interpretation, citation: (p) => (isNumeric(p) ? lineNo : line), agreement, agreementId: agreement, agreement_id: agreement ?? '', expectDay: day, expect_day: day, line: lineNo, day, byDay: day });
 function talk(E, who, model, id = 'C1') {
   const port = char(E.world, who).port;
   const c = new Conversation({

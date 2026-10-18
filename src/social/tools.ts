@@ -235,6 +235,12 @@ function transaction(ctx: ToolContext, a: Record<string, unknown>, req: string):
       : world.agreements.find((x) => x.closedT === null && (x.terms.buyer === character || x.terms.alternateSale));
   if (whose === 'consignment' && !agreement) return { output: { ok: false, reason: 'unknown' } };
   const from = agreement ? agreement.id : 'player';
+  // the jars must be aboard and free now: the player's own, or the agreement owner's under that agreement
+  const owner = agreement ? `char:${agreement.owner}` : 'player';
+  const free = dealings.o.session.voyage.lots
+    .filter((l) => l.good === 'wine' && l.owner === owner && l.custody.at === 'aboard' && l.moving === undefined && l.agreement === agreement?.id)
+    .reduce((n, l) => n + l.qty, 0);
+  if (free < jars) return { output: { ok: false, reason: 'stock' } };
   const quote = dealings.buyerQuote(character, port, jars);
   const total = money(quote);
   const per = money(Math.floor(quote / jars));
