@@ -2,14 +2,14 @@
 // facts a character witnessed, was shown or heard as news; warmth, the trust limit, beliefs and overdue stages are
 // worked out from them on demand and never stored. Pure: plain data, no game imports.
 
-import type { Agreement, CharacterId, WorldState } from '../trade/world';
+import type { Agreement, CharacterId, Holder, WorldState } from '../trade/world';
 
 export type RecordSource = 'witnessed' | 'shown' | 'news';
 
 interface RecordOf<K extends string, F> {
   /** built from the facts, e.g. 'damaris:settled:A3:R57', so a retelling or reload never writes it twice */
   id: string;
-  holder: CharacterId;
+  holder: Holder;
   /** absolute game hour */
   T: number;
   source: RecordSource;
@@ -24,8 +24,12 @@ export type SocialRecord =
   /** unit = the sale receipt's gross per unit; heardBid = the bid she had heard for that port at the sale */
   | RecordOf<'sold-below', { agreement: string; receipt: string; unit: number; heardBid: number }>
   | RecordOf<'heard-sale', { qty: number; unit: number; consignedQty: number; agreement?: string }>
-  /** written by Pass 2 */
-  | RecordOf<'letter-shown', Record<string, unknown>>
+  /** the letter's author tells its recipient by ship that the player showed it to him */
+  | RecordOf<'letter-shown', { document: string; by: 'player' }>
+  /** someone was shown a document (source 'shown'); possession unchanged */
+  | RecordOf<'document-shown', { document: string; by: Holder }>
+  /** something the player said: the claim as spoken, her reading of it, and the cited line */
+  | RecordOf<'promise', { claim: string; interpretation: 'firm' | 'tentative' | 'conditional'; citation: string; agreement?: string; expectT: number }>
   /** T is the cutoff */
   | RecordOf<'undelivered', { qty: number }>;
 
@@ -51,7 +55,7 @@ export function addRecord(world: WorldState, r: SocialRecord): boolean {
 }
 
 /** The holder's records with T ≤ the given time, in time order (ties keep the order they were added). */
-export function recordsOf(world: WorldState, who: CharacterId, T: number): SocialRecord[] {
+export function recordsOf(world: WorldState, who: Holder, T: number): SocialRecord[] {
   return world.records
     .filter((r) => r.holder === who && r.T <= T)
     .sort((x, y) => x.T - y.T);

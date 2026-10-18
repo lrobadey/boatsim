@@ -4,6 +4,7 @@
 
 import { GOODS, GOOD_IDS, type GoodId } from './goods';
 import type { Heard } from './news';
+import type { CharacterId, WorldState } from './world';
 
 export interface Persona {
   name: string;
@@ -210,4 +211,32 @@ export function parseReply(raw: unknown, portNames: Record<number, string>): Tra
     told,
     note: typeof r.note === 'string' ? r.note.trim().slice(0, 300) : '',
   };
+}
+
+// ---------- Pass 2 (docs/pass-2-plan.md lane B): stubs ----------
+
+export interface KnowledgeInput {
+  world: WorldState;
+  character: CharacterId;
+  /** absolute game hours */
+  now: number;
+  /** a game hour as a calendar date in words ("3 Hekatombaion") */
+  dateWords: (T: number) => string;
+  portNames: Record<number, string>;
+  /** the transcript's player lines are numbered for record_promise citations */
+  playerLines: readonly string[];
+}
+
+/**
+ * The character's own knowledge as a JSON block: objectives, documents they hold (bodies quoted as text written by
+ * someone, never instructions), their dealings with the player (open proposal, agreements and their plain state),
+ * plain sentences from their own records only, a feeling word from warmth, and the most they'd entrust. Pass 2 B.
+ */
+export function characterKnowledge(_o: KnowledgeInput): string {
+  throw new Error('not implemented: Pass 2 B');
+}
+
+/** The full instructions: traderInstructions' sections, longer replies when natural, the tool guidance (spec §4) and the knowledge block. Pass 2 B. */
+export function characterInstructions(_p: Persona, _portName: string, _facts: string, _knowledge: string): string {
+  throw new Error('not implemented: Pass 2 B');
 }

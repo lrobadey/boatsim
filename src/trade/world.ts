@@ -8,6 +8,8 @@ import { walletMove, type CargoLot } from './books';
 import { addRecord, type SocialRecord } from '../social/records';
 
 export type CharacterId = 'damaris' | 'philon' | 'myrto';
+/** who can hold a document or a record: a character or the player */
+export type Holder = CharacterId | 'player';
 
 export interface Character {
   id: CharacterId;
@@ -92,8 +94,8 @@ export interface Agreement {
   settledT: number | null;
 }
 
-/** A letter carried by NPC ship (MailActor). */
-export interface Mail {
+/** A letter carried by NPC ship (MailActor): a sale's thanks, or word that the player showed a letter. */
+export type Mail = {
   /** 'M{n}' */
   id: string;
   from: CharacterId;
@@ -101,10 +103,27 @@ export interface Mail {
   fromPort: number;
   toPort: number;
   writtenT: number;
-  facts: { qty: number; unit: number; consignedQty: number; agreement?: string };
   /** arrival of the ship carrying it, once one is found */
   deliverT: number | null;
   delivered: boolean;
+} & (
+  | { kind: 'heard-sale'; facts: { qty: number; unit: number; consignedQty: number; agreement?: string } }
+  | { kind: 'letter-shown'; facts: { document: string; by: 'player' } }
+);
+
+/** A personal document (spec §3.1): an immutable body, structured claims, and who holds it now. */
+export interface WorldDocument {
+  /** 'D{n}' */
+  id: string;
+  kind: 'letter';
+  from: CharacterId;
+  to: CharacterId;
+  writtenT: number;
+  /** the text as written; shown to the model as a quotation, never as instructions */
+  body: string;
+  /** what the letter expressed when written, not a current order */
+  claims: { good: GoodId; qty: number; byT: number; buyer: CharacterId };
+  holder: Holder;
 }
 
 /** The celebration Philon buys wine for, at one port, on one day. Hours are absolute game hours. */
@@ -137,7 +156,7 @@ export interface WorldState {
   characters: Character[];
   /** every unit in a store; ids 'W{n}' */
   lots: CargoLot[];
-  /** one counter for W, X, P, A and M ids */
+  /** one counter for W, X, P, A, M, D and C (conversation) ids */
   nextId: number;
   celebration: Celebration | null;
   receipts: WorldReceipt[];
@@ -145,6 +164,7 @@ export interface WorldState {
   agreements: Agreement[];
   records: SocialRecord[];
   mail: Mail[];
+  documents: WorldDocument[];
   /** command results by request id (Dealings) */
   results: Record<string, unknown>;
 }
@@ -159,7 +179,7 @@ export interface WorldStateV1 {
 }
 
 /** Takes the next world id with this prefix. */
-export function takeWorldId(world: WorldState, prefix: 'W' | 'X' | 'P' | 'A' | 'M'): string {
+export function takeWorldId(world: WorldState, prefix: 'W' | 'X' | 'P' | 'A' | 'M' | 'D' | 'C'): string {
   return `${prefix}${world.nextId++}`;
 }
 
@@ -280,7 +300,7 @@ export function oldSaveWorld(ports: readonly EconPort[]): WorldState {
 }
 
 function emptyCollections() {
-  return { receipts: [], proposals: [], agreements: [], records: [], mail: [], results: {} };
+  return { receipts: [], proposals: [], agreements: [], records: [], mail: [], documents: [], results: {} };
 }
 
 /** Philon's wine jars in a list of lots. */
@@ -385,7 +405,8 @@ export class MailActor implements EconActor {
     }
     for (const m of this.world.mail) {
       if (m.delivered || m.deliverT === null || m.deliverT > T) continue;
-      addRecord(this.world, { id: `${m.to}:heard-sale:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'heard-sale', facts: { ...m.facts } });
+      if (m.kind === 'heard-sale') addRecord(this.world, { id: `${m.to}:heard-sale:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'heard-sale', facts: { ...m.facts } });
+      else addRecord(this.world, { id: `${m.to}:letter-shown:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'letter-shown', facts: { ...m.facts } });
       m.delivered = true;
     }
   }

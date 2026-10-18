@@ -331,6 +331,7 @@ export class Dealings {
         fromPort: buyer.port,
         toPort: recipient.port,
         writtenT: T,
+        kind: 'heard-sale',
         facts: {
           qty: o.qty,
           unit: Math.floor(quote / o.qty),

@@ -32,7 +32,7 @@ export interface SaveData {
   voyage: VoyageState;
   economy: EconomySnapshot;
   /** traders (optional; older saves have none): the price news heard at each port and each trader's note on you, keyed 'trader:{port}' */
-  talk?: { news: PriceRecord[]; notes: Record<string, string> };
+  talk?: { news: PriceRecord[]; notes: Record<string, string>; lines?: Record<string, { who: 'you' | 'them' | 'info'; text: string }[]> };
   /** the people and their money (optional; older saves have none): see oldSaveWorld */
   world?: WorldState;
 }
