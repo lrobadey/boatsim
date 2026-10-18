@@ -211,7 +211,13 @@ function propose(ctx: ToolContext, a: Record<string, unknown>, req: string): Too
       terms.alternateSale ? `You may sell them to ${BuyerName} or elsewhere.` : `They are for ${BuyerName}.`,
       `You keep ${terms.share}% of the profit after the agreed value and the handling and sale costs. ${Name} pays the handling at the home quay.`,
     ],
-    confirm: (x) => dealings.accept(x, proposal, revision),
+    // accepting at her quay with the ship there starts the loading at once; the result says if loading couldn't start
+    confirm: (x) => {
+      const r = dealings.accept(x, proposal, revision);
+      if (!r.ok || ctx.berth === null || ctx.port !== terms.homePort) return r;
+      const load = dealings.startLoading(`${x}:load`, r.agreement, ctx.port, ctx.berth);
+      return { ...r, loading: load.ok ? 'started' : load.reason };
+    },
     decline: (x) => dealings.decline(x, proposal, revision),
   };
   return {
