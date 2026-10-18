@@ -45,6 +45,24 @@ const dr2 = (c: number) => `${c < 0 ? '−' : ''}${(Math.abs(c) / 100).toFixed(2
 const goodName = (good: CargoLot['good']) => goodById(good).name.toLowerCase();
 const jars = (n: number) => `${n} ${n === 1 ? 'jar' : 'jars'}`;
 
+/**
+ * A deadline at absolute hour T (the start of a day, as cutoffs are) and the whole days left before it:
+ * "the end of 29 Skirophorion · Year 1 (16 days left)". Shared with the conversation cards.
+ */
+export function deadlineWords(dateWords: (T: number) => string, T: number, now: number): string {
+  const h = T - now;
+  const left = h <= 0 ? 'passed' : h < 24 ? 'less than a day left' : `${Math.floor(h / 24)} ${Math.floor(h / 24) === 1 ? 'day' : 'days'} left`;
+  return `the end of ${dateWords(T - 1)} (${left})`;
+}
+
+/** "11:52 on 13 Skirophorion · Year 1" for an absolute hour */
+export function whenWords(dateWords: (T: number) => string, T: number): string {
+  const hours = T - 24 * Math.floor(T / 24);
+  const h = Math.floor(hours);
+  const m = Math.floor((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} on ${dateWords(T)}`;
+}
+
 function ownerWords(o: JournalOptions, owner: string): string {
   if (owner === 'player') return 'yours';
   const id = owner.startsWith('char:') ? (owner.slice(5) as CharacterId) : null;
@@ -84,7 +102,7 @@ function agreementItem(o: JournalOptions, a: Agreement): JournalItem {
   const acc = o.account(a.id);
   const lines = [
     `${jars(t.qty)} of ${goodName(t.good)}, valued at ${dr2(t.perJar)} a jar (${dr2(t.perJar * t.qty)} in all).`,
-    `For ${o.names(t.buyer)}${t.alternateSale ? ', or sold elsewhere' : ''}. You keep ${t.share}% of the profit after the agreed value and the handling and sale costs.`,
+    `For ${o.names(t.buyer)} by ${deadlineWords(o.dateWords, t.opportunityT, o.now)}${t.alternateSale ? ', or sold elsewhere' : ''}. You keep ${t.share}% of the profit after the agreed value and the handling and sale costs.`,
     `Agreed on ${o.dateWords(a.acceptedT)}. By the terms, ${owner} expects you back by ${o.dateWords(a.expectedT)}.`,
     `Loaded ${a.loaded} · sold ${a.sold} · returned ${a.returned}.`,
   ];
@@ -97,7 +115,7 @@ function promiseLines(o: JournalOptions, r: Extract<SocialRecord, { kind: 'promi
   const who = o.names(r.holder as CharacterId);
   return [
     `You said: “${r.facts.citation}”`,
-    `${who} took it as ${r.facts.interpretation === 'firm' ? 'a firm promise' : r.facts.interpretation === 'conditional' ? 'a conditional promise' : 'a tentative promise'}, by ${o.dateWords(r.facts.expectT)}.`,
+    `${who} took it as ${r.facts.interpretation === 'firm' ? 'a firm promise' : r.facts.interpretation === 'conditional' ? 'a conditional promise' : 'a tentative promise'}, by ${o.dateWords(r.facts.expectT - 1)}.`,
   ];
 }
 

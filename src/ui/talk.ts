@@ -3,7 +3,8 @@ import './talk.css';
 /**
  * Talking with a stall trader (docs/kormakos-and-traders-spec.md, part B): a small panel over the quay with
  * the conversation and a line to type into. Keyboard-first: Enter says the line, Tab opens the ledger, Esc
- * leaves; the buttons under the line (Trade, Show letter, Review agreement) are ordinary focusable buttons. When the trader has a card for you (a proposal, a sale, an account), Ctrl+Enter confirms it and
+ * leaves; the buttons under the line (Trade, Show letter, Review agreement) are ordinary focusable buttons, reached
+ * with Shift+Tab (Tab and Shift+Tab move between the panel's buttons and the line, and Enter presses a button). When the trader has a card for you (a proposal, a sale, an account), Ctrl+Enter confirms it and
  * Ctrl+Backspace declines it; you can keep talking meanwhile. The panel only shows and collects input; the trade layer talks to the model.
  */
 export interface TalkLine {
@@ -64,6 +65,8 @@ export class Talk {
   private readonly pending = new WeakSet<TalkLine[]>();
   private readonly onKeyDown = (e: KeyboardEvent) => this.handleKey(e);
   onClose?: () => void;
+  /** after each exchange has answered (or failed): screens over the conversation may redraw */
+  onSettled?: () => void;
   /** true while another screen (the personal menu) is over the conversation: keys and focus are left to it */
   covered: () => boolean = () => false;
 
@@ -100,6 +103,11 @@ export class Talk {
 
   get isOpen(): boolean {
     return this.src !== null;
+  }
+
+  /** the open conversation is waiting on the trader's answer */
+  get waiting(): boolean {
+    return this.src !== null && this.pending.has(this.src.lines);
   }
 
   open(src: TalkSource): void {
@@ -182,6 +190,7 @@ export class Talk {
       this.pending.delete(s.lines);
       // the panel may have been closed and reopened meanwhile with a new source over the same lines
       if (this.src) this.render();
+      this.onSettled?.();
     }
   }
 
@@ -197,6 +206,17 @@ export class Talk {
     await this.run(() => (confirm ? s.confirm() : s.decline()));
   }
 
+  /** the next (dir 1) or previous (−1) of the panel's usable controls in screen order, from the focused one */
+  private moveFocus(dir: 1 | -1): void {
+    const card = this.cardEl.hidden ? [] : [this.confirmBtn, this.declineBtn];
+    const all: HTMLElement[] = [...card, this.input, this.tradeBtn, this.letterBtn, this.reviewBtn];
+    const usable = all.filter((x) => !x.hidden && !(x as HTMLButtonElement | HTMLInputElement).disabled);
+    if (!usable.length) return;
+    const i = usable.indexOf(document.activeElement as HTMLElement);
+    const n = i < 0 ? (dir > 0 ? 0 : usable.length - 1) : (i + dir + usable.length) % usable.length;
+    usable[n].focus();
+  }
+
   private handleKey(e: KeyboardEvent): void {
     const s = this.src;
     if (!s || this.covered()) return;
@@ -205,15 +225,20 @@ export class Talk {
     if (e.key === 'Escape') {
       e.preventDefault();
       this.close();
-    } else if (e.key === 'Tab' && document.activeElement === this.input) {
-      // Tab from the text line opens the ledger; on the buttons it moves focus as usual
+    } else if (e.key === 'Tab') {
+      // Tab from the text line opens the ledger; otherwise focus moves around the panel's controls, wrapping
       e.preventDefault();
-      s.ledger();
+      if (document.activeElement === this.input && !e.shiftKey) s.ledger();
+      else this.moveFocus(e.shiftKey ? -1 : 1);
     } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (e.repeat) return;
-      if (e.ctrlKey && s.card()) void this.act(s, true);
-      else if (!e.ctrlKey) void this.send(s);
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (!e.repeat && s.card()) void this.act(s, true);
+      } else if (document.activeElement === this.input) {
+        e.preventDefault();
+        if (!e.repeat) void this.send(s);
+      }
+      // on a button, Enter presses it
     } else if (e.key === 'Backspace' && e.ctrlKey && s.card()) {
       e.preventDefault();
       if (!e.repeat) void this.act(s, false);

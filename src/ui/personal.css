@@ -40,3 +40,4 @@
 .pm-btn:hover:not(:disabled) { border-color: rgba(243, 238, 228, 0.6); background: rgba(243, 238, 228, 0.05); }
 .pm-btn.primary { background: var(--bone); color: #101820; border-color: transparent; }
 .pm-btn.primary:hover:not(:disabled) { background: #fff; }
+.pm-btn:disabled { opacity: 0.5; cursor: default; }

@@ -45,3 +45,13 @@ cargo resuming after the screens close.
 
 Still open: in her own words Damaris sometimes says you pay the home handling, while the card says she does (a
 model wording issue).
+
+## Review follow-ups (October 18, 2026)
+
+- The conversation's buttons are reachable by keyboard: Shift+Tab, and Tab from a button, move between the buttons and the
+  line (wrapping); Enter presses a focused button. Tab from the line still opens the ledger.
+- A promise's date in Expectations is the promised day (it showed the day after).
+- The agreement in Expectations and the proposal card give the buyer's deadline as "the end of 29 Skirophorion · Year 1
+  (16 days left)" (spec §6); Philon's buy card says when the unloading finishes, from the work queue (spec §3.4).
+- Show to … in the personal menu waits while the character is answering, so a shown letter is never recorded unheard.
+- Not checked in the browser.

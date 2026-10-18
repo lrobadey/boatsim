@@ -9,6 +9,8 @@ import { GOOD_IDS, goodById, type GoodId } from '../trade/goods';
 import type { CharacterId, WorldState } from '../trade/world';
 import type { TalkLine } from '../ui/talk';
 import { personaById } from '../trade/trader';
+import { dueLandingT } from '../trade/job';
+import { deadlineWords, whenWords } from './journal';
 
 /** A function tool definition (OpenAI Responses API, strict). */
 export interface ToolDef {
@@ -46,6 +48,8 @@ export interface ToolContext {
   /** the transcript, for citations */
   lines: readonly TalkLine[];
   now: number;
+  /** "13 Skirophorion · Year 1" for an absolute hour, for the cards */
+  dateWords: (T: number) => string;
 }
 
 export interface ToolOutcome {
@@ -204,13 +208,16 @@ function propose(ctx: ToolContext, a: Record<string, unknown>, req: string): Too
   const value = money(terms.perJar * terms.qty);
   const Name = personaById(character).name;
   const BuyerName = personaById(terms.buyer).name;
+  const deadline = deadlineWords(ctx.dateWords, terms.opportunityT, ctx.now);
   const card: Card = {
     id: req,
     kind: 'proposal',
     title: `${Name} proposes a consignment`,
     lines: [
       `${terms.qty} jars of ${goodById(terms.good).name.toLowerCase()}, valued at ${per} a jar (${value} in all).`,
-      terms.alternateSale ? `You may sell them to ${BuyerName} or elsewhere.` : `They are for ${BuyerName}.`,
+      terms.alternateSale
+        ? `You may sell them to ${BuyerName} by ${deadline}, or elsewhere.`
+        : `They are for ${BuyerName}, by ${deadline}.`,
       `You keep ${terms.share}% of the profit after the agreed value and the handling and sale costs. ${Name} pays the handling at the home quay.`,
     ],
     // accepting at her quay with the ship there starts the loading at once; the result says if loading couldn't start
@@ -257,7 +264,11 @@ function transaction(ctx: ToolContext, a: Record<string, unknown>, req: string):
     id: req,
     kind: 'transaction',
     title: `${personaById(character).name} offers to buy wine`,
-    lines: [`${jars} jars of ${whose === 'player' ? 'your wine' : `${OwnerName}'s wine`} for ${total} (${per} a jar).`],
+    lines: [
+      `${jars} jars of ${whose === 'player' ? 'your wine' : `${OwnerName}'s wine`} for ${total} (${per} a jar).`,
+      // his jars unload first, so this is when the work queue at this berth lands the last of them
+      `Unloaded by ${whenWords(ctx.dateWords, dueLandingT(dealings.o.session.voyage, ctx.now, { wine: jars }))}.`,
+    ],
     confirm: (x) => dealings.sellToBuyer(x, { buyer: character, port, berth, from, qty: jars, quoted: quote }),
   };
   return { output: { ok: true, jars, whose: whose === 'player' ? 'their own wine' : `${OwnerName}'s wine`, total, per_jar: per, card: 'shown to the player' }, card };

@@ -56,6 +56,7 @@ test('an accepted consignment: custody by owner, the terms, and the account', ()
   assert.equal(x.title, "Damaris's wine for Philon");
   const per = (p.terms.perJar / 100).toFixed(2);
   assert.ok(x.lines[0].includes(`${per} dr a jar`), x.lines[0]);
+  assert.ok(x.lines[1].startsWith('For Philon by the end of day 17 (16 days left).'), x.lines[1]);
   assert.ok(x.lines.includes('Loaded 40 · sold 0 · returned 0.'));
   assert.equal(x.lines.at(-1), 'Open.');
   assert.ok(v.accounts.ventures[0].lines.includes('Your share is worked out once every jar is sold or returned.'));
@@ -70,7 +71,8 @@ test('a spoken promise shows your words and her reading, apart from the terms; n
   const lines = v.expectations[0].lines;
   assert.ok(lines.some((l) => l.includes('By the terms, Damaris expects you back by')), lines.join(' | '));
   assert.ok(lines.includes("You said: “I'll be back within the week.”"), lines.join(' | '));
-  assert.ok(lines.some((l) => l.startsWith('Damaris took it as a conditional promise, by')), lines.join(' | '));
+  // expectDay 8 is the promised day itself, not the day after
+  assert.ok(lines.includes('Damaris took it as a conditional promise, by day 8.'), lines.join(' | '));
   assert.equal(v.belongings.length, 1);
   assert.equal(v.belongings[0].title, 'Letter from Philon to Damaris');
   assert.equal(v.belongings[0].body, world.documents[0].body);

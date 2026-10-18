@@ -126,6 +126,8 @@ export class TradeLayer {
       this.talkConv = null;
     };
     this.talk.covered = () => this.personal.isOpen;
+    // a Show button over the conversation waits for the answer in progress
+    this.talk.onSettled = () => this.personal.refresh();
     // back to the conversation underneath, if any
     this.personal.onClose = () => this.talk.render();
     this.ledger.onPersonal = () => {
@@ -248,7 +250,7 @@ export class TradeLayer {
             dateWords: (T) => formatDate(dateOn(this.g.clock.epoch, Math.floor(T / 24))),
             account: (id) => this.dealings.account(id),
           }),
-        showTo: () => (this.talkConv && this.talk.isOpen ? personaById(this.talkCharacter!).name : null),
+        showTo: () => (this.talkConv && this.talk.isOpen ? { name: personaById(this.talkCharacter!).name, ready: !this.talk.waiting } : null),
         show: (id) => this.showInTalk(id),
       },
       tab,
@@ -266,7 +268,8 @@ export class TradeLayer {
     const character = this.talkCharacter;
     const port = this.talkPort;
     const doc = this.worldState.documents.find((d) => d.id === document);
-    if (!conv || !character || port === null || !doc) return;
+    // never while they are answering: the showing would be recorded but they would not hear of it
+    if (!conv || !character || port === null || !doc || this.talk.waiting) return;
     const r = this.social.showDocument(`${conv.o.id}:show:${document}`, { document, by: 'player', to: character });
     if (!r.ok) return;
     const name = (id: CharacterId) => personaById(id).name;
@@ -627,6 +630,7 @@ export class TradeLayer {
         berth: this.dockedPort() === port ? (this.g.ship.mooring.berth?.id ?? null) : null,
         lines,
         now: this.economy.now,
+        dateWords: (T) => formatDate(dateOn(this.g.clock.epoch, Math.floor(T / 24))),
       }),
       prompt: () => {
         const now = this.g.clock.totalHours;

@@ -10,8 +10,8 @@ export type PersonalTab = 'belongings' | 'cargo' | 'expectations' | 'accounts';
 
 export interface PersonalSource {
   view(): JournalView;
-  /** the person you could show a document to right now (an open conversation), or null */
-  showTo(): string | null;
+  /** the person you could show a document to right now (an open conversation), or null; not ready while they are answering */
+  showTo(): { name: string; ready: boolean } | null;
   /** shows the document to that person; resolves once the menu should close and the conversation go on */
   show(document: string): void;
 }
@@ -88,6 +88,11 @@ export class PersonalMenu {
     this.onClose?.();
   }
 
+  /** redraws the open view (the conversation underneath has answered) */
+  refresh(): void {
+    this.render();
+  }
+
   private select(tab: PersonalTab): void {
     this.tab = tab;
     for (const [id, b] of this.tabButtons) {
@@ -118,8 +123,9 @@ export class PersonalMenu {
         });
         actions.append(read);
         if (to) {
-          const show = el('button', 'pm-btn primary', `Show to ${to}`);
+          const show = el('button', 'pm-btn primary', `Show to ${to.name}`);
           show.type = 'button';
+          show.disabled = !to.ready;
           show.dataset.key = `show:${d.id}`;
           show.addEventListener('click', () => {
             this.close();

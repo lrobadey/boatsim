@@ -168,3 +168,6 @@ brief, a recorder, a Haiku implementer and one review, in about half the time. T
   (`trieres.voyage.v2.<seed>.<size>`) to another key and restore it afterwards. Edits to main.ts, tradeLayer.ts or
   talk.ts reload the page and drop an open card. Screenshots in a hidden pane can trail by a frame, so read the DOM
   to confirm state.
+- **Golden portability:** `test:trade-golden` compares floats with ===, so it can fail on another Node/V8 (on Node 22.22
+  every scenario differs in the last digit of a market stock at step 0, even at the commit that recorded it). Check the
+  recording commit in the same environment before reading a golden failure as a regression.

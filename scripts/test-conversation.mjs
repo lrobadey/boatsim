@@ -128,7 +128,7 @@ function talk(E, who, model, id = 'C1') {
   const port = char(E.world, who).port;
   const c = new Conversation({
     id, client: model, lines: [], portNames: PORT_NAMES,
-    tools: () => ({ world: E.world, dealings: E.dealings, actions: E.actions, character: who, port, berth: E.at === port ? 0 : null, lines: c.o.lines, now: E.economy.now }),
+    tools: () => ({ world: E.world, dealings: E.dealings, actions: E.actions, character: who, port, berth: E.at === port ? 0 : null, lines: c.o.lines, now: E.economy.now, dateWords: (T) => `day ${Math.floor(T / 24) + 1}` }),
     prompt: () => ({ instructions: `You are ${who}.`, schema: replySchema(['Kormakos', 'Korkia']) }),
   });
   return c;
@@ -262,7 +262,12 @@ await test('buyer identification: Damaris has no demand; Philon\'s card is his r
   await cp.say('Will you buy five jars of my wine?');
   assert.equal(cp.card?.kind, 'transaction');
   assert.equal(frozen(E), quiet, 'the card moves nothing');
+  const shown = cp.card.lines[1];
   await cp.confirm();
+  // the card's unloading time is when his jars, now due first, will be ashore
+  const { dueLandingT } = await import('../src/trade/job.ts');
+  const { whenWords } = await import('../src/social/journal.ts');
+  assert.equal(shown, `Unloaded by ${whenWords((T) => `day ${Math.floor(T / 24) + 1}`, dueLandingT(E.session.voyage, E.economy.now))}.`);
   const rc = E.session.voyage.receipts.find((x) => x.kind === 'sale' && x.party === 'char:philon');
   assert.deepEqual([rc?.amount, rc?.qty], [q, 5]);
   assert.equal(E.session.voyage.purse, purse0 + q - (q - Math.floor(q * (1 - DUTY))));
