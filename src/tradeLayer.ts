@@ -3,7 +3,8 @@ import type { WorldGenResult } from './world/worldgenTypes';
 import type { HarbourLayout, Berth } from './world/harbour';
 import { Economy, type EconActor } from './trade/economy';
 import { landUseProfile } from './trade/landUse';
-import { freshWorld, oldSaveWorld, characterAt, CelebrationActor, type WorldState } from './trade/world';
+import { freshWorld, oldSaveWorld, characterAt, CelebrationActor, MailActor, type WorldState } from './trade/world';
+import { Dealings, homeValue } from './trade/consignment';
 import { TradeSession } from './trade/session';
 import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
@@ -51,6 +52,8 @@ export class TradeLayer {
   private notes: Record<number, string> = {};
   /** the people and their money: characters, store lots, the celebration (saved) */
   private worldState!: WorldState;
+  /** the consignment commands for this voyage (no UI yet) */
+  dealings!: Dealings;
   /** true when an unreadable save could not be moved aside: no save is written until New voyage */
   private savesHeld = false;
   /** the conversation at each stall this session (not saved) */
@@ -231,13 +234,30 @@ export class TradeLayer {
   private startVoyage() {
     const ports = this.econPorts();
     this.worldState = freshWorld({ ports, celebrationDay: nextNewYearDay(this.g.clock.epoch, this.g.clock.dayCount) });
-    this.economy = this.buildEconomy(this.g.clock.totalHours, this.worldState.celebration ? [new CelebrationActor(this.worldState)] : []);
-    this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity });
+    const actors: EconActor[] = this.worldState.celebration ? [this.celebrationActor()] : [];
+    this.economy = this.buildEconomy(this.g.clock.totalHours, [...actors, new MailActor(this.worldState)]);
+    this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity, world: this.worldState });
+    this.worldState.characters.find((c) => c.id === 'damaris')!.trustBase = homeValue(this.economy, 0, 40) * 40;
+    this.dealings = this.buildDealings();
     this.news = this.pastNews(this.economy.now);
     this.notes = {};
     this.talkLines.clear();
     const b = this.layouts[0]?.berths[0];
     if (b) this.placeDocked(b, true);
+  }
+
+  /** Philon's celebration buying; his jars aboard and on the quay count as his too */
+  private celebrationActor(): CelebrationActor {
+    return new CelebrationActor(this.worldState, () => this.session?.voyage.lots ?? []);
+  }
+
+  /** the consignment commands over this voyage's world and session; a trader's heard bid comes from the news */
+  private buildDealings(): Dealings {
+    return new Dealings({
+      world: this.worldState,
+      session: this.session,
+      heardBid: (listener, about, good, T) => this.news.heard(listener, about, T, (f, t) => this.economy.routeHours(f, t))?.bid[good] ?? null,
+    });
   }
 
   private applySave(s: SaveData): boolean {
@@ -263,8 +283,10 @@ export class TradeLayer {
       this.worldState = s.world ?? oldSaveWorld(this.econPorts());
       const celebration = this.worldState.celebration;
       if (celebration && !this.economy.ports.some((p) => p.id === celebration.port)) throw new RangeError('celebration port is not in this world');
-      if (this.worldState.celebration && !this.worldState.celebration.done) this.economy.addActor(new CelebrationActor(this.worldState));
-      this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity });
+      if (this.worldState.celebration && !this.worldState.celebration.done) this.economy.addActor(this.celebrationActor());
+      this.economy.addActor(new MailActor(this.worldState));
+      this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity, world: this.worldState });
+      this.dealings = this.buildDealings();
       this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
       this.notes = {};
       // notes are saved under each port's trader id ('trader:{port}')
