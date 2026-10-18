@@ -269,7 +269,7 @@ export function freshWorld(o: { ports: readonly EconPort[]; celebrationDay: numb
   const rulerPrice = Math.round(1.5 * goodById(WINE).pRef);
   const limit = Math.floor(0.85 * rulerPrice);
   characters.find((c) => c.id === 'philon')!.wallet = requirement * limit;
-  world.celebration = {
+  const celebration: Celebration = {
     port: celebPort,
     day: o.celebrationDay,
     cutoffT: o.celebrationDay * 24,
@@ -283,8 +283,23 @@ export function freshWorld(o: { ports: readonly EconPort[]; celebrationDay: numb
     consumed: 0,
     shortfall: 0,
   };
+  world.celebration = celebration;
+  world.documents.push({
+    id: takeWorldId(world, 'D'),
+    kind: 'letter',
+    from: 'philon',
+    to: 'damaris',
+    writtenT: Math.max(0, celebration.cutoffT - 20 * 24),
+    body: PHILON_LETTER,
+    claims: { good: WINE, qty: celebration.earmark, byT: celebration.cutoffT, buyer: 'philon' },
+    holder: 'damaris',
+  });
   return withOpenings(world);
 }
+
+/** Philon's letter to Damaris about the feast wine: written on a fresh voyage when there is a celebration. */
+const PHILON_LETTER =
+  "Damaris, the archon is holding the New Year feast on 1 Hekatombaion and I'm short of wine for it. If you can get forty jars to me before then, I'll take them. We'd settle the price when they're here, at what wine is fetching on the island. My regards to your boys. Philon";
 
 /** One opening receipt per non-zero wallet, so each wallet equals its receipt sum. */
 function withOpenings(world: WorldState): WorldState {

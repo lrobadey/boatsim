@@ -128,11 +128,20 @@ const CELEBRATION_NUMS = ['port', 'day', 'cutoffT', 'fallbackT', 'requirement', 
 /** A world's version: missing counts as 1. */
 const worldVersion = (w: Record<string, unknown>): unknown => (w.version === undefined ? 1 : w.version);
 
+const HOLDER_IDS = ['damaris', 'philon', 'myrto', 'player'];
+
+/** Documents (optional in a version 2 world): letters with an id, a body and a known holder. */
+function documentsOk(docs: unknown): boolean {
+  if (!Array.isArray(docs)) return false;
+  return docs.every((d) => isObj(d) && typeof d.id === 'string' && /^D\d+$/.test(d.id) && typeof d.body === 'string' && HOLDER_IDS.includes(d.holder as string));
+}
+
 /** The collections and per-character money of a version 2 world (receipts sum to each wallet). */
 function worldV2Ok(w: Record<string, unknown>): boolean {
   const { receipts, proposals, agreements, records, mail, results } = w;
   if (!Array.isArray(receipts) || !Array.isArray(proposals) || !Array.isArray(agreements) || !Array.isArray(records) || !Array.isArray(mail)) return false;
   if (!isObj(results)) return false;
+  if (w.documents !== undefined && !documentsOk(w.documents)) return false;
   for (const c of w.characters as unknown[]) {
     if (!isObj(c) || !Number.isSafeInteger(c.reserved) || (c.reserved as number) < 0) return false;
     if (!Number.isSafeInteger(c.trustBase) || (c.trustBase as number) < 0) return false;
@@ -219,9 +228,13 @@ export function parseSave(json: string, seed: number, heightmapSize: number): Sa
   }
 }
 
-/** A save's world as version 2: a version 1 world (or one with no version) is upgraded. */
+/**
+ * A save's world as version 2: a version 1 world (or one with no version) is upgraded; a version 2 world from
+ * before documents gets none.
+ */
 function worldOf(w: Record<string, unknown>): WorldState {
-  return worldVersion(w) === 1 ? upgradeWorld(w as unknown as WorldStateV1) : (w as unknown as WorldState);
+  if (worldVersion(w) === 1) return upgradeWorld(w as unknown as WorldStateV1);
+  return (w.documents === undefined ? { ...w, documents: [] } : w) as unknown as WorldState;
 }
 
 /**
