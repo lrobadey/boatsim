@@ -3,12 +3,14 @@ import type { WorldGenResult } from './world/worldgenTypes';
 import type { HarbourLayout, Berth } from './world/harbour';
 import { Economy, type EconActor } from './trade/economy';
 import { landUseProfile } from './trade/landUse';
-import { freshWorld, oldSaveWorld, characterAt, CelebrationActor, MailActor, type WorldState } from './trade/world';
+import { freshWorld, oldSaveWorld, characterAt, takeWorldId, CelebrationActor, MailActor, type CharacterId, type WorldState } from './trade/world';
 import { Dealings } from './trade/consignment';
 import { TradeSession } from './trade/session';
 import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
-import { personaById, traderFacts, traderInstructions, replySchema, parseReply, type Persona } from './trade/trader';
+import { personaById, traderFacts, characterInstructions, characterKnowledge, replySchema, type TraderReply } from './trade/trader';
+import { Conversation, KEEP_LINES } from './social/conversation';
+import { SocialActions } from './social/actions';
 import { Talk, type TalkLine } from './ui/talk';
 import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, saveKey, legacySaveKey, traderId, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
@@ -24,18 +26,31 @@ import { WAGE_PER_HAND_DAY } from './trade/economy';
 import { formatHandlingDuration, handlingStatus } from './trade/handlingStatus';
 import * as THREE from 'three';
 import type { CargoJob } from './trade/voyage';
-import { nextNewYearDay, moonPhaseOn, LUNATION_DAYS } from './world/calendar';
+import { dateOn, formatDate, nextNewYearDay, moonPhaseOn, LUNATION_DAYS } from './world/calendar';
 import { planOf } from './world/ormosLayout';
 
 
 const frac = (x: number) => x - Math.floor(x);
 
-/** what the conversation shows when no reply came back */
-const TALK_ERRORS: Record<string, string> = {
-  'no-key': 'Talking needs an OpenAI API key (OPENAI_API_KEY in .env.local).',
-  timeout: 'The model took too long to answer. Try again.',
-  upstream: 'The connection to the model failed. Try again.',
-};
+const CHARACTER_IDS: readonly CharacterId[] = ['damaris', 'philon', 'myrto'];
+
+/** the saved transcripts, read leniently: known characters only, and only your and their lines with text */
+function readTranscripts(saved: unknown): Map<CharacterId, TalkLine[]> {
+  const out = new Map<CharacterId, TalkLine[]>();
+  if (typeof saved !== 'object' || saved === null) return out;
+  for (const id of CHARACTER_IDS) {
+    const list: unknown = (saved as Record<string, unknown>)[id];
+    if (!Array.isArray(list)) continue;
+    const lines: TalkLine[] = [];
+    for (const l of list) {
+      if (typeof l !== 'object' || l === null) continue;
+      const { who, text } = l as Record<string, unknown>;
+      if ((who === 'you' || who === 'them') && typeof text === 'string' && text.length <= 2000) lines.push({ who, text });
+    }
+    out.set(id, lines.slice(-KEEP_LINES));
+  }
+  return out;
+}
 
 /**
  * Cargo and ports (docs/cargo-trade-spec.md): the merchant's economy, purse, hold and ledger, wired to the
@@ -56,8 +71,12 @@ export class TradeLayer {
   dealings!: Dealings;
   /** true when an unreadable save could not be moved aside: no save is written until New voyage */
   private savesHeld = false;
-  /** the conversation at each stall this session (not saved) */
-  private talkLines = new Map<number, TalkLine[]>();
+  /** each character's conversation with you (saved: the last KEEP_LINES lines) */
+  private transcripts = new Map<CharacterId, TalkLine[]>();
+  /** the consignment and social commands for this voyage's world */
+  private social!: SocialActions;
+  /** the conversation of the open panel, if any */
+  private talkConv: Conversation | null = null;
   private readonly cargoStatus = document.createElement('div');
   private readonly cargoStatusLabel = document.createElement('div');
   private readonly cargoStatusDetail = document.createElement('div');
@@ -93,6 +112,10 @@ export class TradeLayer {
     this.hold = new Hold(g.design);
     for (const l of layouts) this.portNames[l.id] = l.name;
     this.ledger.onToast = (t) => g.hud.showToast(t);
+    this.talk.onClose = () => {
+      this.talkConv?.close();
+      this.talkConv = null;
+    };
     const stalls = layouts.map((l) => ({ port: l.id, x: l.stall.x, y: l.stall.y, z: l.stall.z }));
     g.player.interactions.list.push(
       ...createStallInteractions({
@@ -238,9 +261,12 @@ export class TradeLayer {
     this.economy = this.buildEconomy(this.g.clock.totalHours, [...actors, new MailActor(this.worldState)]);
     this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity, world: this.worldState });
     this.dealings = this.buildDealings();
+    this.social = new SocialActions({ world: this.worldState, now: () => this.economy.now });
     this.news = this.pastNews(this.economy.now);
     this.notes = {};
-    this.talkLines.clear();
+    this.transcripts.clear();
+    this.talkConv?.close();
+    this.talkConv = null;
     const b = this.layouts[0]?.berths[0];
     if (b) this.placeDocked(b, true);
   }
@@ -287,6 +313,7 @@ export class TradeLayer {
       this.economy.addActor(new MailActor(this.worldState));
       this.session = new TradeSession({ economy: this.economy, voyage: s.voyage, holdCapacity: this.hold.capacity, world: this.worldState });
       this.dealings = this.buildDealings();
+      this.social = new SocialActions({ world: this.worldState, now: () => this.economy.now });
       this.news = s.talk ? PriceNews.restore(s.talk.news) : this.pastNews(this.economy.now);
       this.notes = {};
       // notes are saved under each port's trader id ('trader:{port}')
@@ -294,7 +321,7 @@ export class TradeLayer {
         const port = /^trader:(0|[1-9]\d*)$/.exec(k);
         if (port && typeof v === 'string' && this.portNames[Number(port[1])] !== undefined) this.notes[Number(port[1])] = v.slice(0, 300);
       }
-      this.talkLines.clear();
+      this.transcripts = readTranscripts(s.talk?.lines);
       this.placeDocked(berth, s.berth.bowOut);
       return true;
     } catch (e) {
@@ -352,7 +379,13 @@ export class TradeLayer {
       berth: { id: b.id, bowOut },
       voyage: this.session.voyage,
       economy: this.economy.snapshot(),
-      talk: { news: this.news.snapshot(), notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])) },
+      talk: {
+        news: this.news.snapshot(),
+        notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])),
+        lines: Object.fromEntries(
+          [...this.transcripts].map(([id, lines]) => [id, lines.filter((l) => l.who === 'you' || l.who === 'them').slice(-KEEP_LINES)]),
+        ),
+      },
       world: this.worldState,
     });
     return writeSave(this.world.seed, this.world.heightmapSize, data);
@@ -442,15 +475,83 @@ export class TradeLayer {
   /** E at a stall: talk with its trader; Tab in the conversation opens the ledger */
   openTalk(port: number) {
     if (this.ledger.isOpen || this.talk.isOpen) return;
-    const persona = personaById(characterAt(this.worldState, port));
-    const lines = this.talkLines.get(port) ?? [];
-    this.talkLines.set(port, lines);
+    const character = characterAt(this.worldState, port);
+    const persona = personaById(character);
+    const lines = this.transcripts.get(character) ?? [];
+    this.transcripts.set(character, lines);
+    const conv = new Conversation({
+      id: takeWorldId(this.worldState, 'C'),
+      client: {
+        respond: (req) =>
+          fetch('/__trieres_talk__', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req) })
+            .then((r) => r.json())
+            .catch(() => ({ ok: false, error: 'offline' })),
+      },
+      tools: () => ({
+        world: this.worldState,
+        dealings: this.dealings,
+        actions: this.social,
+        character,
+        port,
+        berth: this.dockedPort() === port ? (this.g.ship.mooring.berth?.id ?? null) : null,
+        lines,
+        now: this.economy.now,
+      }),
+      prompt: () => {
+        const now = this.g.clock.totalHours;
+        const route = (a: number, b: number) => this.economy.routeHours(a, b);
+        const others = this.economy.ports.map((p) => p.id).filter((id) => id !== port);
+        const portName = this.portNames[port] ?? '';
+        const facts = traderFacts({
+          persona,
+          port,
+          portName,
+          portNames: this.portNames,
+          now,
+          market: (good) => this.economy.market(port, good),
+          heard: others.map((id) => ({ port: id, news: this.news.heard(port, id, now, route) })),
+          memory: this.notes[port] ?? '',
+          shipHere: this.dockedPort() === port,
+        });
+        const knowledge = characterKnowledge({
+          world: this.worldState,
+          character,
+          now: this.economy.now,
+          dateWords: (T) => formatDate(dateOn(this.g.clock.epoch, Math.floor(T / 24))),
+          portNames: this.portNames,
+          playerLines: lines.filter((l) => l.who === 'you').map((l) => l.text),
+          need: character === 'philon' ? this.dealings.buyerDemand('philon') || null : null,
+        });
+        return {
+          instructions: characterInstructions(persona, portName, facts, knowledge),
+          schema: replySchema(others.map((id) => this.portNames[id])),
+        };
+      },
+      lines,
+      portNames: this.portNames,
+    });
+    this.talkConv = conv;
     this.g.input.freeze(true);
     this.talk.open({
       name: persona.name,
       port: this.portNames[port] ?? '',
       lines,
-      say: (text) => this.say(port, persona, lines, text),
+      say: async (text) => {
+        const r = await conv.say(text);
+        if (r) this.applyReply(port, r);
+        this.save();
+      },
+      card: () => (conv.card ? { title: conv.card.title, lines: conv.card.lines } : null),
+      confirm: async () => {
+        const r = await conv.confirm();
+        if (r) this.applyReply(port, r);
+        this.save();
+      },
+      decline: async () => {
+        const r = await conv.decline();
+        if (r) this.applyReply(port, r);
+        this.save();
+      },
       ledger: () => {
         this.talk.close();
         this.openLedger(port);
@@ -458,50 +559,11 @@ export class TradeLayer {
     });
   }
 
-  private async say(port: number, persona: Persona, lines: TalkLine[], text: string) {
-    lines.push({ who: 'you', text });
+  /** a trader's reply: the note on you, and every other-port price passed on goes into the notebook unless it knows newer */
+  private applyReply(port: number, reply: TraderReply) {
     const now = this.g.clock.totalHours;
     const route = (a: number, b: number) => this.economy.routeHours(a, b);
-    const others = this.economy.ports.map((p) => p.id).filter((id) => id !== port);
-    const portName = this.portNames[port] ?? '';
-    const facts = traderFacts({
-      persona,
-      port,
-      portName,
-      portNames: this.portNames,
-      now,
-      market: (good) => this.economy.market(port, good),
-      heard: others.map((id) => ({ port: id, news: this.news.heard(port, id, now, route) })),
-      memory: this.notes[port] ?? '',
-      shipHere: this.dockedPort() === port,
-    });
-    const messages = lines
-      .filter((l) => l.who !== 'info')
-      .slice(-16)
-      .map((l) => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text }));
-    let res: { ok: boolean; reply?: unknown; error?: string };
-    try {
-      const r = await fetch('/__trieres_talk__', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          instructions: traderInstructions(persona, portName, facts),
-          messages,
-          schema: replySchema(others.map((id) => this.portNames[id])),
-        }),
-      });
-      res = await r.json();
-    } catch {
-      res = { ok: false, error: 'offline' };
-    }
-    const reply = res.ok ? parseReply(res.reply, this.portNames) : null;
-    if (!reply) {
-      lines.push({ who: 'info', text: TALK_ERRORS[res.error ?? ''] ?? TALK_ERRORS.upstream });
-      return;
-    }
-    lines.push({ who: 'them', text: reply.say });
     if (reply.note) this.notes[port] = reply.note;
-    // every other-port price the trader passed on goes into the notebook, unless the notebook already knows newer
     const notebook = this.session.voyage.notebook;
     for (const t of reply.told) {
       const h = this.news.heard(port, t.port, now, route);
@@ -510,7 +572,6 @@ export class TradeLayer {
       if (seen && seen.T >= h.T) continue;
       updateNotebook(notebook, { port: t.port, good: t.good, ask: h.ask[t.good], bid: h.bid[t.good], T: h.T, heard: true });
     }
-    this.save();
   }
 
   openHoldBook() {

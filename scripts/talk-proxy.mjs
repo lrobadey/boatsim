@@ -1,12 +1,13 @@
-// Dev-server proxy for the stall traders' voice (docs/kormakos-and-traders-spec.md, part B). The browser posts
-// { instructions, messages, schema }; this calls the OpenAI Responses API with gpt-6-luna on low reasoning and
-// returns the parsed reply. The API key is read here (environment or .env.local) and never reaches the page.
+// Dev-server proxy for the stall traders' voice (docs/pass-2-plan.md, lane C). The browser posts
+// { instructions, input, tools, schema }; this calls the OpenAI Responses API with gpt-6-luna on medium reasoning,
+// lets the model call the trusted tools (parallel calls off) and returns its output items: the reply text and any
+// function calls, in order. The API key is read here (environment or .env.local) and never reaches the page.
 import { loadEnv } from 'vite';
 
 const MODEL = 'gpt-6-luna';
 const ENDPOINT = 'https://api.openai.com/v1/responses';
-const TIMEOUT_MS = 30000;
-const MAX_BODY = 96 * 1024;
+const TIMEOUT_MS = 60000;
+const MAX_BODY = 256 * 1024;
 
 const reply = (res, status, body) => {
   res.statusCode = status;
@@ -15,13 +16,29 @@ const reply = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-/** the request the page may send: bounded sizes, two roles only */
+const str = (v, max) => typeof v === 'string' && v.length <= max;
+
+/** a function tool definition (strict) */
+function validTool(t) {
+  return !!t && typeof t === 'object' && t.type === 'function' && str(t.name, 64) && str(t.description, 2000) && t.strict === true && !!t.parameters && typeof t.parameters === 'object';
+}
+
+/** one input item: a message, a function call the model made, or its output */
+function validItem(m) {
+  if (!m || typeof m !== 'object') return false;
+  if (m.type === 'function_call') return typeof m.call_id === 'string' && typeof m.name === 'string' && str(m.arguments, 4000);
+  if (m.type === 'function_call_output') return typeof m.call_id === 'string' && str(m.output, 8000);
+  return (m.role === 'user' || m.role === 'assistant' || m.role === 'developer') && str(m.content, 4000);
+}
+
+/** the request the page may send: bounded sizes, known item and tool shapes only */
 function validRequest(b) {
   if (!b || typeof b !== 'object') return false;
-  if (typeof b.instructions !== 'string' || b.instructions.length > 24000) return false;
+  if (typeof b.instructions !== 'string' || b.instructions.length > 48000) return false;
   if (!b.schema || typeof b.schema !== 'object') return false;
-  if (!Array.isArray(b.messages) || b.messages.length < 1 || b.messages.length > 24) return false;
-  return b.messages.every((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.length <= 1200);
+  if (!Array.isArray(b.tools) || b.tools.length > 8 || !b.tools.every(validTool)) return false;
+  if (!Array.isArray(b.input) || b.input.length < 1 || b.input.length > 80) return false;
+  return b.input.every(validItem);
 }
 
 /**
@@ -44,16 +61,24 @@ export function refusal(req) {
   return null;
 }
 
-/** the first output_text of the response's message, or a refusal */
-function outputText(data) {
+/**
+ * the response's output as the page reads it: a message's first output_text, each function call, reasoning and
+ * other items dropped. A refusal, a message without text, or no items at all is null (an upstream error).
+ */
+function outputItems(data) {
+  const items = [];
   for (const item of data?.output ?? []) {
-    if (item.type !== 'message') continue;
-    for (const c of item.content ?? []) {
-      if (c.type === 'output_text') return { text: c.text };
-      if (c.type === 'refusal') return { refusal: c.refusal };
+    if (item?.type === 'message') {
+      const parts = item.content ?? [];
+      if (parts.some((c) => c.type === 'refusal')) return null;
+      const text = parts.find((c) => c.type === 'output_text')?.text;
+      if (typeof text !== 'string') return null;
+      items.push({ type: 'message', text });
+    } else if (item?.type === 'function_call') {
+      items.push({ type: 'function_call', call_id: item.call_id, name: item.name, arguments: item.arguments });
     }
   }
-  return {};
+  return items.length ? items : null;
 }
 
 export function talkProxy() {
@@ -88,11 +113,13 @@ export function talkProxy() {
               headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 model: MODEL,
-                reasoning: { effort: 'low' },
+                reasoning: { effort: 'medium' },
                 instructions: b.instructions,
-                input: b.messages.map((m) => ({ role: m.role, content: m.content })),
+                input: b.input,
+                tools: b.tools,
+                parallel_tool_calls: false,
                 text: { format: { type: 'json_schema', name: 'trader_reply', strict: true, schema: b.schema } },
-                max_output_tokens: 2000,
+                max_output_tokens: 4000,
                 store: false,
               }),
               signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -102,9 +129,9 @@ export function talkProxy() {
               console.warn(`[talk] OpenAI ${r.status}: ${data?.error?.message ?? 'no body'}`);
               return reply(res, 502, { ok: false, error: 'upstream' });
             }
-            const out = outputText(data);
-            if (out.refusal || !out.text) return reply(res, 502, { ok: false, error: 'upstream' });
-            return reply(res, 200, { ok: true, reply: JSON.parse(out.text) });
+            const output = outputItems(data);
+            if (!output) return reply(res, 502, { ok: false, error: 'upstream' });
+            return reply(res, 200, { ok: true, output });
           } catch (e) {
             const timeout = e?.name === 'TimeoutError' || e?.name === 'AbortError';
             if (!timeout) console.warn('[talk] request failed:', e?.message ?? e);

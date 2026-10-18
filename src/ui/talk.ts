@@ -3,7 +3,8 @@ import './talk.css';
 /**
  * Talking with a stall trader (docs/kormakos-and-traders-spec.md, part B): a small panel over the quay with
  * the conversation and a line to type into. Keyboard-first: Enter says the line, Tab opens the ledger, Esc
- * leaves. The panel only shows and collects text; the trade layer talks to the model.
+ * leaves. When the trader has a card for you (a proposal, a sale, an account), Enter confirms it and Backspace
+ * declines it. The panel only shows and collects input; the trade layer talks to the model.
  */
 export interface TalkLine {
   who: 'you' | 'them' | 'info';
@@ -18,6 +19,12 @@ export interface TalkSource {
   lines: TalkLine[];
   /** says a line; resolves when the trader has answered (the caller appends to `lines`) */
   say(text: string): Promise<void>;
+  /** the card waiting for you, or null */
+  card(): { title: string; lines: string[] } | null;
+  /** Enter on a card: runs it; resolves when the trader has answered */
+  confirm(): Promise<void>;
+  /** Backspace on a card: declines it; resolves when the trader has answered */
+  decline(): Promise<void>;
   /** Tab: leave the conversation for the ledger */
   ledger(): void;
 }
@@ -34,6 +41,8 @@ export class Talk {
   private readonly nameEl = el('h2', 'talk-name');
   private readonly portEl = el('div', 'talk-port');
   private readonly log = el('div', 'talk-log');
+  private readonly cardEl = el('div', 'talk-card');
+  private readonly cardBody = el('div', 'talk-card-body');
   private readonly input = el('input', 'talk-input');
   private src: TalkSource | null = null;
   /** conversations waiting on a reply, by their `lines` (the caller builds a new source on every opening) */
@@ -51,7 +60,11 @@ export class Talk {
     this.input.autocomplete = 'off';
     const keys = el('div', 'talk-keys');
     keys.innerHTML = '<span><kbd>Enter</kbd> Say</span><span><kbd>Tab</kbd> Ledger</span><span><kbd>Esc</kbd> Leave</span>';
-    this.panel.append(head, this.log, this.input, keys);
+    const cardKeys = el('div', 'talk-keys');
+    cardKeys.innerHTML = '<span><kbd>Enter</kbd> Confirm</span><span><kbd>Backspace</kbd> Decline</span>';
+    this.cardEl.hidden = true;
+    this.cardEl.append(this.cardBody, cardKeys);
+    this.panel.append(head, this.log, this.cardEl, this.input, keys);
     this.root.append(this.panel);
     document.getElementById('ui')!.appendChild(this.root);
   }
@@ -105,19 +118,31 @@ export class Talk {
       this.log.append(p);
     }
     this.log.scrollTop = this.log.scrollHeight;
+    const card = waiting ? null : s.card();
+    this.cardEl.hidden = !card;
+    if (card) {
+      const title = el('h3', 'talk-card-title');
+      title.textContent = card.title;
+      const lines = card.lines.map((text) => {
+        const p = el('p', 'talk-card-line');
+        p.textContent = text;
+        return p;
+      });
+      this.cardBody.replaceChildren(title, ...lines);
+    }
+    this.input.hidden = !!card;
     this.input.disabled = waiting;
-    if (!waiting && document.activeElement !== this.input) this.input.focus();
+    if (!waiting && !card && document.activeElement !== this.input) this.input.focus();
   }
 
-  private async send(): Promise<void> {
+  /** one exchange with the trader (a line, or a card's outcome): the panel shows the wait until it has answered */
+  private async run(exchange: () => Promise<void>): Promise<void> {
     const s = this.src;
-    const text = this.input.value.trim();
-    if (!s || this.pending.has(s.lines) || !text) return;
-    this.input.value = '';
+    if (!s || this.pending.has(s.lines)) return;
     this.pending.add(s.lines);
     try {
-      // say() appends your line before it waits, so the redraw shows it under the trader's pending '…'
-      const answered = s.say(text);
+      // the caller appends your line before it waits, so the redraw shows it under the trader's pending '…'
+      const answered = exchange();
       this.render();
       await answered;
     } finally {
@@ -125,6 +150,18 @@ export class Talk {
       // the panel may have been closed and reopened meanwhile with a new source over the same lines
       if (this.src) this.render();
     }
+  }
+
+  private async send(s: TalkSource): Promise<void> {
+    const text = this.input.value.trim();
+    if (!text || this.pending.has(s.lines)) return;
+    this.input.value = '';
+    await this.run(() => s.say(text));
+  }
+
+  private async act(s: TalkSource, confirm: boolean): Promise<void> {
+    if (!s.card() || this.pending.has(s.lines)) return;
+    await this.run(() => (confirm ? s.confirm() : s.decline()));
   }
 
   private handleKey(e: KeyboardEvent): void {
@@ -140,7 +177,12 @@ export class Talk {
       s.ledger();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (!e.repeat) void this.send();
+      if (e.repeat) return;
+      if (s.card()) void this.act(s, true);
+      else void this.send(s);
+    } else if (e.key === 'Backspace' && s.card()) {
+      e.preventDefault();
+      if (!e.repeat) void this.act(s, false);
     }
   }
 }
