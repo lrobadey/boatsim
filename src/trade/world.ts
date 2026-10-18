@@ -4,8 +4,8 @@
 
 import { referenceFlows, type EconActor, type EconPort, type Economy } from './economy';
 import { goodById, goodIndex, type GoodId } from './goods';
-import type { CargoLot } from './books';
-import type { SocialRecord } from '../social/records';
+import { walletMove, type CargoLot } from './books';
+import { addRecord, type SocialRecord } from '../social/records';
 
 export type CharacterId = 'damaris' | 'philon' | 'myrto';
 
@@ -164,8 +164,16 @@ export function takeWorldId(world: WorldState, prefix: 'W' | 'X' | 'P' | 'A' | '
 }
 
 /** A version 1 world with empty collections and one opening receipt per non-zero wallet. Pass 1c lane C2. */
-export function upgradeWorld(_w: WorldStateV1): WorldState {
-  throw new Error('not implemented: Pass 1c C2');
+export function upgradeWorld(w: WorldStateV1): WorldState {
+  const world: WorldState = {
+    version: 2,
+    characters: w.characters.map((c) => ({ ...c, reserved: 0, trustBase: 0, warmth0: c.id === 'damaris' ? 1 : 0 })),
+    lots: w.lots,
+    nextId: w.nextId,
+    celebration: w.celebration,
+    ...emptyCollections(),
+  };
+  return withOpenings(world);
 }
 
 const WINE = 'wine' as const;
@@ -275,26 +283,28 @@ function emptyCollections() {
   return { receipts: [], proposals: [], agreements: [], records: [], mail: [], results: {} };
 }
 
+/** Philon's wine jars in a list of lots. */
+const philonWine = (lots: readonly CargoLot[]): number =>
+  lots.filter((l) => l.good === WINE && l.owner === 'char:philon').reduce((a, l) => a + l.qty, 0);
+
 /**
  * Philon's buying for the celebration, at each midnight. Before the fallback he buys wine at the celebration
  * port while his average price stays at or below the limit, keeping the earmark back; at the fallback he buys
  * the rest at any price the wallet allows, once; at the cutoff he takes up to the requirement from his store.
- * ownedElsewhere counts jars he holds outside the world's lots (none by default).
+ * voyageLots gives the lots aboard and on the quay: jars he holds there count as his, and at the cutoff they are
+ * written down as undelivered.
  */
 export class CelebrationActor implements EconActor {
   constructor(
     private world: WorldState,
-    private ownedElsewhere: () => number = () => 0,
+    private voyageLots: () => CargoLot[] = () => [],
   ) {}
 
   onMidnight(T: number, econ: Economy): void {
     const c = this.world.celebration;
     if (!c || c.done) return;
     const philon = this.world.characters.find((ch) => ch.id === 'philon')!;
-    const owned = () =>
-      this.world.lots
-        .filter((l) => l.good === WINE && l.owner === 'char:philon')
-        .reduce((a, l) => a + l.qty, 0) + this.ownedElsewhere();
+    const owned = () => philonWine(this.world.lots) + philonWine(this.voyageLots());
 
     if (T >= c.cutoffT) {
       const mine = this.world.lots
@@ -310,26 +320,28 @@ export class CelebrationActor implements EconActor {
       this.world.lots = this.world.lots.filter((l) => l.qty > 0);
       c.consumed = c.requirement - left;
       c.shortfall = left;
+      const n = philonWine(this.voyageLots());
+      if (n > 0) addRecord(this.world, { id: `philon:undelivered:${c.cutoffT}`, holder: 'philon', T: c.cutoffT, source: 'witnessed', kind: 'undelivered', facts: { qty: n } });
       c.done = true;
       return;
     }
     if (T >= c.fallbackT && !c.fallbackDone) {
       c.fallbackDone = true;
-      this.buy(econ, c, philon, c.requirement - owned(), false);
+      this.buy(econ, c, philon, c.requirement - owned(), false, T);
       return;
     }
-    if (T < c.fallbackT) this.buy(econ, c, philon, c.requirement - c.earmark - owned(), true);
+    if (T < c.fallbackT) this.buy(econ, c, philon, c.requirement - c.earmark - owned(), true, T);
   }
 
-  /** Buys the largest number of jars up to need that the wallet covers (and, when priced, the limit). */
-  private buy(econ: Economy, c: Celebration, philon: Character, need: number, priced: boolean): void {
+  /** Buys the largest number of jars up to need that the free wallet covers (and, when priced, the limit). */
+  private buy(econ: Economy, c: Celebration, philon: Character, need: number, priced: boolean, T: number): void {
     if (need <= 0) return;
     const m = econ.market(c.port, WINE);
     const cap = Math.min(need, Math.floor(m.maxBuy()));
     const ok = (n: number): boolean => {
       if (n === 0) return true;
       const q = m.quoteBuy(n);
-      return q.total <= philon.wallet && (!priced || q.total <= n * c.limit);
+      return q.total <= philon.wallet - philon.reserved && (!priced || q.total <= n * c.limit);
     };
     let lo = 0;
     let hi = cap;
@@ -340,14 +352,41 @@ export class CelebrationActor implements EconActor {
     }
     if (lo === 0) return;
     const q = m.buy(lo);
-    philon.wallet -= q.total;
+    walletMove(this.world, 'philon', -q.total, 'purchase', T, { port: c.port, qty: lo });
     this.world.lots.push({
-      id: `W${this.world.nextId++}`,
+      id: takeWorldId(this.world, 'W'),
       good: WINE,
       qty: lo,
       owner: 'char:philon',
       custody: { at: 'store', port: c.port },
       origin: 'purchase',
     });
+  }
+}
+
+/**
+ * Letters carried by NPC ships (expectations-mvp-spec §3.6, docs/pass-1c-plan.md C2): a letter is delivered on
+ * the earliest shipment from its port to the recipient's port that left after it was written. The recipient
+ * hears of the sale at that arrival, as news.
+ */
+export class MailActor implements EconActor {
+  constructor(private world: WorldState) {}
+
+  onMidnight(T: number, econ: Economy): void {
+    for (const m of this.world.mail) {
+      if (m.deliverT !== null) continue;
+      let best: number | null = null;
+      for (const s of econ.shipments) {
+        if (s.from !== m.fromPort || s.to !== m.toPort) continue;
+        if (s.arriveT - econ.routeHours(s.from, s.to) < m.writtenT - 1e-6) continue;
+        if (best === null || s.arriveT < best) best = s.arriveT;
+      }
+      if (best !== null) m.deliverT = best;
+    }
+    for (const m of this.world.mail) {
+      if (m.delivered || m.deliverT === null || m.deliverT > T) continue;
+      addRecord(this.world, { id: `${m.to}:heard-sale:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'heard-sale', facts: { ...m.facts } });
+      m.delivered = true;
+    }
   }
 }

@@ -6,9 +6,9 @@ import type { EconomySnapshot } from './economy';
 import { GOOD_IDS } from './goods';
 import { restoreJob, type Units } from './job';
 import type { VoyageState } from './voyage';
-import { checkBooks, rebuildBooks } from './books';
+import { checkBooks, checkWorld, normalizeLots, rebuildBooks } from './books';
 import type { PriceRecord } from './news';
-import type { WorldState } from './world';
+import { upgradeWorld, type WorldState, type WorldStateV1 } from './world';
 import type { CalendarEpoch } from '../world/calendar';
 
 export interface SaveClock {
@@ -125,9 +125,37 @@ function normalizeVoyage(d: Record<string, unknown>): VoyageState {
 const CHARACTER_IDS = ['damaris', 'philon', 'myrto'];
 const CELEBRATION_NUMS = ['port', 'day', 'cutoffT', 'fallbackT', 'requirement', 'rulerPrice', 'limit', 'earmark', 'consumed', 'shortfall'];
 
+/** A world's version: missing counts as 1. */
+const worldVersion = (w: Record<string, unknown>): unknown => (w.version === undefined ? 1 : w.version);
+
+/** The collections and per-character money of a version 2 world (receipts sum to each wallet). */
+function worldV2Ok(w: Record<string, unknown>): boolean {
+  const { receipts, proposals, agreements, records, mail, results } = w;
+  if (!Array.isArray(receipts) || !Array.isArray(proposals) || !Array.isArray(agreements) || !Array.isArray(records) || !Array.isArray(mail)) return false;
+  if (!isObj(results)) return false;
+  for (const c of w.characters as unknown[]) {
+    if (!isObj(c) || !Number.isSafeInteger(c.reserved) || (c.reserved as number) < 0) return false;
+    if (!Number.isSafeInteger(c.trustBase) || (c.trustBase as number) < 0) return false;
+    if (!Number.isSafeInteger(c.warmth0) || (c.warmth0 as number) < -2 || (c.warmth0 as number) > 2) return false;
+  }
+  const sums = new Map<unknown, number>();
+  for (const r of receipts) {
+    if (!isObj(r) || typeof r.id !== 'string' || !/^X\d+$/.test(r.id) || !Number.isSafeInteger(r.amount)) return false;
+    sums.set(r.who, (sums.get(r.who) ?? 0) + (r.amount as number));
+  }
+  for (const c of w.characters as Record<string, unknown>[]) {
+    if (c.wallet !== (sums.get(c.id) ?? 0)) return false;
+  }
+  for (const a of agreements) {
+    if (!isObj(a) || !proposals.some((p) => isObj(p) && p.id === a.proposal)) return false;
+  }
+  return true;
+}
+
 /**
  * The world and epoch, when the save has them: known characters with whole wallets, well-formed store
- * lots, a numeric nextId, and a complete celebration (with Philon present) or null.
+ * lots, a numeric nextId, and a complete celebration (with Philon present) or null. A version 2 world also
+ * has its collections, character money and agreements in place (worldV2Ok).
  */
 function worldOk(d: Record<string, unknown>): boolean {
   const e = (d.clock as Record<string, unknown>).epoch;
@@ -135,6 +163,8 @@ function worldOk(d: Record<string, unknown>): boolean {
   if (d.world === undefined) return true;
   const w = d.world;
   if (!isObj(w) || !Array.isArray(w.characters) || !Array.isArray(w.lots) || !isNum(w.nextId)) return false;
+  const version = worldVersion(w);
+  if (version !== 1 && version !== 2) return false;
   for (const c of w.characters) {
     if (!isObj(c) || !CHARACTER_IDS.includes(c.id as string) || !isNum(c.port) || !Number.isSafeInteger(c.wallet) || (c.wallet as number) < 0) return false;
   }
@@ -142,6 +172,7 @@ function worldOk(d: Record<string, unknown>): boolean {
     if (!isObj(l) || !(GOOD_IDS as readonly string[]).includes(l.good as string) || !Number.isSafeInteger(l.qty) || (l.qty as number) <= 0) return false;
     if (typeof l.id !== 'string' || typeof l.owner !== 'string' || typeof l.origin !== 'string' || !isObj(l.custody)) return false;
   }
+  if (version === 2 && !worldV2Ok(w)) return false;
   const c = w.celebration;
   if (c === null) return true;
   if (!isObj(c) || CELEBRATION_NUMS.some((k) => !isNum(c[k])) || typeof c.fallbackDone !== 'boolean' || typeof c.done !== 'boolean') return false;
@@ -177,12 +208,20 @@ export function parseSave(json: string, seed: number, heightmapSize: number): Sa
       return null;
     }
     const voyage = normalizeVoyage(d);
+    normalizeLots(voyage);
     checkBooks(voyage);
-    return { ...d, voyage } as unknown as SaveData;
+    const world = d.world === undefined ? undefined : worldOf(d.world as Record<string, unknown>);
+    if (world) checkWorld(world, voyage);
+    return { ...d, voyage, ...(world ? { world } : {}) } as unknown as SaveData;
   } catch (err) {
     console.warn('voyage save ignored: unreadable', err);
     return null;
   }
+}
+
+/** A save's world as version 2: a version 1 world (or one with no version) is upgraded. */
+function worldOf(w: Record<string, unknown>): WorldState {
+  return worldVersion(w) === 1 ? upgradeWorld(w as unknown as WorldStateV1) : (w as unknown as WorldState);
 }
 
 /**
@@ -197,8 +236,10 @@ export function migrateV1(d: unknown): SaveData {
   if (!shapeOk(d)) throw new RangeError('malformed v1 save');
   const voyage = normalizeVoyage(d);
   rebuildBooks(voyage, (d.economy as Record<string, unknown>).T as number);
+  normalizeLots(voyage);
   checkBooks(voyage);
   const out: Record<string, unknown> = { ...d, v: SAVE_VERSION, voyage };
+  if (d.world !== undefined) out.world = upgradeWorld(d.world as unknown as WorldStateV1);
   const talk = d.talk;
   if (isObj(talk) && isObj(talk.notes)) {
     const notes: Record<string, unknown> = {};
