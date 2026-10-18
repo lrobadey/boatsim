@@ -63,16 +63,25 @@ export function recordsOf(world: WorldState, who: Holder, T: number): SocialReco
 
 /** 1c: one assumed, tentative return belief per agreement the holder owns (expectT = expectedT). */
 export function beliefsOf(world: WorldState, who: CharacterId): Belief[] {
-  return world.agreements
+  const beliefs: Belief[] = world.agreements
     .filter((a) => a.owner === who)
     .map((a) => ({ holder: who, agreement: a.id, expectT: a.expectedT, firmness: 'tentative', source: 'assumed' }));
+  for (const r of world.records) {
+    if (r.holder === who && r.kind === 'promise') {
+      beliefs.push({ holder: who, agreement: r.facts.agreement ?? '', expectT: r.facts.expectT, firmness: r.facts.interpretation, source: 'said' });
+    }
+  }
+  return beliefs;
 }
 
-/** Let down at T: T > expectT and the holder has no witnessed record of the agreement at or before expectT. */
+/**
+ * Let down at T: T > expectT and the holder has no witnessed settlement or return of the agreement at or before
+ * expectT. A belief with no agreement (a spoken promise without one) is never let down.
+ */
 export function letDown(world: WorldState, b: Belief, T: number): boolean {
-  if (T <= b.expectT) return false;
+  if (T <= b.expectT || b.agreement === '') return false;
   return !recordsOf(world, b.holder, b.expectT).some(
-    (r) => r.source === 'witnessed' && agreementOf(r) === b.agreement,
+    (r) => r.source === 'witnessed' && (r.kind === 'settled' || r.kind === 'returned') && agreementOf(r) === b.agreement,
   );
 }
 
