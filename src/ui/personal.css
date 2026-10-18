@@ -1,0 +1,42 @@
+/* ==========================================================================
+   Personal menu (expectations spec §5): belongings, ship cargo, expectations
+   and accounts. The ledger's glass and hairlines; headings in Cormorant.
+   ========================================================================== */
+
+.pm-root { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 10, 16, 0.45); }
+.pm-root.on { display: flex; }
+
+.pm { width: min(620px, calc(100vw - 32px)); height: min(520px, calc(100vh - 32px)); display: flex; flex-direction: column;
+  padding: 18px 22px 16px; box-sizing: border-box; color: var(--t1); text-shadow: none;
+  background: var(--glass-strong); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--lift); }
+
+.pm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.pm-title { margin: 0; font: 500 26px/1.1 var(--f-name); letter-spacing: 0.01em; }
+.pm-close { font: 500 13px var(--f-ui); color: var(--t2); background: none; border: 0; padding: 4px 2px; cursor: pointer; }
+.pm-close:hover, .pm-close:focus-visible { color: var(--t1); }
+
+.pm-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 0; padding-bottom: 10px; border-bottom: 1px solid var(--hair); }
+.pm-tab { font: 500 13px/1 var(--f-ui); color: var(--t2); background: none; border: 1px solid transparent; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.pm-tab:hover { color: var(--t1); }
+.pm-tab.on { color: var(--t1); background: rgba(243, 238, 228, 0.08); border-color: var(--hair); }
+.pm-tab:focus-visible, .pm-btn:focus-visible, .pm-close:focus-visible { outline: 1px solid rgba(243, 238, 228, 0.5); outline-offset: 2px; }
+
+.pm-body { overflow-y: auto; padding: 12px 0 2px; }
+.pm-empty { margin: 4px 0; font: 400 14px/1.45 var(--f-ui); color: var(--t3); }
+.pm-item { padding: 10px 0 12px; border-bottom: 1px solid var(--hair); }
+.pm-item:last-child { border-bottom: 0; }
+.pm-item-title { margin: 0 0 6px; font: 500 19px/1.15 var(--f-name); letter-spacing: 0.01em; }
+.pm-line { margin: 0 0 4px; font: 400 14px/1.45 var(--f-ui); color: var(--t2); }
+.pm-sub { margin: 14px 0 6px; font: 600 11px/1.2 var(--f-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); }
+.pm-list { margin: 0; padding: 0; list-style: none; }
+.pm-list li { padding: 6px 0; font: 400 14px/1.4 var(--f-ui); color: var(--t2); border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
+.pm-list li:last-child { border-bottom: 0; }
+.pm-purse { display: flex; align-items: baseline; justify-content: space-between; padding: 2px 0 10px; border-bottom: 1px solid var(--hair); font: 400 14px var(--f-ui); color: var(--t2); }
+.pm-purse b { font: 500 20px var(--f-ui); color: var(--t1); font-variant-numeric: tabular-nums; }
+.pm-letter { margin: 8px 0 10px; padding: 10px 14px; font: italic 400 17px/1.5 var(--f-name); color: var(--t1); border-left: 2px solid var(--bronze); background: rgba(243, 238, 228, 0.04); white-space: pre-wrap; }
+.pm-actions { display: flex; gap: 8px; margin-top: 8px; }
+.pm-btn { font: 500 13px/1 var(--f-ui); letter-spacing: 0.02em; padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; color: var(--t1); background: transparent; border: 1px solid rgba(243, 238, 228, 0.3); }
+.pm-btn:hover:not(:disabled) { border-color: rgba(243, 238, 228, 0.6); background: rgba(243, 238, 228, 0.05); }
+.pm-btn.primary { background: var(--bone); color: #101820; border-color: transparent; }
+.pm-btn.primary:hover:not(:disabled) { background: #fff; }

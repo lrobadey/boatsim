@@ -186,6 +186,8 @@ function nbCell(c: { ask: number; bid: number; ageHours: number; heard?: boolean
 export class Ledger {
   /** called once per line after an order is confirmed, e.g. 'Sold 30 wine · 246.0 dr' */
   onToast?: (text: string) => void;
+  /** the Belongings and accounts button: the caller closes the ledger and opens the personal menu */
+  onPersonal?: () => void;
 
   private readonly root = el('div', 'ledger-root');
   private readonly panel = el('div', 'ledger');
@@ -219,7 +221,10 @@ export class Ledger {
 
   constructor() {
     const head = el('div', 'ledger-head');
-    head.append(this.title, this.time);
+    const personal = el('button', 'ledger-personal', 'Belongings and accounts') as HTMLButtonElement;
+    personal.type = 'button';
+    personal.addEventListener('click', () => this.onPersonal?.());
+    head.append(this.title, this.time, personal);
 
     const thead = el('thead');
     const headRow = el('tr');

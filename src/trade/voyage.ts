@@ -61,6 +61,13 @@ export function newVoyage(): VoyageState {
   return v;
 }
 
+/** The opening voyage (expectations spec §1): purse 300.0 dr and an empty hold; the wine aboard will be Damaris's. */
+export function openingVoyage(): VoyageState {
+  const v: VoyageState = { purse: 0, manifest: {}, lots: [], receipts: [], nextId: 1, notebook: [], job: null };
+  resetBooks(v, { purse: START_PURSE, cargo: {}, T: 0 });
+  return v;
+}
+
 /** Porterage for one unit moved, centidrachmas: ceil(0.25 · mass). */
 export function porterFeePerUnit(good: Good): number {
   return Math.ceil(PORTER_FEE_PER_KG * good.mass);

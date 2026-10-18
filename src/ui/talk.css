@@ -8,7 +8,7 @@
 .talk-root.on { display: block; }
 
 .talk { position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%); width: min(560px, calc(100vw - 32px));
-  display: flex; flex-direction: column; max-height: min(520px, calc(100vh - 32px));
+  display: flex; flex-direction: column; max-height: min(640px, calc(100vh - 32px));
   padding: 18px 22px 14px; pointer-events: auto; color: var(--t1); text-shadow: none;
   background: var(--glass-strong); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--hair); border-radius: var(--radius); box-shadow: var(--lift); }
@@ -39,3 +39,16 @@
 .talk-card-title { margin: 0 0 6px; font: 500 19px/1.15 var(--f-name); letter-spacing: 0.01em; }
 .talk-card-line { margin: 0 0 4px; font: 400 14px/1.45 var(--f-ui); color: var(--t2); }
 .talk-card .talk-keys { margin-top: 8px; }
+
+/* visible actions: the card's Confirm and Decline, and Trade, Show letter and Review agreement under the line */
+.talk-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.talk-btn { font: 500 13px/1 var(--f-ui); letter-spacing: 0.02em; padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; color: var(--t1); background: transparent; border: 1px solid rgba(243, 238, 228, 0.3); }
+.talk-btn:hover:not(:disabled) { border-color: rgba(243, 238, 228, 0.6); background: rgba(243, 238, 228, 0.05); }
+.talk-btn.primary { background: var(--bone); color: #101820; border-color: transparent; }
+.talk-btn.primary:hover:not(:disabled) { background: #fff; }
+.talk-btn[hidden] { display: none; }
+.talk-btn:disabled { opacity: 0.5; cursor: default; }
+.talk-btn:focus-visible { outline: 1px solid rgba(243, 238, 228, 0.5); outline-offset: 2px; }
+
+/* a document shown to you: quoted in the letter face with a bronze rule */
+.tl.doc { margin: 0 0 12px; padding: 8px 12px; font: italic 400 16px/1.5 var(--f-name); color: var(--t1); border-left: 2px solid var(--bronze); background: rgba(243, 238, 228, 0.04); }

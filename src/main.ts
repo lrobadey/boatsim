@@ -330,7 +330,7 @@ async function boot() {
         <label class="row"><span>Invert Y</span><input type="checkbox" class="switch" data-k="invert"></label>
         <div class="row"><span>Quality</span>${qualitySeg(seed, quality.name)}</div>
       </div>
-      <div class="card-foot"><button class="pill primary resume">Resume</button></div>
+      <div class="card-foot"><button class="pill primary resume">Resume</button>${game.trade ? '<button class="pill ghost personal">Belongings and accounts</button>' : ''}</div>
     </div>`;
   pause.style.display = 'none';
   ui.appendChild(pause);
@@ -424,6 +424,8 @@ async function boot() {
       }
     }
     setPaused(false);
+    // a fresh voyage opens on deck with Damaris at the plank (runs once; Continue never does)
+    game.trade?.beginOpening();
   };
   const board = () => {
     game.audio.init();
@@ -436,6 +438,10 @@ async function boot() {
     board();
   });
   title.querySelector('.open-settings')!.addEventListener('click', () => showSettings('title'));
+  pause.querySelector('.personal')?.addEventListener('click', () => {
+    setPaused(false);
+    game.trade?.openPersonal();
+  });
   resumeBtn.addEventListener('click', () => (settingsFrom === 'title' ? closeTitleSettings() : board()));
   // a click starts or resumes the voyage (and retries the lock); while playing without the lock it is
   // left to the game, where LMB places pieces in build mode and drags the view
@@ -444,7 +450,7 @@ async function boot() {
   });
   game.input.onLockChange = (locked) => {
     if (locked) begin();
-    else if (started && !game.input.hoverLook) setPaused(true); // Esc released the mouse
+    else if (started && !game.input.hoverLook && !game.ledgerOpen) setPaused(true); // Esc released the mouse
   };
   window.addEventListener('keydown', (e) => {
     // the ledger closes itself on Esc (and marks the event handled); it never opens the pause menu

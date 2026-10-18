@@ -18,6 +18,9 @@
 .ledger-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--hair); }
 .ledger-title { margin: 0; font: 500 30px/1.1 var(--f-name); letter-spacing: 0.01em; }
 .ledger-time { font: 500 13px var(--f-ui); color: var(--t2); font-variant-numeric: tabular-nums; }
+.ledger-personal { margin-left: auto; font: 500 12px/1 var(--f-ui); color: var(--t2); background: none; border: 1px solid var(--hair); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.ledger-personal:hover, .ledger-personal:focus-visible { color: var(--t1); border-color: rgba(243, 238, 228, 0.35); }
+
 
 /* goods table and notebook share the table styling */
 .ledger-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }

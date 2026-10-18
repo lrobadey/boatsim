@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Game } from '../game';
 import { clamp, KNOTS } from '../core/util';
+import { dateOn, formatDate } from '../world/calendar';
 
 const POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const C = 64; // dial centre in the 128 box
@@ -60,6 +61,9 @@ export class Astrolabe {
   private dial = document.createElement('div');
   private time = document.createElement('div');
   private sub = document.createElement('div');
+  /** the time and calendar date under the dial; dims while the world is stopped */
+  private date = document.createElement('div');
+  private dateText = '';
   private skyTop!: SVGStopElement;
   private skyHor!: SVGStopElement;
   private sea!: SVGRectElement;
@@ -122,7 +126,8 @@ export class Astrolabe {
     this.windMark = q<SVGGElement>('.wind');
     this.time.className = 'astro-time';
     this.sub.className = 'astro-sub';
-    this.root.append(this.dial, this.time, this.sub);
+    this.date.className = 'astro-date';
+    this.root.append(this.dial, this.time, this.sub, this.date);
   }
 
   update(g: Game) {
@@ -174,6 +179,14 @@ export class Astrolabe {
       this.timeText = tt;
       this.time.innerHTML = tt;
     }
+    const c = g.clock;
+    const dt = `${c.timeString} · ${formatDate(dateOn(c.epoch, c.dayCount))}`;
+    if (dt !== this.dateText) {
+      this.dateText = dt;
+      this.date.textContent = dt;
+    }
+    const stopped = g.worldStopped;
+    if (this.date.classList.contains('stopped') !== stopped) this.date.classList.toggle('stopped', stopped);
     const wd = ((((g.wind.from / D2R) % 360) + 360) % 360);
     const st = `Wind ${POINTS[Math.round(wd / 45) % 8]} ${(g.wind.speed * KNOTS).toFixed(0)} kn`;
     const now = performance.now() / 1000;

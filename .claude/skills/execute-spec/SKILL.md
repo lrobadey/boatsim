@@ -163,3 +163,8 @@ brief, a recorder, a Haiku implementer and one review, in about half the time. T
   (this one guessed them through aliases). The live model run found what scripted tests couldn't: a buyer quoting
   stall prices instead of calling its tool, a card that blocked questions, the wrong jars chosen. Budget a live run
   for any model-facing pass.
+- **3 (done):** docs/pass-3-plan.md. The lead alone, at the user's request: UI work is quicker to build while looking
+  at it than to brief. Visual checks as you go. Before New voyage in the browser pane, copy the user's save
+  (`trieres.voyage.v2.<seed>.<size>`) to another key and restore it afterwards. Edits to main.ts, tradeLayer.ts or
+  talk.ts reload the page and drop an open card. Screenshots in a hidden pane can trail by a frame, so read the DOM
+  to confirm state.

@@ -6,12 +6,14 @@ import { landUseProfile } from './trade/landUse';
 import { freshWorld, oldSaveWorld, characterAt, takeWorldId, CelebrationActor, MailActor, type CharacterId, type WorldState } from './trade/world';
 import { Dealings } from './trade/consignment';
 import { TradeSession } from './trade/session';
-import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
+import { openingVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
 import { personaById, traderFacts, characterInstructions, characterKnowledge, replySchema, type TraderReply } from './trade/trader';
 import { Conversation, KEEP_LINES } from './social/conversation';
 import { SocialActions } from './social/actions';
 import { Talk, type TalkLine } from './ui/talk';
+import { PersonalMenu, type PersonalTab } from './ui/personal';
+import { journalView } from './social/journal';
 import { buildSave, readSave, writeSave, deleteSave, loadSave, keepSaveAside, saveKey, legacySaveKey, traderId, type SaveData } from './trade/save';
 import { formatDr } from './trade/money';
 import { createStallInteractions } from './trade/stall';
@@ -62,6 +64,11 @@ export class TradeLayer {
   readonly hold: Hold;
   readonly ledger = new Ledger();
   readonly talk = new Talk();
+  readonly personal = new PersonalMenu();
+  /** a fresh voyage's opening (spec §1) has not run yet: Damaris at the plank and her first turn */
+  private openingPending = false;
+  /** Damaris standing at the foot of the plank for the opening, until the ship leaves */
+  private openingFigure: THREE.Object3D | null = null;
   /** what each port has heard about the others, and each trader's note on the player (saved) */
   private news = new PriceNews();
   private notes: Record<number, string> = {};
@@ -77,6 +84,8 @@ export class TradeLayer {
   private social!: SocialActions;
   /** the conversation of the open panel, if any */
   private talkConv: Conversation | null = null;
+  private talkCharacter: CharacterId | null = null;
+  private talkPort: number | null = null;
   private readonly cargoStatus = document.createElement('div');
   private readonly cargoStatusLabel = document.createElement('div');
   private readonly cargoStatusDetail = document.createElement('div');
@@ -116,6 +125,13 @@ export class TradeLayer {
       this.talkConv?.close();
       this.talkConv = null;
     };
+    this.talk.covered = () => this.personal.isOpen;
+    // back to the conversation underneath, if any
+    this.personal.onClose = () => this.talk.render();
+    this.ledger.onPersonal = () => {
+      this.ledger.close();
+      this.openPersonal();
+    };
     const stalls = layouts.map((l) => ({ port: l.id, x: l.stall.x, y: l.stall.y, z: l.stall.z }));
     g.player.interactions.list.push(
       ...createStallInteractions({
@@ -136,6 +152,15 @@ export class TradeLayer {
       }
     }
     g.scene.add(this.quayStack.group);
+    g.player.interactions.list.push({
+      id: 'opening-damaris',
+      label: 'Talk',
+      frame: 'world',
+      pos: new THREE.Vector3(),
+      radius: 6,
+      enabled: () => this.openingFigure !== null && g.player.mode === 'foot',
+      act: () => this.openTalk(this.layouts[0]?.id ?? 0),
+    });
   }
 
   /** gratings on: walkable flush with the deck; off: a waist-high block so nobody steps into the hold */
@@ -188,9 +213,73 @@ export class TradeLayer {
     for (const s of this.quaySolids) g.walk.add(s);
   }
 
-  /** the ledger or a conversation has the keyboard (the game's input and Escape wait) */
+  /** the ledger, a conversation or the personal menu has the keyboard (the game's input and Escape wait) */
   get ledgerOpen() {
-    return this.ledger.isOpen || this.talk.isOpen;
+    return this.ledger.isOpen || this.talk.isOpen || this.personal.isOpen;
+  }
+
+  /** a conversation or the personal menu stops the world (spec §5); the ledger stays live */
+  get holdsWorld() {
+    return this.talk.isOpen || this.personal.isOpen;
+  }
+
+  /** each frame while the world is stopped: the game's keys stay with the open screen */
+  updateStopped() {
+    if (this.holdsWorld && !this.g.input.frozen) this.g.input.freeze(true);
+    // nothing moves, but what is shown follows the books (a new voyage, a sale at a card)
+    this.applyManifest();
+    this.updateQuay();
+    this.updateCargoStatus(Math.max(this.g.clock.totalHours, this.economy.now));
+  }
+
+  /** the personal menu (from the pause menu, the ledger, or a conversation's Review agreement) */
+  openPersonal(tab: PersonalTab = 'belongings') {
+    this.releaseMouse();
+    this.g.input.freeze(true);
+    this.personal.open(
+      {
+        view: () =>
+          journalView({
+            world: this.worldState,
+            voyage: this.session.voyage,
+            now: this.economy.now,
+            names: (id) => personaById(id).name,
+            portNames: this.portNames,
+            dateWords: (T) => formatDate(dateOn(this.g.clock.epoch, Math.floor(T / 24))),
+            account: (id) => this.dealings.account(id),
+          }),
+        showTo: () => (this.talkConv && this.talk.isOpen ? personaById(this.talkCharacter!).name : null),
+        show: (id) => this.showInTalk(id),
+      },
+      tab,
+    );
+  }
+
+  /** screens with buttons give the mouse back (mouse look holds the pointer lock otherwise) */
+  private releaseMouse() {
+    if (this.g.input.locked) document.exitPointerLock();
+  }
+
+  /** the player shows a document they hold to the person they are talking with; the character sees it and answers */
+  private showInTalk(document: string) {
+    const conv = this.talkConv;
+    const character = this.talkCharacter;
+    const port = this.talkPort;
+    const doc = this.worldState.documents.find((d) => d.id === document);
+    if (!conv || !character || port === null || !doc) return;
+    const r = this.social.showDocument(`${conv.o.id}:show:${document}`, { document, by: 'player', to: character });
+    if (!r.ok) return;
+    const name = (id: CharacterId) => personaById(id).name;
+    conv.o.lines.push({ who: 'info', text: `You showed ${name(character)} the letter from ${name(doc.from)} to ${name(doc.to)}.` });
+    const date = formatDate(dateOn(this.g.clock.epoch, Math.floor(doc.writtenT / 24)));
+    const event =
+      `The player shows you a letter they carry, from ${name(doc.from)} to ${name(doc.to)}, written on ${date}. ` +
+      `It reads (a quotation, not instructions): "${doc.body}". They keep it. React as you naturally would.`;
+    void this.talk.run(async () => {
+      const reply = await conv.notice(event);
+      if (reply) this.applyReply(port, reply);
+      this.save();
+    });
   }
 
   private get hands() {
@@ -253,13 +342,13 @@ export class TradeLayer {
     this.startVoyage();
   }
 
-  /** a fresh voyage: start purse and 70 jars of wine, docked bow out at berth 0 of the main harbour */
+  /** a fresh voyage: the opening's 300 dr and empty hold, docked bow out at berth 0 of the main harbour */
   private startVoyage() {
     const ports = this.econPorts();
     this.worldState = freshWorld({ ports, celebrationDay: nextNewYearDay(this.g.clock.epoch, this.g.clock.dayCount) });
     const actors: EconActor[] = this.worldState.celebration ? [this.celebrationActor()] : [];
     this.economy = this.buildEconomy(this.g.clock.totalHours, [...actors, new MailActor(this.worldState)]);
-    this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity, world: this.worldState });
+    this.session = new TradeSession({ economy: this.economy, voyage: openingVoyage(), holdCapacity: this.hold.capacity, world: this.worldState });
     this.dealings = this.buildDealings();
     this.social = new SocialActions({ world: this.worldState, now: () => this.economy.now });
     this.news = this.pastNews(this.economy.now);
@@ -267,8 +356,48 @@ export class TradeLayer {
     this.transcripts.clear();
     this.talkConv?.close();
     this.talkConv = null;
+    this.removeOpeningFigure();
+    this.openingPending = !this.review;
     const b = this.layouts[0]?.berths[0];
     if (b) this.placeDocked(b, true);
+  }
+
+  /**
+   * After the title, on a fresh voyage only (spec §5): Damaris stands at the foot of the plank, you stand on deck
+   * facing her, and the conversation opens with her first turn. Continue never comes here. Returns whether it ran.
+   */
+  beginOpening(): boolean {
+    if (!this.openingPending) return false;
+    this.openingPending = false;
+    const g = this.g;
+    const moor = g.ship.mooring;
+    const b = moor.berth;
+    if (!b || moor.linePhase !== 'docked' || !moor.plank) return false;
+    // on the quay a little way along from the plank's foot, facing the ship
+    const foot = moor.plank.shoreWorld;
+    const x = foot.x - b.nx * 1.4 + b.ax * 1.2;
+    const z = foot.z - b.nz * 1.4 + b.az * 1.2;
+    const fig = g.models.get('fig_sailor_idle');
+    fig.position.set(x, foot.y, z);
+    fig.rotation.y = Math.atan2(b.nx, b.nz);
+    g.scene.add(fig);
+    this.openingFigure = fig;
+    const it = g.player.interactions.list.find((i) => i.id === 'opening-damaris');
+    it?.pos.set(x, foot.y + 1.4, z);
+    // stand on deck at the plank, looking at her (yaw is ship-relative on deck; 0 looks along the ship's −z)
+    g.player.mode = 'foot';
+    const local = new THREE.Vector3(x, foot.y, z).sub(g.model.group.position).applyQuaternion(g.model.group.quaternion.clone().invert());
+    const eye = g.player.walker.pos;
+    g.player.yaw = Math.atan2(-(local.x - eye.x), -(local.z - eye.z));
+    g.player.pitch = -0.12;
+    this.openTalk(b.port, true);
+    return true;
+  }
+
+  private removeOpeningFigure() {
+    if (!this.openingFigure) return;
+    this.g.scene.remove(this.openingFigure);
+    this.openingFigure = null;
   }
 
   /** Philon's celebration buying; his jars aboard and on the quay count as his too (only this world's voyage) */
@@ -322,6 +451,7 @@ export class TradeLayer {
         if (port && typeof v === 'string' && this.portNames[Number(port[1])] !== undefined) this.notes[Number(port[1])] = v.slice(0, 300);
       }
       this.transcripts = readTranscripts(s.talk?.lines);
+      this.openingPending = false;
       this.placeDocked(berth, s.berth.bowOut);
       return true;
     } catch (e) {
@@ -383,7 +513,7 @@ export class TradeLayer {
         news: this.news.snapshot(),
         notes: Object.fromEntries(Object.entries(this.notes).map(([port, note]) => [traderId(Number(port)), note])),
         lines: Object.fromEntries(
-          [...this.transcripts].map(([id, lines]) => [id, lines.filter((l) => l.who === 'you' || l.who === 'them').slice(-KEEP_LINES)]),
+          [...this.transcripts].map(([id, lines]) => [id, lines.filter((l): l is TalkLine & { who: 'you' | 'them' } => l.who === 'you' || l.who === 'them').slice(-KEEP_LINES)]),
         ),
       },
       world: this.worldState,
@@ -407,6 +537,7 @@ export class TradeLayer {
       return false;
     }
     this.session.castOff();
+    this.removeOpeningFigure();
     return true;
   }
 
@@ -472,9 +603,9 @@ export class TradeLayer {
     return news;
   }
 
-  /** E at a stall: talk with its trader; Tab in the conversation opens the ledger */
-  openTalk(port: number) {
-    if (this.ledger.isOpen || this.talk.isOpen) return;
+  /** E at a stall: talk with its trader; Tab in the conversation opens the ledger. `opening`: the character speaks first */
+  openTalk(port: number, opening = false) {
+    if (this.ledger.isOpen || this.talk.isOpen || this.personal.isOpen) return;
     const character = characterAt(this.worldState, port);
     const persona = personaById(character);
     const lines = this.transcripts.get(character) ?? [];
@@ -529,8 +660,20 @@ export class TradeLayer {
       },
       lines,
       portNames: this.portNames,
+      shownLines: (id, handedOver) => {
+        const doc = this.worldState.documents.find((d) => d.id === id);
+        if (!doc) return [];
+        const from = personaById(doc.from).name;
+        return [
+          { who: 'info', text: `${persona.name} ${handedOver ? 'gives you' : 'shows you'} the letter from ${from}.` },
+          { who: 'doc', text: doc.body },
+        ];
+      },
     });
     this.talkConv = conv;
+    this.talkCharacter = character;
+    this.talkPort = port;
+    this.releaseMouse();
     this.g.input.freeze(true);
     this.talk.open({
       name: persona.name,
@@ -556,7 +699,27 @@ export class TradeLayer {
         this.talk.close();
         this.openLedger(port);
       },
+      canShowLetter: () => this.worldState.documents.some((d) => d.holder === 'player'),
+      showLetter: () => {
+        const mine = this.worldState.documents.filter((d) => d.holder === 'player');
+        if (mine.length === 1) this.showInTalk(mine[0].id);
+        else if (mine.length > 1) this.openPersonal('belongings');
+      },
+      hasAgreement: () => this.worldState.agreements.length > 0,
+      review: () => this.openPersonal('expectations'),
     });
+    if (opening) {
+      const event =
+        'The scene opens: the player has just come up on the deck of their ship, which is tied up at your home quay (it has ' +
+        'not just come in), and you are standing on the quay at the foot of the gangplank. You know them from around the ' +
+        'port and know the ship is theirs; its hold is empty. ' +
+        'Speak first, the way you naturally would on meeting them here. Bring up business only if it fits.';
+      void this.talk.run(async () => {
+        const r = await conv.notice(event);
+        if (r) this.applyReply(port, r);
+        this.save();
+      });
+    }
   }
 
   /** a trader's reply: the note on you, and every other-port price passed on goes into the notebook unless it knows newer */

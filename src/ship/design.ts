@@ -470,10 +470,10 @@ export const MERCHANT: ShipDesign = {
 
 export const DESIGNS: Record<ShipKind, ShipDesign> = { trireme: TRIREME, merchant: MERCHANT };
 
-/** the ship chosen for this page load: `?ship=` wins, then the remembered choice, else the trireme */
+/** the ship chosen for this page load: `?ship=` wins, then the remembered choice, else the merchant (the opening) */
 export function chosenShipKind(search: string, stored: string | null): ShipKind {
   const q = new URLSearchParams(search).get('ship');
   if (q === 'trireme' || q === 'merchant') return q;
   if (stored === 'trireme' || stored === 'merchant') return stored;
-  return 'trireme';
+  return 'merchant';
 }

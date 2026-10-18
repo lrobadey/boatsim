@@ -3,11 +3,12 @@ import './talk.css';
 /**
  * Talking with a stall trader (docs/kormakos-and-traders-spec.md, part B): a small panel over the quay with
  * the conversation and a line to type into. Keyboard-first: Enter says the line, Tab opens the ledger, Esc
- * leaves. When the trader has a card for you (a proposal, a sale, an account), Ctrl+Enter confirms it and
+ * leaves; the buttons under the line (Trade, Show letter, Review agreement) are ordinary focusable buttons. When the trader has a card for you (a proposal, a sale, an account), Ctrl+Enter confirms it and
  * Ctrl+Backspace declines it; you can keep talking meanwhile. The panel only shows and collects input; the trade layer talks to the model.
  */
 export interface TalkLine {
-  who: 'you' | 'them' | 'info';
+  /** 'doc': a document shown to you, quoted in the conversation (never sent to the model or saved) */
+  who: 'you' | 'them' | 'info' | 'doc';
   text: string;
 }
 
@@ -25,8 +26,16 @@ export interface TalkSource {
   confirm(): Promise<void>;
   /** Ctrl+Backspace on a card: declines it; resolves when the trader has answered */
   decline(): Promise<void>;
-  /** Tab: leave the conversation for the ledger */
+  /** Tab or the Trade button: leave the conversation for the ledger */
   ledger(): void;
+  /** true when you hold a letter you could show */
+  canShowLetter(): boolean;
+  /** the Show letter button: shows your letter (or lets you choose one); resolves when the trader has answered */
+  showLetter(): void;
+  /** true when you have an agreement to review */
+  hasAgreement(): boolean;
+  /** the Review agreement button: opens the personal menu's expectations over the conversation */
+  review(): void;
 }
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string) => {
@@ -44,11 +53,19 @@ export class Talk {
   private readonly cardEl = el('div', 'talk-card');
   private readonly cardBody = el('div', 'talk-card-body');
   private readonly input = el('input', 'talk-input');
+  private readonly buttons = el('div', 'talk-buttons');
+  private readonly tradeBtn = el('button', 'talk-btn');
+  private readonly letterBtn = el('button', 'talk-btn');
+  private readonly reviewBtn = el('button', 'talk-btn');
+  private readonly confirmBtn = el('button', 'talk-btn primary');
+  private readonly declineBtn = el('button', 'talk-btn');
   private src: TalkSource | null = null;
   /** conversations waiting on a reply, by their `lines` (the caller builds a new source on every opening) */
   private readonly pending = new WeakSet<TalkLine[]>();
   private readonly onKeyDown = (e: KeyboardEvent) => this.handleKey(e);
   onClose?: () => void;
+  /** true while another screen (the personal menu) is over the conversation: keys and focus are left to it */
+  covered: () => boolean = () => false;
 
   constructor() {
     const head = el('div', 'talk-head');
@@ -62,9 +79,21 @@ export class Talk {
     keys.innerHTML = '<span><kbd>Enter</kbd> Say</span><span><kbd>Tab</kbd> Ledger</span><span><kbd>Esc</kbd> Leave</span>';
     const cardKeys = el('div', 'talk-keys');
     cardKeys.innerHTML = '<span><kbd>Ctrl</kbd><kbd>Enter</kbd> Confirm</span><span><kbd>Ctrl</kbd><kbd>Backspace</kbd> Decline</span>';
+    const cardButtons = el('div', 'talk-buttons');
+    for (const [b, text] of [[this.confirmBtn, 'Confirm'], [this.declineBtn, 'Decline'], [this.tradeBtn, 'Trade'], [this.letterBtn, 'Show letter'], [this.reviewBtn, 'Review agreement']] as const) {
+      b.type = 'button';
+      b.textContent = text;
+    }
+    this.confirmBtn.addEventListener('click', () => this.src && void this.act(this.src, true));
+    this.declineBtn.addEventListener('click', () => this.src && void this.act(this.src, false));
+    this.tradeBtn.addEventListener('click', () => this.src?.ledger());
+    this.letterBtn.addEventListener('click', () => this.src?.showLetter());
+    this.reviewBtn.addEventListener('click', () => this.src?.review());
+    cardButtons.append(this.confirmBtn, this.declineBtn);
+    this.buttons.append(this.tradeBtn, this.letterBtn, this.reviewBtn);
     this.cardEl.hidden = true;
-    this.cardEl.append(this.cardBody, cardKeys);
-    this.panel.append(head, this.log, this.cardEl, this.input, keys);
+    this.cardEl.append(this.cardBody, cardButtons, cardKeys);
+    this.panel.append(head, this.log, this.cardEl, this.input, this.buttons, keys);
     this.root.append(this.panel);
     document.getElementById('ui')!.appendChild(this.root);
   }
@@ -117,7 +146,6 @@ export class Talk {
       p.append(n, '…');
       this.log.append(p);
     }
-    this.log.scrollTop = this.log.scrollHeight;
     const card = waiting ? null : s.card();
     this.cardEl.hidden = !card;
     if (card) {
@@ -130,12 +158,18 @@ export class Talk {
       });
       this.cardBody.replaceChildren(title, ...lines);
     }
+    // scroll once the card is laid out: it takes room from the log
+    this.log.scrollTop = this.log.scrollHeight;
     this.input.disabled = waiting;
-    if (!waiting && document.activeElement !== this.input) this.input.focus();
+    this.confirmBtn.disabled = this.declineBtn.disabled = waiting;
+    this.letterBtn.hidden = !s.canShowLetter();
+    this.letterBtn.disabled = waiting;
+    this.reviewBtn.hidden = !s.hasAgreement();
+    if (!waiting && !this.covered() && document.activeElement !== this.input) this.input.focus();
   }
 
-  /** one exchange with the trader (a line, or a card's outcome): the panel shows the wait until it has answered */
-  private async run(exchange: () => Promise<void>): Promise<void> {
+  /** one exchange with the trader (a line, a card's outcome, a letter shown): the panel shows the wait until it has answered */
+  async run(exchange: () => Promise<void>): Promise<void> {
     const s = this.src;
     if (!s || this.pending.has(s.lines)) return;
     this.pending.add(s.lines);
@@ -165,13 +199,14 @@ export class Talk {
 
   private handleKey(e: KeyboardEvent): void {
     const s = this.src;
-    if (!s) return;
+    if (!s || this.covered()) return;
     // the game never sees keys while the panel is open; the text field still receives them
     e.stopPropagation();
     if (e.key === 'Escape') {
       e.preventDefault();
       this.close();
-    } else if (e.key === 'Tab') {
+    } else if (e.key === 'Tab' && document.activeElement === this.input) {
+      // Tab from the text line opens the ledger; on the buttons it moves focus as usual
       e.preventDefault();
       s.ledger();
     } else if (e.key === 'Enter') {

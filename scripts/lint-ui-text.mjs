@@ -16,6 +16,9 @@ const TARGETS = [
   { file: 'src/trade/stall.ts' },
   { file: 'src/ui/ledgerSource.ts' },
   { file: 'src/ui/hud.ts', regions: true },
+  { file: 'src/ui/personal.ts' },
+  { file: 'src/social/journal.ts' },
+  { file: 'src/ui/talk.ts' },
 ];
 
 /** string and template literal text (template `${}` code is skipped; nested literals are read) */

@@ -49,6 +49,8 @@ export interface ConversationOptions {
   lines: TalkLine[];
   /** port names for parseReply */
   portNames: Record<number, string>;
+  /** the lines that show a document the character showed the player (not sent to the model, not saved) */
+  shownLines?: (document: string, handedOver: boolean) => TalkLine[];
 }
 
 /** The line shown to the player for a failed turn. */
@@ -82,6 +84,14 @@ export class Conversation {
   async say(text: string): Promise<TraderReply | null> {
     this.add({ who: 'you', text });
     return this.loop([]);
+  }
+
+  /**
+   * Something happened that the character sees (the opening scene, the player showing a letter): no line from the
+   * player; the event goes to the model as a developer note and the loop runs once, so the character may speak first.
+   */
+  async notice(event: string): Promise<TraderReply | null> {
+    return this.loop([{ role: 'developer', content: event }]);
   }
 
   /** The player confirms the card: runs its command, tells the model the outcome, and runs the loop once. */
@@ -122,7 +132,7 @@ export class Conversation {
   /** The saved transcript as model input: the player's lines as user, the character's as assistant, no info lines. */
   private transcript(): InputItem[] {
     return this.o.lines
-      .filter((l) => l.who !== 'info')
+      .filter((l) => l.who === 'you' || l.who === 'them')
       .slice(-KEEP_LINES)
       .map((l): InputItem => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text }));
   }
@@ -150,6 +160,7 @@ export class Conversation {
           if (this.epoch !== e) return null;
           const out = runTool(this.o.tools(), call.name, call.arguments, `${this.o.id}:${call.call_id}`);
           if (out.card) this.card = out.card;
+          if (out.shown) for (const l of this.o.shownLines?.(out.shown.document, out.shown.handedOver) ?? []) this.add(l);
           turn.push(call, { type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(out.output) });
         }
         continue;

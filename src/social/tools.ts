@@ -52,6 +52,8 @@ export interface ToolOutcome {
   /** what the model is told (JSON-serialisable): { ok: true, ... } or { ok: false, reason } */
   output: object;
   card?: Card;
+  /** a document the character showed (or handed) to the player, for the conversation to display */
+  shown?: { document: string; handedOver: boolean };
 }
 
 const BUYERS = ['damaris', 'philon', 'myrto'] as const;
@@ -302,7 +304,7 @@ function showDocument(ctx: ToolContext, a: Record<string, unknown>, req: string)
     to: 'player',
     handOver: a.hand_over,
   });
-  return { output: result };
+  return result.ok ? { output: result, shown: { document: a.document_id, handedOver: result.handedOver } } : { output: result };
 }
 
 function recordPromise(ctx: ToolContext, a: Record<string, unknown>, req: string): ToolOutcome {

@@ -5,7 +5,8 @@ save v2) implemented and gated on October 16, 2026 (docs/pass-1a-contract.md). P
 use, characters, celebration) implemented and gated the same day (docs/pass-1b-plan.md). Pass 1c (agreements,
 settlement, records, news by ship) implemented and gated on October 17, 2026 (docs/pass-1c-plan.md). Pass 2
 (conversation tools, cards, letter, promises) implemented, gated and run live against the model the same day
-(docs/pass-2-plan.md).
+(docs/pass-2-plan.md). Pass 3 (playable opening, personal menu, pause, calendar HUD) implemented and checked
+in the browser the same day (docs/pass-3-plan.md).
 Known follow-up: receipts grow by about 110 bytes per handled unit, so saves need compaction or a size
 policy before long play reaches the browser storage limit.
 

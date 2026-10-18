@@ -393,9 +393,14 @@ export class Game {
     return true;
   }
 
-  /** the ledger owns the keyboard */
+  /** the ledger, a conversation or the personal menu owns the keyboard */
   get ledgerOpen() {
     return !!this.trade?.ledgerOpen;
+  }
+
+  /** the world is stopped: the settings sheet, or a conversation or the personal menu (the ledger stays live) */
+  get worldStopped() {
+    return this.paused || !!this.trade?.holdsWorld;
   }
 
   /** cargo and ports for a merchant: continue this world's saved voyage or start a new one docked at home */
@@ -729,7 +734,8 @@ export class Game {
     }
 
     let cameraCut = false;
-    if (!this.paused) {
+    const stopped = this.worldStopped;
+    if (!stopped) {
       if (this.cinematic) this.player.chaseYaw += dt * 0.035;
       else if (!this.ledgerOpen) {
         const previousMode = this.player.mode;
@@ -793,7 +799,7 @@ export class Game {
     hints.docking = ap && (lp === 'none' || lp === 'out' || lp === 'hauling') ? clamp((90 - ap.dist) / 50, 0, 1) : 0;
     // felt contact: shake only for real contact (grounding here, quay bumps in updateMooring); the
     // swell already moves the ship, and bowSlam is a column sum that runs high in an ordinary sea
-    if (!this.paused && !this.cinematic && this.ship.grounding > 0.02) this.player.addTrauma(Math.min(0.6, this.ship.grounding) * dt * 3);
+    if (!stopped && !this.cinematic && this.ship.grounding > 0.02) this.player.addTrauma(Math.min(0.6, this.ship.grounding) * dt * 3);
     const sp = this.shipPose;
     sp.origin.copy(this.model.group.position);
     sp.quat.copy(this.shipQuat);
@@ -804,10 +810,10 @@ export class Game {
     if (this.crewSolids && this.ship.rowing instanceof CrewRowing) this.crewSolids.update(this.ship.rowing.crewView, this.ship.rowing);
     this.player.update(dt, sp, this.walk, this.terrain, this.waves, this.ship.time);
     if(this.reviewCamera){this.camera.position.copy(this.reviewCamera.position);this.camera.lookAt(this.reviewCamera.target);this.camera.updateMatrixWorld(true);}
-    if (!this.paused) {
+    if (!stopped) {
       this.updateMooring(dt);
       this.trade?.update();
-    }
+    } else this.trade?.updateStopped();
     // world systems
     this.advanceCloudWeather(dt);
     this.sky.updateLighting(dt, this.camera, this.lightingJump);
@@ -837,8 +843,8 @@ export class Game {
     this.ocean.update(this.camera);
     this.props.update(dt, this.ship.time, this.camera, this.sky.night);
     this.birds.update(dt, this.camera);
-    this.foam.update(this.paused ? 0 : dt, this.ship, this.model, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !this.paused);
-    this.oarWater.update(this.paused ? 0 : dt, this.ship, this.model, this.waves, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !this.paused);
+    this.foam.update(stopped ? 0 : dt, this.ship, this.model, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !stopped);
+    this.oarWater.update(stopped ? 0 : dt, this.ship, this.model, this.waves, this.pipeline.renderer, this.ship.time - SIM_DT + alpha * SIM_DT, present && !stopped);
 
     const rt = this.pipeline.refractTarget;
     const size = this.pipeline.renderer.getDrawingBufferSize(new THREE.Vector2());
@@ -858,7 +864,7 @@ export class Game {
     if (timed) this.pipeline.endGpuTimer();
 
     // audio & UI
-    if (!this.paused) this.audio.rowingEvents(this.ship.rowing, this.ship.time - SIM_DT + alpha * SIM_DT);
+    if (!stopped) this.audio.rowingEvents(this.ship.rowing, this.ship.time - SIM_DT + alpha * SIM_DT);
     this.audio.update(dt, this);
     if (this.showHud) this.hud.update(this, this.frameMs, dt);
     this.chart.update(this.ship, this.player);
