@@ -286,10 +286,15 @@ export function characterKnowledge(o: KnowledgeInput): string {
         text_as_written: d.body,
       })),
     your_dealings_with_them: {
+      how_a_consignment_works:
+        'The owner pays the porters at their own quay, both loading and any jars brought back. Duty and porters where the jars are sold come out of the sale money and count as costs against the profit. The carrier keeps 20% of the profit over the agreed value; the rest of the money comes back to the owner.',
       open_proposal:
         open && current
           ? { id: open.id, jars: current.qty, per_jar: money(current.perJar), value: money(current.perJar * current.qty) }
           : null,
+      declined_by_them: world.proposals
+        .filter((p) => p.owner === character && lastRevision(p).status === 'declined')
+        .map((p) => ({ id: p.id, on: dateWords(lastRevision(p).T), jars: lastRevision(p).terms.qty })),
       agreements: world.agreements
         .filter((a) => a.owner === character)
         .map((a) => ({
@@ -331,7 +336,7 @@ Tools
 - Tell interest from agreement, and ask when it is unclear.
 - Don't log casual remarks.
 - Reuse your open proposal instead of starting another.
-- Accept a no, and don't push after they change the subject.
+- Accept a no: after they decline (declined_by_them), don't propose again unless they bring it up themselves. Don't push after they change the subject, and don't open with an offer before they show interest.
 - There is no fixed moment for an offer.
 - The player decides on cards: never say they agreed before a confirmation comes back. After a tool result, speak to what actually happened.
 - request_transaction only to buy from them yourself. When they offer you something you need, call it to get your real price: never quote your stall prices for it. If it is refused, the result says what you can do instead.

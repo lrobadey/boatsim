@@ -3,8 +3,8 @@ import './talk.css';
 /**
  * Talking with a stall trader (docs/kormakos-and-traders-spec.md, part B): a small panel over the quay with
  * the conversation and a line to type into. Keyboard-first: Enter says the line, Tab opens the ledger, Esc
- * leaves. When the trader has a card for you (a proposal, a sale, an account), Enter confirms it and Backspace
- * declines it. The panel only shows and collects input; the trade layer talks to the model.
+ * leaves. When the trader has a card for you (a proposal, a sale, an account), Ctrl+Enter confirms it and
+ * Ctrl+Backspace declines it; you can keep talking meanwhile. The panel only shows and collects input; the trade layer talks to the model.
  */
 export interface TalkLine {
   who: 'you' | 'them' | 'info';
@@ -21,9 +21,9 @@ export interface TalkSource {
   say(text: string): Promise<void>;
   /** the card waiting for you, or null */
   card(): { title: string; lines: string[] } | null;
-  /** Enter on a card: runs it; resolves when the trader has answered */
+  /** Ctrl+Enter on a card: runs it; resolves when the trader has answered */
   confirm(): Promise<void>;
-  /** Backspace on a card: declines it; resolves when the trader has answered */
+  /** Ctrl+Backspace on a card: declines it; resolves when the trader has answered */
   decline(): Promise<void>;
   /** Tab: leave the conversation for the ledger */
   ledger(): void;
@@ -61,7 +61,7 @@ export class Talk {
     const keys = el('div', 'talk-keys');
     keys.innerHTML = '<span><kbd>Enter</kbd> Say</span><span><kbd>Tab</kbd> Ledger</span><span><kbd>Esc</kbd> Leave</span>';
     const cardKeys = el('div', 'talk-keys');
-    cardKeys.innerHTML = '<span><kbd>Enter</kbd> Confirm</span><span><kbd>Backspace</kbd> Decline</span>';
+    cardKeys.innerHTML = '<span><kbd>Ctrl</kbd><kbd>Enter</kbd> Confirm</span><span><kbd>Ctrl</kbd><kbd>Backspace</kbd> Decline</span>';
     this.cardEl.hidden = true;
     this.cardEl.append(this.cardBody, cardKeys);
     this.panel.append(head, this.log, this.cardEl, this.input, keys);
@@ -130,9 +130,8 @@ export class Talk {
       });
       this.cardBody.replaceChildren(title, ...lines);
     }
-    this.input.hidden = !!card;
     this.input.disabled = waiting;
-    if (!waiting && !card && document.activeElement !== this.input) this.input.focus();
+    if (!waiting && document.activeElement !== this.input) this.input.focus();
   }
 
   /** one exchange with the trader (a line, or a card's outcome): the panel shows the wait until it has answered */
@@ -178,9 +177,9 @@ export class Talk {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (e.repeat) return;
-      if (s.card()) void this.act(s, true);
-      else void this.send(s);
-    } else if (e.key === 'Backspace' && s.card()) {
+      if (e.ctrlKey && s.card()) void this.act(s, true);
+      else if (!e.ctrlKey) void this.send(s);
+    } else if (e.key === 'Backspace' && e.ctrlKey && s.card()) {
       e.preventDefault();
       if (!e.repeat) void this.act(s, false);
     }
