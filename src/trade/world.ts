@@ -3,8 +3,9 @@
 // for. Pure: plain data, no game imports. Money is integer centidrachmas.
 
 import { referenceFlows, type EconActor, type EconPort, type Economy } from './economy';
-import { goodById, goodIndex } from './goods';
+import { goodById, goodIndex, type GoodId } from './goods';
 import type { CargoLot } from './books';
+import type { SocialRecord } from '../social/records';
 
 export type CharacterId = 'damaris' | 'philon' | 'myrto';
 
@@ -12,8 +13,98 @@ export interface Character {
   id: CharacterId;
   /** the harbour whose stall this character keeps (−1: none) */
   port: number;
-  /** centidrachmas */
+  /** centidrachmas; always the sum of this character's world receipts */
   wallet: number;
+  /** centidrachmas of the wallet held for committed home handling (the sum of their agreements' reserved) */
+  reserved: number;
+  /** centidrachmas: the goods value they entrust before any record (spec §3.6) */
+  trustBase: number;
+  /** warmth before any record, −2..2 */
+  warmth0: number;
+}
+
+/** One movement of a character's wallet (books.ts writes these). amount is signed, + into the wallet. */
+export interface WorldReceipt {
+  /** 'X{n}' from world.nextId */
+  id: string;
+  T: number;
+  who: CharacterId;
+  kind: 'opening' | 'porterage' | 'purchase' | 'sale' | 'remit';
+  amount: number;
+  agreement?: string;
+  port?: number;
+  qty?: number;
+}
+
+/** What a consignment agreement fixes (spec §3.3). perJar and homePort are set by trusted code. */
+export interface Terms {
+  good: GoodId;
+  qty: number;
+  /** centidrachmas per jar: homeValue at the owner's port when proposed */
+  perJar: number;
+  /** player's commission, percent of profit */
+  share: 20;
+  /** may the player sell the jars on the market or to another buyer */
+  alternateSale: boolean;
+  /** the named buyer the jars are meant for */
+  buyer: CharacterId;
+  /** the buyer's deadline (absolute hour) */
+  opportunityT: number;
+  /** the owner's port, where loading, return and settlement happen */
+  homePort: number;
+}
+
+export interface ProposalRevision {
+  revision: number;
+  terms: Terms;
+  T: number;
+  status: 'open' | 'superseded' | 'accepted' | 'declined';
+}
+
+export interface Proposal {
+  /** 'P{n}' */
+  id: string;
+  owner: CharacterId;
+  /** oldest first; the last one is the current revision */
+  revisions: ProposalRevision[];
+}
+
+export interface Agreement {
+  /** 'A{n}' */
+  id: string;
+  proposal: string;
+  revision: number;
+  owner: CharacterId;
+  terms: Terms;
+  acceptedT: number;
+  /** opportunityT + routeHours(buyer's port, homePort) + 72 */
+  expectedT: number;
+  /** units moved from her store to the quay (books.ts) */
+  loaded: number;
+  /** units sold, counted at confirm (books.ts) */
+  sold: number;
+  /** units committed to go back to her store (books.ts) */
+  returned: number;
+  /** centidrachmas of the owner's wallet still held for this agreement's home handling (books.ts) */
+  reserved: number;
+  closedT: number | null;
+  /** set when settled in full */
+  settledT: number | null;
+}
+
+/** A letter carried by NPC ship (MailActor). */
+export interface Mail {
+  /** 'M{n}' */
+  id: string;
+  from: CharacterId;
+  to: CharacterId;
+  fromPort: number;
+  toPort: number;
+  writtenT: number;
+  facts: { qty: number; unit: number; consignedQty: number; agreement?: string };
+  /** arrival of the ship carrying it, once one is found */
+  deliverT: number | null;
+  delivered: boolean;
 }
 
 /** The celebration Philon buys wine for, at one port, on one day. Hours are absolute game hours. */
@@ -42,11 +133,39 @@ export interface Celebration {
 }
 
 export interface WorldState {
-  version: 1;
+  version: 2;
   characters: Character[];
+  /** every unit in a store; ids 'W{n}' */
+  lots: CargoLot[];
+  /** one counter for W, X, P, A and M ids */
+  nextId: number;
+  celebration: Celebration | null;
+  receipts: WorldReceipt[];
+  proposals: Proposal[];
+  agreements: Agreement[];
+  records: SocialRecord[];
+  mail: Mail[];
+  /** command results by request id (Dealings) */
+  results: Record<string, unknown>;
+}
+
+/** A 1b save's world: upgradeWorld turns it into version 2. */
+export interface WorldStateV1 {
+  version: 1;
+  characters: { id: CharacterId; port: number; wallet: number }[];
   lots: CargoLot[];
   nextId: number;
   celebration: Celebration | null;
+}
+
+/** Takes the next world id with this prefix. */
+export function takeWorldId(world: WorldState, prefix: 'W' | 'X' | 'P' | 'A' | 'M'): string {
+  return `${prefix}${world.nextId++}`;
+}
+
+/** A version 1 world with empty collections and one opening receipt per non-zero wallet. Pass 1c lane C2. */
+export function upgradeWorld(_w: WorldStateV1): WorldState {
+  throw new Error('not implemented: Pass 1c C2');
 }
 
 const WINE = 'wine' as const;
@@ -84,9 +203,9 @@ export function castFor(ports: readonly EconPort[], celebration: number | null):
   const rest = ids.filter((id) => id !== HOME && id !== philonPort);
   const myrtoPort = rest.length > 0 ? Math.min(...rest) : -1;
   return [
-    { id: 'damaris', port: HOME, wallet: 0 },
-    { id: 'philon', port: philonPort, wallet: 0 },
-    { id: 'myrto', port: myrtoPort, wallet: 0 },
+    { id: 'damaris', port: HOME, wallet: 0, reserved: 0, trustBase: 0, warmth0: 1 },
+    { id: 'philon', port: philonPort, wallet: 0, reserved: 0, trustBase: 0, warmth0: 0 },
+    { id: 'myrto', port: myrtoPort, wallet: 0, reserved: 0, trustBase: 0, warmth0: 0 },
   ];
 }
 
@@ -105,14 +224,15 @@ export function freshWorld(o: { ports: readonly EconPort[]; celebrationDay: numb
   const celebPort = celebrationPort(o.ports);
   const characters = castFor(o.ports, celebPort);
   const world: WorldState = {
-    version: 1,
+    version: 2,
     characters,
     lots: [{ id: 'W1', good: WINE, qty: 40, owner: 'char:damaris', custody: { at: 'store', port: HOME }, origin: 'opening' }],
     nextId: 2,
     celebration: null,
+    ...emptyCollections(),
   };
   characters.find((c) => c.id === 'damaris')!.wallet = 15000;
-  if (celebPort === null) return world;
+  if (celebPort === null) return withOpenings(world);
 
   const wineIdx = goodIndex(WINE);
   const portIdx = o.ports.findIndex((p) => p.id === celebPort);
@@ -135,12 +255,24 @@ export function freshWorld(o: { ports: readonly EconPort[]; celebrationDay: numb
     consumed: 0,
     shortfall: 0,
   };
+  return withOpenings(world);
+}
+
+/** One opening receipt per non-zero wallet, so each wallet equals its receipt sum. */
+function withOpenings(world: WorldState): WorldState {
+  for (const c of world.characters) {
+    if (c.wallet !== 0) world.receipts.push({ id: takeWorldId(world, 'X'), T: 0, who: c.id, kind: 'opening', amount: c.wallet });
+  }
   return world;
 }
 
 /** The people of an old save with no world: the cast, no money, no lots, no celebration. */
 export function oldSaveWorld(ports: readonly EconPort[]): WorldState {
-  return { version: 1, characters: castFor(ports, celebrationPort(ports)), lots: [], nextId: 1, celebration: null };
+  return { version: 2, characters: castFor(ports, celebrationPort(ports)), lots: [], nextId: 1, celebration: null, ...emptyCollections() };
+}
+
+function emptyCollections() {
+  return { receipts: [], proposals: [], agreements: [], records: [], mail: [], results: {} };
 }
 
 /**

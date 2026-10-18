@@ -6,6 +6,8 @@ import { GOOD_IDS, goodById, type GoodId } from './goods';
 import { applyWages, noteOpened as writeNotebook, porterFeePerUnit, type VoyageState } from './voyage';
 import { addOrder, CART_AFTER_JOB, newJob, pendingUnits as countPending, restoreJob, stepJob, type Units } from './job';
 import { checkBooks, recordPurchase, recordSale, releaseLanded } from './books';
+import type { CargoJob } from './voyage';
+import type { WorldState } from './world';
 
 /** Signed units per good: + buy, − sell. */
 export type Orders = Partial<Record<GoodId, number>>;
@@ -30,11 +32,14 @@ export class TradeSession {
   readonly economy: Economy;
   readonly voyage: VoyageState;
   readonly holdCapacity: number;
+  /** the people and their stores (null in tests that only trade) */
+  readonly world: WorldState | null;
   /** session clock: the economy's time at the last tick, or its start */
   private lastT: number;
 
-  constructor(o: { economy: Economy; voyage: VoyageState; holdCapacity: number }) {
+  constructor(o: { economy: Economy; voyage: VoyageState; holdCapacity: number; world?: WorldState }) {
     this.economy = o.economy;
+    this.world = o.world ?? null;
     this.voyage = o.voyage;
     this.holdCapacity = o.holdCapacity;
     this.lastT = o.economy.now;
@@ -212,6 +217,11 @@ export class TradeSession {
       // addOrder clears a stale cart timer when more work is committed.
     }
     return { sold, bought };
+  }
+
+  /** The job at this berth, created if there is none. Throws if the job is at another port or berth. Pass 1c lane A. */
+  ensureJob(_port: number, _berth: number): CargoJob {
+    throw new Error('not implemented: Pass 1c A');
   }
 
   /** Writes the notebook for this port at T: current ask and bid per good. */

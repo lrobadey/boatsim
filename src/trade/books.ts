@@ -6,6 +6,7 @@
 import { GOOD_IDS, type GoodId } from './goods';
 import type { Units } from './job';
 import type { CargoJob, VoyageState } from './voyage';
+import type { CharacterId, WorldReceipt, WorldState } from './world';
 
 export type OwnerId = 'player' | `market:${number}` | `char:${string}`;
 export type Custody = { at: 'aboard' } | { at: 'quay'; port: number; berth: number } | { at: 'store'; port: number };
@@ -18,11 +19,17 @@ export interface CargoLot {
   qty: number;
   owner: OwnerId;
   custody: Custody;
-  /** 'opening', 'migrated', or the id of the receipt that created it */
+  /** 'opening', 'migrated', the id of the receipt that created it, or the lot it moved from */
   origin: string;
+  /** a consigned unit's agreement ('A3'): kept through every move, also after a sale, until it lands back in the owner's store */
+  agreement?: string;
+  /** committed to the job: 'load' waits on the quay to come aboard, 'unload' is aboard and goes ashore */
+  moving?: 'load' | 'unload';
+  /** absolute hour by which a named buyer's units must land */
+  due?: number;
 }
 
-export type ReceiptKind = 'opening' | 'sale' | 'purchase' | 'duty' | 'porterage' | 'wages';
+export type ReceiptKind = 'opening' | 'sale' | 'purchase' | 'duty' | 'porterage' | 'wages' | 'remit';
 const RECEIPT_KINDS: readonly ReceiptKind[] = ['opening', 'sale', 'purchase', 'duty', 'porterage', 'wages'];
 
 export interface Receipt {
@@ -37,6 +44,9 @@ export interface Receipt {
   good?: GoodId;
   qty?: number;
   lot?: string;
+  agreement?: string;
+  /** the counterparty */
+  party?: OwnerId;
 }
 
 const PLAYER: OwnerId = 'player';
@@ -294,4 +304,86 @@ export function checkBooks(v: VoyageState): void {
     if (marketQuay !== landed) throw new RangeError(`books: market quay lots of ${good} (${marketQuay}) differ from job.quay − job.incoming (${landed})`);
     if (marketAboard !== outgoing) throw new RangeError(`books: market lots aboard of ${good} (${marketAboard}) differ from job.outgoing (${outgoing})`);
   }
+}
+
+// ---------- Pass 1c (docs/pass-1c-plan.md A): stubs, implemented by lane A ----------
+
+const todo = (): never => {
+  throw new Error('not implemented: Pass 1c A');
+};
+
+/**
+ * Moves a character's wallet by amount (+ in) and writes a world receipt. Throws if wallet − reserved would go
+ * below 0, unless fromReserved: then amount must be ≤ 0, −amount ≤ reserved, and reserved (and the agreement's
+ * reserved, when extra.agreement is set) fall by −amount.
+ */
+export function walletMove(
+  _world: WorldState,
+  _who: CharacterId,
+  _amount: number,
+  _kind: WorldReceipt['kind'],
+  _T: number,
+  _extra?: { agreement?: string; port?: number; qty?: number; fromReserved?: boolean },
+): WorldReceipt {
+  return todo();
+}
+
+/** Holds amount of the owner's free wallet for the agreement (character and agreement reserved both rise). Throws if wallet − reserved < amount. */
+export function reserveFor(_world: WorldState, _agreementId: string, _amount: number): void {
+  todo();
+}
+
+/** Releases what is still reserved for the agreement. */
+export function releaseReserve(_world: WorldState, _agreementId: string): void {
+  todo();
+}
+
+/** Splits qty of the owner's unallocated store wine at port into a store lot carrying the agreement. Throws if short. */
+export function allocateStore(_world: WorldState, _agreementId: string): void {
+  todo();
+}
+
+/** Moves every store unit allocated to the agreement into one quay lot at the job's berth, marked 'load'; adds them to job.incoming and job.quay. */
+export function loadFromStore(_v: VoyageState, _world: WorldState, _job: CargoJob, _agreementId: string, _T: number): void {
+  todo();
+}
+
+/** A sale to a named buyer: the units become the buyer's aboard, marked 'unload' with due; receipts sale (+total, party) and duty (−duty); the buyer's wallet −total. */
+export function recordNamedSale(
+  _v: VoyageState,
+  _world: WorldState,
+  _job: CargoJob,
+  _o: { buyer: CharacterId; port: number; good: GoodId; qty: number; total: number; duty: number; due: number; from: 'player' | string; T: number },
+): void {
+  todo();
+}
+
+/** recordSale for the agreement's jars aboard: total is net of duty, as in recordSale; receipts and the market lot carry the agreement. */
+export function recordConsignedMarketSale(
+  _v: VoyageState,
+  _world: WorldState,
+  _job: CargoJob,
+  _o: { agreement: string; port: number; good: GoodId; qty: number; total: number; duty: number; T: number },
+): void {
+  todo();
+}
+
+/** qty of the agreement's jars aboard (hers, not moving) are marked 'unload' to go back to her store. */
+export function recordReturn(_v: VoyageState, _world: WorldState, _job: CargoJob, _agreementId: string, _qty: number): void {
+  todo();
+}
+
+/** A payment to the owner: purse receipt −amount (kind 'remit', agreement, party), and +amount into her wallet. */
+export function recordRemit(_v: VoyageState, _world: WorldState, _agreementId: string, _amount: number, _T: number): void {
+  todo();
+}
+
+/** Lots from 1a/1b saves: market lots aboard without moving get 'unload', player lots on the quay get 'load'. */
+export function normalizeLots(_v: VoyageState): void {
+  todo();
+}
+
+/** Throws a RangeError naming the first broken world invariant (docs/pass-1c-plan.md, checkWorld). */
+export function checkWorld(_world: WorldState, _v: VoyageState): void {
+  todo();
 }

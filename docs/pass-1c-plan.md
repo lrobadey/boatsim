@@ -383,3 +383,27 @@ It checks spec §3.4's two worked examples through `account`.
     port for hers, and learned when it arrives. It says how many jars, the price, and how many were hers.
 12. **Trust starts** at the value of Damaris's 40 jars at her home sale price on the fresh start.
 13. **Command results are saved by request id,** so a repeated tool call after a reload does nothing new.
+
+## Refinements made while writing the stubs (October 17, 2026)
+
+The stubs (src/trade/books.ts, job.ts, session.ts, world.ts, consignment.ts, src/social/records.ts) are the
+interface. Where they differ from the text above, they win:
+1. **Returned jars land untagged.** A returned jar landing in the owner's store joins her ordinary stock (no
+   `agreement`), so it can be consigned again and isn't counted twice. Agreement conservation is then:
+   her store lots tagged + her voyage lots tagged and not marked `'unload'` + `sold` + `returned` == `qty`.
+2. **Agreement counters.** books.ts maintains `loaded`, `sold`, `returned` and `reserved` on the agreement.
+   `checkWorld` adds: each character's `reserved` == the sum of their agreements' `reserved`.
+3. **Porterage payer by owner, not port.** Units owned by the agreement's owner are paid from her wallet
+   (`fromReserved`); any other tagged units from the purse, tagged. An alternate market sale at home is
+   therefore paid from the sale money.
+4. **Closure** also needs no tagged voyage lot still `moving`, so expenses are final before any commission.
+5. **"Sold below"** uses the bid she had heard for that port at the sale's time (spec: "that port and time").
+6. **The assumed return belief is tentative**, so in 1c warmth only rises. Beliefs are derived, not stored.
+7. **Trust limit:** a full on-time settlement sets L = max(L, 2 × that value), so a halving sticks until a
+   bigger venture.
+8. **Settling zero** is allowed when payable is 0 (an honest loss closed in person). With payable > 0 and an
+   empty purse it's refused (`purse`). Every settlement writes a remit receipt, even of 0.
+9. **The account** is a pure `ventureAccount`, so §3.4's examples are checked to the cent with plain receipts.
+10. **Wages** are one receipt per midnight step, aggregated into one wages event per tick.
+11. **Mail** departure test uses a 1e-6 tolerance (arriveT − routeHours isn't exact in floats).
+12. **Results** are stored for refusals too: a request id is single-use.

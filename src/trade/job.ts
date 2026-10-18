@@ -68,6 +68,15 @@ function remainingWorkKg(job: CargoJob): number {
   return Math.max(0, kg - (job.active?.workKg ?? 0));
 }
 
+/**
+ * The hour the last due unit (lots aboard marked 'unload' with due, plus `extra` counted as due) lands with
+ * uninterrupted handling from T: an active unit that isn't due finishes first; due units then go before all other
+ * work. T when there are no due units. Pass 1c lane A.
+ */
+export function dueLandingT(_voyage: VoyageState, _T: number, _extra: Units = {}): number {
+  throw new Error('not implemented: Pass 1c A');
+}
+
 export function jobSummary(job: CargoJob): JobSummary {
   const pending = pendingUnits(job);
   const next = job.active ?? nextUnit(job);
