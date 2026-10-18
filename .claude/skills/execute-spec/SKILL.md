@@ -158,3 +158,8 @@ brief, a recorder, a Haiku implementer and one review, in about half the time. T
   owner was treated as a market). One Opus review found three setup issues; the lead fixed them. Lesson: exact
   per-function briefs let Haiku implement money code correctly; the gate tests, run after the merge, earned their
   cost.
+- **2 (done):** docs/pass-2-plan.md. Lead stubs, then three Haiku lanes (actions, conversation, proxy and UI) and an
+  Opus gate author, all in parallel; then one Opus review. A gate author needs the tool argument names in its brief
+  (this one guessed them through aliases). The live model run found what scripted tests couldn't: a buyer quoting
+  stall prices instead of calling its tool, a card that blocked questions, the wrong jars chosen. Budget a live run
+  for any model-facing pass.
