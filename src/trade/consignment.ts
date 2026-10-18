@@ -107,9 +107,18 @@ function freeAboard(v: VoyageState, owner: OwnerId, good: GoodId, agreement?: st
 /** A job at another port or berth than the one asked for. */
 const atOtherBerth = (job: CargoJob | null, port: number, berth: number): boolean => job !== null && (job.port !== port || job.berth !== berth);
 
+/**
+ * The opening venture (spec §3.6): someone who knows the player locally (warmth0 ≥ 1) and has no trust base set
+ * yet entrusts a first venture whatever its value; accepting it sets the base to that value.
+ */
+function opening(world: WorldState, owner: CharacterId): boolean {
+  const c = world.characters.find((x) => x.id === owner);
+  return !!c && c.trustBase === 0 && c.warmth0 >= 1 && !world.agreements.some((a) => a.owner === owner);
+}
+
 /** Trust and stock for an offer of qty jars at perJar: the reason it is refused, or null. */
 function blocked(world: WorldState, owner: CharacterId, port: number, good: GoodId, qty: number, perJar: number, T: number): Reason | null {
-  if (perJar * qty > trustLimit(world, owner, T) || world.agreements.some((a) => a.owner === owner && stage(world, a, T) === 'long-overdue')) return 'trust';
+  if ((!opening(world, owner) && perJar * qty > trustLimit(world, owner, T)) || world.agreements.some((a) => a.owner === owner && stage(world, a, T) === 'long-overdue')) return 'trust';
   if (unallocated(world, owner, port, good) < qty) return 'stock';
   return null;
 }
@@ -221,8 +230,10 @@ export class Dealings {
         closedT: null,
         settledT: null,
       };
+      const first = opening(world, p.owner);
       world.agreements.push(a);
       allocateStore(world, a.id);
+      if (first) world.characters.find((c) => c.id === p.owner)!.trustBase = a.terms.perJar * a.terms.qty;
       current.status = 'accepted';
       return { ok: true, agreement: a.id };
     });

@@ -2,7 +2,8 @@
 
 Status: design decisions settled with the user on October 16, 2026 (section 8). Pass 1a (lots, receipts,
 save v2) implemented and gated on October 16, 2026 (docs/pass-1a-contract.md). Pass 1b (calendar, land
-use, characters, celebration) implemented and gated the same day (docs/pass-1b-plan.md). 1c not started.
+use, characters, celebration) implemented and gated the same day (docs/pass-1b-plan.md). Pass 1c (agreements,
+settlement, records, news by ship) implemented and gated on October 17, 2026 (docs/pass-1c-plan.md).
 Known follow-up: receipts grow by about 110 bytes per handled unit, so saves need compaction or a size
 policy before long play reaches the browser storage limit.
 

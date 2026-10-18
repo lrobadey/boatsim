@@ -54,7 +54,6 @@ console.log(`Philon after pre-run: ${lotsOf('philon')} jars, wallet ${dr(philon.
 const voyage = newVoyage(); resetBooks(voyage, { purse: 30000, cargo: {}, T: 7.4 });
 const CONSIGN = 40, wine = goodById('wine');
 session = new TradeSession({ economy, voyage, holdCapacity: new Hold(MERCHANT).capacity, world });
-damaris.trustBase = homeValue(economy, 0, CONSIGN) * CONSIGN;
 // no price news in this run: the "sold below known prices" rule has nothing to judge against
 const dealings = new Dealings({ world, session, heardBid: () => null });
 const damaris0 = damaris.wallet;

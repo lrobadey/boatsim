@@ -152,8 +152,9 @@ brief, a recorder, a Haiku implementer and one review, in about half the time. T
   - Philon's rule is in src/trade/world.ts (`CelebrationActor`, an economy actor run at midnight). The
     budget is `npm run budget:opening`. The merchant's crossing speed came from a physics probe, about
     100 s of compute.
-- **1c (planned):** docs/pass-1c-plan.md. The lead writes the stubs. Then two Haiku lanes run alongside an
-  Opus test author (capped at 450 lines): A, the books, and B, the records. Two more Haiku lanes follow
-  A: C1, the dealings, and C2, the world, save and wiring. Then one Opus review.
-  Cargo aboard or on the quay lives in the voyage's books, cargo in stores in the world's.
-  The session tick advances the economy hour by hour alongside the cargo work.
+- **1c (done):** docs/pass-1c-plan.md. Lead stubs, then A (books) and B (records) as Haiku lanes beside an
+  Opus gate author (450 lines, 22 cases); C1 (dealings) and C2 (world, save, wiring) as Haiku lanes after A. Lanes
+  took 1–6 minutes each; the gate author about 11. Merging the gate tests caught one real bug (every non-player
+  owner was treated as a market). One Opus review found three setup issues; the lead fixed them. Lesson: exact
+  per-function briefs let Haiku implement money code correctly; the gate tests, run after the merge, earned their
+  cost.

@@ -4,7 +4,7 @@ import type { HarbourLayout, Berth } from './world/harbour';
 import { Economy, type EconActor } from './trade/economy';
 import { landUseProfile } from './trade/landUse';
 import { freshWorld, oldSaveWorld, characterAt, CelebrationActor, MailActor, type WorldState } from './trade/world';
-import { Dealings, homeValue } from './trade/consignment';
+import { Dealings } from './trade/consignment';
 import { TradeSession } from './trade/session';
 import { newVoyage, updateNotebook, type VoyageState } from './trade/voyage';
 import { PriceNews, recordOf } from './trade/news';
@@ -237,7 +237,6 @@ export class TradeLayer {
     const actors: EconActor[] = this.worldState.celebration ? [this.celebrationActor()] : [];
     this.economy = this.buildEconomy(this.g.clock.totalHours, [...actors, new MailActor(this.worldState)]);
     this.session = new TradeSession({ economy: this.economy, voyage: newVoyage(), holdCapacity: this.hold.capacity, world: this.worldState });
-    this.worldState.characters.find((c) => c.id === 'damaris')!.trustBase = homeValue(this.economy, 0, 40) * 40;
     this.dealings = this.buildDealings();
     this.news = this.pastNews(this.economy.now);
     this.notes = {};
@@ -246,9 +245,10 @@ export class TradeLayer {
     if (b) this.placeDocked(b, true);
   }
 
-  /** Philon's celebration buying; his jars aboard and on the quay count as his too */
+  /** Philon's celebration buying; his jars aboard and on the quay count as his too (only this world's voyage) */
   private celebrationActor(): CelebrationActor {
-    return new CelebrationActor(this.worldState, () => this.session?.voyage.lots ?? []);
+    const world = this.worldState;
+    return new CelebrationActor(world, () => (this.session?.world === world ? this.session.voyage.lots : []));
   }
 
   /** the consignment commands over this voyage's world and session; a trader's heard bid comes from the news */

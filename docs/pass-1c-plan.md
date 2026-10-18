@@ -407,3 +407,14 @@ interface. Where they differ from the text above, they win:
 10. **Wages** are one receipt per midnight step, aggregated into one wages event per tick.
 11. **Mail** departure test uses a 1e-6 tolerance (arriveT − routeHours isn't exact in floats).
 12. **Results** are stored for refusals too: a request id is single-use.
+13. **Opening trust (review fix).** A character who knows the player locally (warmth0 ≥ 1) and has no trust base
+    yet entrusts the first venture whatever its value; accepting it sets `trustBase` to that value. This replaces
+    setting the base from the price on the day the voyage started, which drifted, and lets 1b saves open too.
+
+## Result (October 17, 2026)
+
+All gates pass: typecheck, test:trade (golden unchanged), test:world, test:calendar, test:records (6),
+test:consignment (22), lint:ui-text, build. The budget plays the round trip through Dealings: Philon pays 421.88 for
+the 40 (10.55 a jar against a market bid of 10.16), commission 36.84, Damaris nets 367.80 (1b: 366.92). The player
+ends at 745.29 dr against 1b's 635.79: the sale money is in the purse now, so the return cargo is larger (the spec's
+"keep the player's purse spendable"). Philon's thanks reach Damaris by ship at T123.9.
