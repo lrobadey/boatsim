@@ -209,7 +209,7 @@ function propose(ctx: ToolContext, a: Record<string, unknown>, req: string): Too
     lines: [
       `${terms.qty} jars of ${goodById(terms.good).name.toLowerCase()}, valued at ${per} a jar (${value} in all).`,
       terms.alternateSale ? `You may sell them to ${BuyerName} or elsewhere.` : `They are for ${BuyerName}.`,
-      `You keep ${terms.share}% of the profit after the agreed value and the handling and sale costs. ${Name} pays the handling at her quay.`,
+      `You keep ${terms.share}% of the profit after the agreed value and the handling and sale costs. ${Name} pays the handling at the home quay.`,
     ],
     confirm: (x) => dealings.accept(x, proposal, revision),
     decline: (x) => dealings.decline(x, proposal, revision),
