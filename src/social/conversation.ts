@@ -3,8 +3,8 @@
 // result goes back to the model. Card tools leave a pending card: only the player's confirmation runs the
 // authoritative command. Pure: the client is injected, so tests script it.
 
-import type { Card, ToolContext, ToolDef } from './tools';
-import type { TraderReply } from '../trade/trader';
+import { runTool, toolDefs, type Card, type ToolContext, type ToolDef } from './tools';
+import { parseReply, type TraderReply } from '../trade/trader';
 import type { TalkLine } from '../ui/talk';
 
 /** One item of model input (the OpenAI Responses API shapes the proxy forwards). */
@@ -51,6 +51,22 @@ export interface ConversationOptions {
   portNames: Record<number, string>;
 }
 
+/** The line shown to the player for a failed turn. */
+export function errorText(error: string): string {
+  if (error === 'no-key') return 'Talking needs an OpenAI API key (OPENAI_API_KEY in .env.local).';
+  if (error === 'timeout') return 'The model took too long to answer. Try again.';
+  if (error === 'rounds') return 'No answer came back. Try again.';
+  return 'The connection to the model failed. Try again.';
+}
+
+const parseJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
+
 export class Conversation {
   /** bumped by close(); a response for an older epoch is dropped before any tool runs */
   epoch = 0;
@@ -63,22 +79,91 @@ export class Conversation {
    * The player says text: appends it, runs the loop, appends the reply (or an 'info' error line) and returns the
    * parsed reply, or null on failure or when closed meanwhile. Pass 2 lane B.
    */
-  say(_text: string): Promise<TraderReply | null> {
-    throw new Error('not implemented: Pass 2 B');
+  async say(text: string): Promise<TraderReply | null> {
+    this.add({ who: 'you', text });
+    return this.loop([]);
   }
 
   /** The player confirms the card: runs its command, tells the model the outcome, and runs the loop once. */
-  confirm(): Promise<TraderReply | null> {
-    throw new Error('not implemented: Pass 2 B');
+  async confirm(): Promise<TraderReply | null> {
+    const card = this.card;
+    if (!card) return null;
+    this.card = null;
+    const r = card.confirm(`${card.id}:confirm`);
+    const done = card.kind === 'proposal' ? 'You accepted.' : card.kind === 'transaction' ? 'Sold.' : 'Paid.';
+    this.add({ who: 'info', text: r.ok ? done : 'It could not go ahead.' });
+    return this.loop([{ role: 'developer', content: `The player confirmed the ${card.kind} card. Result: ${JSON.stringify(r)}` }]);
   }
 
   /** The player declines the card: runs its decline (if any), tells the model, and runs the loop once. */
-  decline(): Promise<TraderReply | null> {
-    throw new Error('not implemented: Pass 2 B');
+  async decline(): Promise<TraderReply | null> {
+    const card = this.card;
+    if (!card) return null;
+    this.card = null;
+    const r = card.decline?.(`${card.id}:decline`);
+    this.add({ who: 'info', text: 'You declined.' });
+    return this.loop([
+      { role: 'developer', content: `The player declined the ${card.kind} card.` + (r ? ` Result: ${JSON.stringify(r)}` : '') },
+    ]);
   }
 
   /** Leaving: bumps the epoch and drops the card without running anything. */
   close(): void {
-    throw new Error('not implemented: Pass 2 B');
+    this.epoch++;
+    this.card = null;
+  }
+
+  private add(line: TalkLine): void {
+    this.o.lines.push(line);
+    const extra = this.o.lines.length - KEEP_LINES;
+    if (extra > 0) this.o.lines.splice(0, extra);
+  }
+
+  /** The saved transcript as model input: the player's lines as user, the character's as assistant, no info lines. */
+  private transcript(): InputItem[] {
+    return this.o.lines
+      .filter((l) => l.who !== 'info')
+      .slice(-KEEP_LINES)
+      .map((l): InputItem => ({ role: l.who === 'you' ? 'user' : 'assistant', content: l.text }));
+  }
+
+  /** Up to MAX_ROUNDS model calls: tool calls run and their results go back; a message is the reply. */
+  private async loop(extra: InputItem[]): Promise<TraderReply | null> {
+    const e = this.epoch;
+    const turn: InputItem[] = [...extra];
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const { instructions, schema } = this.o.prompt();
+      const res = await this.o.client.respond({
+        instructions,
+        input: [...this.transcript(), ...turn],
+        tools: toolDefs(),
+        schema,
+      });
+      if (this.epoch !== e) return null;
+      if (!res.ok) {
+        this.add({ who: 'info', text: errorText(res.error) });
+        return null;
+      }
+      const calls = res.output.filter((x): x is Extract<OutputItem, { type: 'function_call' }> => x.type === 'function_call');
+      if (calls.length) {
+        for (const call of calls) {
+          if (this.epoch !== e) return null;
+          const out = runTool(this.o.tools(), call.name, call.arguments, `${this.o.id}:${call.call_id}`);
+          if (out.card) this.card = out.card;
+          turn.push(call, { type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(out.output) });
+        }
+        continue;
+      }
+      const msg = res.output.find((x): x is Extract<OutputItem, { type: 'message' }> => x.type === 'message');
+      const reply = msg ? parseReply(parseJson(msg.text), this.o.portNames, SAY_CAP) : null;
+      if (!reply) {
+        this.add({ who: 'info', text: errorText('upstream') });
+        return null;
+      }
+      this.add({ who: 'them', text: reply.say });
+      return reply;
+    }
+    this.add({ who: 'info', text: errorText('rounds') });
+    return null;
   }
 }
