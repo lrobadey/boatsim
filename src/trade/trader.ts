@@ -225,6 +225,8 @@ export interface KnowledgeInput {
   portNames: Record<number, string>;
   /** the transcript's player lines are numbered for record_promise citations */
   playerLines: readonly string[];
+  /** jars this character still wants to buy now (Dealings.buyerDemand), kept private; null when none */
+  need: number | null;
 }
 
 /**
