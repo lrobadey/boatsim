@@ -208,20 +208,23 @@ export class TradeSession {
       boughtUnits[id] = v;
     }
     if (sold.length > 0 || bought.length > 0) {
-      let j = this.voyage.job;
-      if (!j) {
-        j = newJob(port, berth);
-        this.voyage.job = j;
-      }
+      const j = this.ensureJob(port, berth);
       addOrder(j, soldUnits, boughtUnits);
       // addOrder clears a stale cart timer when more work is committed.
     }
     return { sold, bought };
   }
 
-  /** The job at this berth, created if there is none. Throws if the job is at another port or berth. Pass 1c lane A. */
-  ensureJob(_port: number, _berth: number): CargoJob {
-    throw new Error('not implemented: Pass 1c A');
+  /** The job at this berth, created if there is none. Throws if the job is at another port or berth. */
+  ensureJob(port: number, berth: number): CargoJob {
+    const job = this.voyage.job;
+    if (job && (job.port !== port || job.berth !== berth)) {
+      throw new RangeError(`cargo job is at port ${job.port}, berth ${job.berth}, not port ${port}, berth ${berth}`);
+    }
+    if (job) return job;
+    const created = newJob(port, berth);
+    this.voyage.job = created;
+    return created;
   }
 
   /** Writes the notebook for this port at T: current ask and bid per good. */
@@ -234,16 +237,20 @@ export class TradeSession {
    * ends the job when the quay is cleared. Returns the events for the caller.
    */
   tick(T: number, handlingAllowed = true): SessionEvent[] {
-    const events: SessionEvent[] = [];
-    this.economy.advanceTo(T);
-    const raw = this.economy.drainEvents();
+    const arrivals: SessionEvent[] = [];
+    const jobDone: SessionEvent[] = [];
     let days = 0;
-    for (const e of raw) if (e.type === 'wages') days += e.days;
-    const amount = applyWages(this.voyage, raw, T);
-    if (days > 0) events.push({ type: 'wages', days, amount });
-    for (const e of raw) {
-      if (e.type === 'arrival') events.push({ type: 'arrival', port: e.port, good: e.good, qty: e.qty });
-    }
+    let amount = 0;
+    // the economy moves to `at` and that step's events are paid and collected, so a midnight sees the cargo before it
+    const settle = (at: number) => {
+      this.economy.advanceTo(at);
+      const raw = this.economy.drainEvents();
+      for (const e of raw) if (e.type === 'wages') days += e.days;
+      amount += applyWages(this.voyage, raw, at);
+      for (const e of raw) {
+        if (e.type === 'arrival') arrivals.push({ type: 'arrival', port: e.port, good: e.good, qty: e.qty });
+      }
+    };
 
     const delta: Partial<Record<GoodId, number>> = {};
     let t = this.lastT;
@@ -257,15 +264,20 @@ export class TradeSession {
       if (cartAt !== null && cartAt > t && cartAt < next) next = cartAt;
       const j = this.voyage.job;
       if (handlingAllowed && j && countPending(j) > 0) {
-        const r = stepJob(j, this.voyage, next - t, t);
+        const r = stepJob(j, this.voyage, next - t, t, this.world);
         for (const m of r.moved) delta[m.good] = (delta[m.good] ?? 0) + m.delta;
         if (r.done) {
-          events.push({ type: 'job-done', kind: r.done });
+          jobDone.push({ type: 'job-done', kind: r.done });
           j.cartAt = t + r.usedHours + CART_AFTER_JOB;
         }
       }
+      settle(next);
       t = next;
     }
+    settle(T);
+    const events: SessionEvent[] = [];
+    if (days > 0) events.push({ type: 'wages', days, amount });
+    events.push(...arrivals, ...jobDone);
     for (const id of GOOD_IDS) {
       if (delta[id]) events.push({ type: 'moved', good: id, delta: delta[id]! });
     }
@@ -298,9 +310,13 @@ export class TradeSession {
     this.voyage.hatchUntil = t + HATCH_AFTER_JOB;
   }
 
+  /** The player's units of good aboard that aren't committed to the job. */
   private sellable(good: GoodId): number {
-    const pendingOut = this.voyage.job?.outgoing[good] ?? 0;
-    return Math.max(0, (this.voyage.manifest[good] ?? 0) - pendingOut);
+    let n = 0;
+    for (const l of this.voyage.lots) {
+      if (l.good === good && l.owner === 'player' && l.custody.at === 'aboard' && l.moving === undefined) n += l.qty;
+    }
+    return n;
   }
 
   /** Net money of one row (+ in), duty and porterage included. Zero for v = 0. */
