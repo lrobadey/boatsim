@@ -232,7 +232,7 @@ function transaction(ctx: ToolContext, a: Record<string, unknown>, req: string):
   const berth = ctx.berth;
   if (berth === null) return { output: { ok: false, reason: 'port' } };
   const demand = dealings.buyerDemand(character);
-  if (!(a.jars > 0) || a.jars > demand) return { output: { ok: false, reason: 'stock' } };
+  if (!(a.jars > 0) || a.jars > demand) return { output: { ok: false, reason: 'stock', most_you_will_take: demand } };
   const jars = a.jars;
   const whose = a.whose;
   const agreement =
@@ -246,7 +246,7 @@ function transaction(ctx: ToolContext, a: Record<string, unknown>, req: string):
   const free = dealings.o.session.voyage.lots
     .filter((l) => l.good === 'wine' && l.owner === owner && l.custody.at === 'aboard' && l.moving === undefined && l.agreement === agreement?.id)
     .reduce((n, l) => n + l.qty, 0);
-  if (free < jars) return { output: { ok: false, reason: 'stock' } };
+  if (free < jars) return { output: { ok: false, reason: 'stock', jars_they_have_free: free } };
   const quote = dealings.buyerQuote(character, port, jars);
   const total = money(quote);
   const per = money(Math.floor(quote / jars));
