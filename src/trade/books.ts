@@ -60,7 +60,7 @@ const PLAYER: OwnerId = 'player';
 const ABOARD: Custody = { at: 'aboard' };
 const marketOwner = (port: number): OwnerId => `market:${port}`;
 const ownerOf = (who: CharacterId): OwnerId => `char:${who}`;
-const isMarket = (owner: OwnerId): boolean => owner !== PLAYER;
+const isMarket = (owner: OwnerId): boolean => owner.startsWith('market:');
 const idNumber = (id: string): number => Number(id.slice(1));
 
 function takeId(v: VoyageState, prefix: 'L' | 'R'): string {

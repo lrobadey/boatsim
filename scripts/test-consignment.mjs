@@ -20,7 +20,7 @@ let passed = 0;
 let failed = 0;
 function test(name, fn) {
   try { const info = fn(); passed++; console.log(`PASS ${name}${info ? ` (${info})` : ''}`); }
-  catch (e) { failed++; console.log(`FAIL ${name}\n     ${String(e.stack ?? e.message).split('\n').slice(0, 4).join('\n     ')}`); }
+  catch (e) { failed++; console.log(`FAIL ${name}\n     ${String(e.stack ?? e.message).split("\n").slice(0, 14).join('\n     ')}`); }
 }
 
 // ---------- synthetic two-port world (same shapes as test-world.mjs): home 0, Kormakos 1 (celebration) ----------
