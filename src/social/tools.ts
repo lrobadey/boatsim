@@ -96,7 +96,7 @@ export function toolDefs(): ToolDef[] {
         required: ['jars', 'whose'],
         properties: {
           jars: { type: 'integer', description: 'how many jars to buy' },
-          whose: { type: 'string', enum: ['player', 'consignment'], description: "the player's own wine, or wine consigned to you" },
+          whose: { type: 'string', enum: ['player', 'consignment'], description: "'consignment' for jars the player carries for someone else (such as Damaris's wine), 'player' for the player's own. Follow what they offered." },
         },
       },
     },
@@ -258,7 +258,7 @@ function transaction(ctx: ToolContext, a: Record<string, unknown>, req: string):
     lines: [`${jars} jars of ${whose === 'player' ? 'your wine' : `${OwnerName}'s wine`} for ${total} (${per} a jar).`],
     confirm: (x) => dealings.sellToBuyer(x, { buyer: character, port, berth, from, qty: jars, quoted: quote }),
   };
-  return { output: { ok: true, jars, total, per_jar: per, card: 'shown to the player' }, card };
+  return { output: { ok: true, jars, whose: whose === 'player' ? 'their own wine' : `${OwnerName}'s wine`, total, per_jar: per, card: 'shown to the player' }, card };
 }
 
 function settlement(ctx: ToolContext, req: string): ToolOutcome {
