@@ -33,3 +33,9 @@
 
 .talk-keys { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font: 500 12px/1.4 var(--f-ui); color: var(--t2); }
 .talk-keys span { white-space: nowrap; }
+
+/* a card waiting for your answer: a hairline box in the same glass, its title in the name face */
+.talk-card { margin: 4px 0 2px; padding: 12px 14px 10px; border: 1px solid var(--hair); border-radius: 6px; background: rgba(243, 238, 228, 0.04); }
+.talk-card-title { margin: 0 0 6px; font: 500 19px/1.15 var(--f-name); letter-spacing: 0.01em; }
+.talk-card-line { margin: 0 0 4px; font: 400 14px/1.45 var(--f-ui); color: var(--t2); }
+.talk-card .talk-keys { margin-top: 8px; }

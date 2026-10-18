@@ -160,7 +160,7 @@ test('reply: unknown ports and goods dropped, duplicates merged, text capped', (
   const server = http.createServer((req, res) => handler(req, res));
   await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
   const base = `http://127.0.0.1:${server.address().port}`;
-  const body = JSON.stringify({ instructions: 'x', messages: [{ role: 'user', content: 'hi' }], schema: { type: 'object' } });
+  const body = JSON.stringify({ instructions: 'x', input: [{ role: 'user', content: 'hi' }], tools: [], schema: { type: 'object' } });
   const post = async (headers) => {
     const r = await fetch(base, { method: 'POST', headers, body });
     return [r.status, (await r.json()).error];
