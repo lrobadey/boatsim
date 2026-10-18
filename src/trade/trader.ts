@@ -258,7 +258,7 @@ function knownSentence(r: SocialRecord, dateWords: (T: number) => string): strin
     case 'document-shown':
       return `${r.facts.by === 'player' ? 'They' : personaById(r.facts.by).name} showed you a letter (${r.facts.document}).`;
     case 'promise':
-      return `They said: "${r.facts.claim}" You took it as ${r.facts.interpretation}, by ${dateWords(r.facts.expectT)}.`;
+      return `They said: "${r.facts.claim}" You took it as ${r.facts.interpretation}, by ${dateWords(r.facts.expectT - 1)}.`;
     case 'undelivered':
       return `${r.facts.qty} jars you paid for weren't delivered before the feast.`;
   }
@@ -296,8 +296,7 @@ export function characterKnowledge(o: KnowledgeInput): string {
           id: a.id,
           jars: a.terms.qty,
           per_jar: money(a.terms.perJar),
-          sold: a.sold,
-          returned: a.returned,
+          // what sold or came back she knows only from her own records below, never from the live counts
           expected_back: dateWords(a.expectedT),
           stage: STAGE_WORDS[stage(world, a, now)],
           settled: a.settledT !== null,

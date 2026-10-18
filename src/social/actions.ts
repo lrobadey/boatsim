@@ -70,7 +70,7 @@ export class SocialActions {
   /**
    * Records something the player said to `holder` as a 'promise' record (source 'witnessed', id
    * `${holder}:promise:${req}`). expectDay is a calendar day number (day N is [24·(N−1), 24·N)); expectT is the
-   * end of it, 24·N. Refused 'state' if the claim or citation is empty or expectDay isn't a whole day ≥ today.
+   * end of it, 24·N. Refused 'state' if the claim or citation is empty or expectDay isn't a whole day ≥ today; 'unknown' if agreement isn't one the holder owns.
    */
   recordPromise(
     req: string,
@@ -81,6 +81,8 @@ export class SocialActions {
       const today = Math.floor(T / 24) + 1;
       if (!Number.isSafeInteger(o.expectDay) || o.expectDay < today) return refuse('state');
       if (o.claim.trim() === '' || o.citation.trim() === '') return refuse('state');
+      // a promise can only concern one of the holder's own agreements (only those can be kept)
+      if (o.agreement !== undefined && !this.o.world.agreements.some((a) => a.id === o.agreement && a.owner === o.holder)) return refuse('unknown');
       const id = `${o.holder}:promise:${req}`;
       addRecord(this.o.world, {
         id,

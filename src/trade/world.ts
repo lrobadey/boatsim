@@ -420,8 +420,9 @@ export class MailActor implements EconActor {
     }
     for (const m of this.world.mail) {
       if (m.delivered || m.deliverT === null || m.deliverT > T) continue;
-      if (m.kind === 'heard-sale') addRecord(this.world, { id: `${m.to}:heard-sale:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'heard-sale', facts: { ...m.facts } });
-      else addRecord(this.world, { id: `${m.to}:letter-shown:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'letter-shown', facts: { ...m.facts } });
+      // 1c mail has no kind: it is always a sale's thanks
+      if (m.kind === 'letter-shown') addRecord(this.world, { id: `${m.to}:letter-shown:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'letter-shown', facts: { ...m.facts } });
+      else addRecord(this.world, { id: `${m.to}:heard-sale:${m.id}`, holder: m.to, T: m.deliverT, source: 'news', kind: 'heard-sale', facts: { ...(m.facts as Extract<Mail, { kind: 'heard-sale' }>['facts']) } });
       m.delivered = true;
     }
   }
