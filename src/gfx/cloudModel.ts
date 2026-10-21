@@ -86,7 +86,11 @@ float vcDensityLod(vec3 p, float hf, bool cheap, float shapeLod) {
   if (hf < 0.0 || hf > 1.0 || uCloudCoverage <= 0.0) return 0.0;
   vec2 flow = vcFlowOffset(hf, uCloudWind);
   vec3 q = p + vec3(flow.x, 0.0, flow.y);
-  vec4 weather = texture(uCloudCover, q.xz / 42000.0);
+  // Explicit LOD: the march runs in divergent loops, where implicit derivatives are undefined
+  // and selected different weather mips row by row (horizontal streaks across thin cloud).
+  // shapeLod is log2 of the footprint over the 56.25 m shape voxel; weather texels are
+  // 42000 / 256 = 164.0625 m, so the same footprint is log2(164.0625 / 56.25) mips finer.
+  vec4 weather = textureLod(uCloudCover, q.xz / 42000.0, max(shapeLod - 1.5443, 0.0));
   float threshold = mix(0.73, 0.43, clamp(uCloudCoverage, 0.0, 1.0));
   if (weather.r < threshold - 0.215) return 0.0;
 
