@@ -344,6 +344,10 @@ const FRAG = /* glsl */ `
 #include <common>
 #include <packing>
 #include <shadowmap_pars_fragment>
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+// The vertex stage's light matrix, also needed here to shadow points beneath the surface.
+uniform mat4 directionalShadowMatrix[ NUM_DIR_LIGHT_SHADOWS ];
+#endif
 ${FOG_PARS_GLSL}
 ${TERRAIN_LIGHT_GLSL}
 ${WAVES_GLSL}
@@ -534,7 +538,8 @@ void main() {
   float D = a2 / (3.14159 * dd * dd);
   float NdotL = max(dot(N, L), 0.0);
   float Fs = 0.02 + 0.98 * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-  float sunVis = terrainShadow(vWorld, L);
+  float terrainVis = terrainShadow(vWorld, L);
+  float sunVis = terrainVis;
 #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
   // Three.js supplies the active directional light's map, matrix and filtering settings.
   sunVis *= getShadow(directionalShadowMap[0], directionalLightShadows[0].shadowMapSize,
@@ -563,11 +568,37 @@ void main() {
   float thickT = depthV / max(V.y, 0.08) * 1.2;
   thick = min(thick, thickT + 0.5);
 
+  // Sunlight scattered back up comes from metres down the refracted view ray, not from the
+  // surface point. Shadow each depth where its own sunlight entered the surface, weighted by
+  // its share of the in-scatter (extinction ~0.06/m: segments 0-2.5, -7, -16, beyond).
+  // A sail's shadow then shows as the soft, partial darkening clear deep water really has,
+  // not a hard-edged dark copy of the sail.
+  float columnVis = sunVis;
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+  if (dist < 400.0) {
+    vec3 viewIn = refract(-V, N, 0.75);
+    vec3 sunIn = -refract(-L, vec3(0.0, 1.0, 0.0), 0.75);
+    vec4 depthT = vec4(1.0, 4.0, 10.0, 22.0);
+    vec4 weight = vec4(0.139, 0.204, 0.274, 0.383);
+    float vis = 0.0;
+    for (int k = 0; k < 4; k++) {
+      vec3 p = vWorld + viewIn * min(depthT[k], thick);
+      vec3 entry = p + sunIn * ((vWorld.y - p.y) / max(sunIn.y, 0.05));
+      vec4 coord = directionalShadowMatrix[0] *
+        vec4(entry + vec3(0.0, directionalLightShadows[0].shadowNormalBias, 0.0), 1.0);
+      vis += weight[k] * getShadow(directionalShadowMap[0], directionalLightShadows[0].shadowMapSize,
+        directionalLightShadows[0].shadowIntensity, directionalLightShadows[0].shadowBias,
+        directionalLightShadows[0].shadowRadius, coord);
+    }
+    columnVis = terrainVis * vis;
+  }
+#endif
+
   vec3 sigma = vec3(0.34, 0.075, 0.042);            // absorption+scatter extinction (1/m), clear Aegean
   vec3 T = exp(-sigma * thick);
   // light available under water
   vec3 skyIrr = sampleSkyEnv(vec3(0.0, 1.0, 0.0), 5.0);
-  vec3 light = uSunColor * max(L.y, 0.0) * 0.55 * sunVis + skyIrr * 1.1;
+  vec3 light = uSunColor * max(L.y, 0.0) * 0.55 * columnVis + skyIrr * 1.1;
   vec3 scatterCol = vec3(0.012, 0.075, 0.105);
   vec3 inscatter = scatterCol * light * (1.0 - T);
   // aerated water (wake) glows turquoise
