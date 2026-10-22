@@ -39,6 +39,8 @@ type Want = 'rest' | 'row' | 'hold' | 'shipped';
  */
 const CHECK_MIN_SPEED = 0.6;
 const CHECK_HOLD_MAX = 10.0;
+/** modes of an oar in the stroke cycle (its plan reflects the current water) */
+const IN_STROKE: ReadonlySet<OarMode> = new Set(['catch', 'drive', 'extract', 'recover']);
 /** a relief takes an oar's catch only once his hands have been on the loom this long (s) (spec §6.2) */
 const HANDS_ON_S = 1.0;
 
@@ -130,8 +132,15 @@ export class StrokeControl {
     o.dir = dir;
     o.period = 60 / Math.max(8, this.ctx.intent.rate);
     o.strokes = 0;
-    o.plan.arc = this.p.arcStart;
-    o.plan.u = 0.55;
+    // joining a crew already rowing this way (the inner side after a turn): take the nearest rower's stroke
+    // and effort on the same bank instead of a cold start, or the sides stay unequal for several strokes
+    let mate: Oar | null = null;
+    for (const j of this.ctx.oars) {
+      if (j === o || j.dir !== dir || j.strokes === 0 || j.slot.bank !== o.slot.bank || !IN_STROKE.has(j.mode)) continue;
+      if (!mate || Math.abs(j.slot.z - o.slot.z) < Math.abs(mate.slot.z - o.slot.z)) mate = j;
+    }
+    o.plan.arc = mate ? mate.plan.arc : this.p.arcStart;
+    o.plan.u = mate ? mate.plan.u : 0.55;
     this.planStroke(o);
     this.startTransfer(o, o.plan.thetaC, 0, 'ready');
   }

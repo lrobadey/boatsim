@@ -22,6 +22,7 @@ export class CloudPass extends Pass {
         uCloud: { value: null },
         uCloudDepth: { value: null },
         uCloudSize: { value: new THREE.Vector2(1, 1) },
+        uFallbackSteps: { value: 56 },
         uInvViewProj: { value: this.invViewProj },
         uReversedDepth: { value: reversedDepth ? 1 : 0 },
       },
@@ -38,6 +39,7 @@ export class CloudPass extends Pass {
         uniform sampler2D uCloud;
         uniform sampler2D uCloudDepth;
         uniform vec2 uCloudSize;
+        uniform float uFallbackSteps;
         uniform mat4 uInvViewProj;
         uniform float uReversedDepth;
         in vec2 vUv;
@@ -55,6 +57,22 @@ export class CloudPass extends Pass {
         void main() {
           vec4 scene = texture(uScene, vUv);
           float distanceKm = sceneDistance(vUv);
+          // Ray and cone are taken here, outside any per-pixel branch, so the fallback march
+          // below gets defined derivatives. The cone is widened to the reduced-resolution
+          // pixel so the fallback filters cloud detail like the neighbouring taps.
+          vec4 p = uInvViewProj * vec4(vUv * 2.0 - 1.0, 0.5, 1.0);
+          vec3 ray = normalize(p.xyz / p.w);
+          float rayCone = max(length(dFdx(ray)), length(dFdy(ray))) *
+            float(textureSize(uScene, 0).x) / uCloudSize.x;
+          if (distanceKm > 0.0) {
+            // A surface nearer than where its view ray enters the cloud layer has no cloud
+            // in front of it. This covers the ship, crew and all terrain below cloud base.
+            vec2 interval = vcCloudInterval(vec3(0.0, uCloudOrigin.y + C_EARTH, 0.0), ray);
+            if (interval.x < 0.0 || distanceKm * 1000.0 <= interval.x) {
+              fragColor = scene;
+              return;
+            }
+          }
           vec2 texel = vUv * uCloudSize - 0.5;
           vec2 base = floor(texel);
           vec2 f = fract(texel);
@@ -86,13 +104,11 @@ export class CloudPass extends Pass {
             radiance /= total;
             transmittance /= total;
           } else {
-            // The low-resolution footprint can straddle a sharp mast or coast edge.
-            // March just this pixel against its own scene depth to fill that gap.
-            vec4 p = uInvViewProj * vec4(vUv * 2.0 - 1.0, 0.5, 1.0);
-            vec3 ray = normalize(p.xyz / p.w);
+            // Rare: a surface inside the cloud layer next to sky, or the reverse. March
+            // just this pixel against its own scene depth to fill that gap.
             float cloudDistance;
-            vec4 exactCloud = vcMarch(ray, 24.0, 0.5,
-              distanceKm > 0.0 ? distanceKm * 1000.0 : 1.0e30, cloudDistance);
+            vec4 exactCloud = vcMarchCone(ray, uFallbackSteps, 0.5,
+              distanceKm > 0.0 ? distanceKm * 1000.0 : 1.0e30, rayCone, cloudDistance);
             radiance = exactCloud.rgb;
             transmittance = exactCloud.a;
           }
@@ -117,6 +133,7 @@ export class CloudPass extends Pass {
     this.clouds.render(renderer, this.viewCamera, this.material.uniforms.uSceneDepth.value, this.reversedDepth);
     const image = this.clouds.texture.image as { width: number; height: number };
     (this.material.uniforms.uCloudSize.value as THREE.Vector2).set(image.width, image.height);
+    this.material.uniforms.uFallbackSteps.value = this.clouds.steps;
     this.material.uniforms.uScene.value = inputBuffer.texture;
     this.material.uniforms.uCloud.value = this.clouds.texture;
     this.material.uniforms.uCloudDepth.value = this.clouds.depthTexture;

@@ -6,11 +6,11 @@ import { Crew } from './crew';
 import { RowingSystem } from './rowing';
 import type { OarPropulsion } from './oarPropulsion';
 import { CrewRowing } from './crew/crewRowing';
-import { hullLateralForce } from './hullLateral';
+import { HullLift } from './hullLateral';
 import { SailingSystem } from './sailing';
 import { Mooring } from './mooring';
 import type { BoxSolid } from '../world/walkable';
-import { createFlowSample } from '../world/waves';
+import { createFlowSample, createInverseCache, type FlowSample, type InverseCache } from '../world/waves';
 import type { WaveField } from '../world/waves';
 import type { Wind } from '../world/wind';
 import type { Terrain } from '../world/terrain';
@@ -32,7 +32,6 @@ const _wa = new THREE.Vector3();
 const _wb = new THREE.Vector3();
 const _wc = new THREE.Vector3();
 const _wd = new THREE.Vector3();
-const _hullHorizontalForce = new THREE.Vector3();
 const _windSample = new THREE.Vector3();
 const _windPointVelocity = new THREE.Vector3();
 // static load (setStaticLoad) scratch
@@ -89,6 +88,14 @@ export class ShipPhysics {
   readonly payload: { mass: number; local: THREE.Vector3 }[] = [];
   private flow = createFlowSample();
   private cgFlow = createFlowSample();
+  /** per column: the wave queries at its bottom (height) and its submerged centre (flow), each warm-started */
+  private colSurface: InverseCache[];
+  private colFlow: FlowSample[];
+  /** lateral crossflow, lift and induced drag over the whole hull (one strip per column), and where each acts */
+  private hullLift: HullLift;
+  private liftPoint: THREE.Vector3[];
+  /** per rudder (port, starboard): its wave query */
+  private rudderFlow = [createFlowSample(), createFlowSample()];
   /**
    * With design.hydro.response: added mass along the hull axes (x sway, y heave, z surge) and added
    * inertia about them (x pitch, y yaw, z roll), summed over the submerged columns each step.
@@ -122,6 +129,10 @@ export class ShipPhysics {
     this.mooring.seabed = (x, z) => terrain.heightAt(x, z);
     const hull = design.hull;
     this.columns = hull.buildColumns(design.columns.stations, design.columns.strips);
+    this.colSurface = this.columns.map(() => createInverseCache());
+    this.colFlow = this.columns.map(() => createFlowSample());
+    this.hullLift = new HullLift(this.columns.length);
+    this.liftPoint = this.columns.map(() => new THREE.Vector3());
     this.rowing = createPropulsion(crew, design, this.payload);
     this.sailing = new SailingSystem(design.rig, design.aero);
     crew.maxOrder = design.oars.maxOrder;
@@ -344,11 +355,12 @@ export class ShipPhysics {
       this.addedMass.set(0, 0, 0);
       this.addedInertia.set(0, 0, 0);
     }
+    this.hullLift.reset();
     for (let i = 0; i < cols.length; i++) {
       const c = cols[i];
       const pb = this.toWorld(_p.set(c.x, c.bottom, c.z), _p);
       const pt = this.toWorld(_n.set(c.x, c.top, c.z), _n);
-      const water = this.waves.heightAt(pb.x, pb.z, t);
+      const water = this.waves.heightAt(pb.x, pb.z, t, this.colSurface[i]);
       if (pb.y >= water) continue;
       const span = pt.y - pb.y;
       const f = span > 1e-3 ? clamp((water - pb.y) / span, 0, 1) : 1;
@@ -363,7 +375,7 @@ export class ShipPhysics {
 
       // hydrodynamic drag in hull frame, relative to the water (vertical orbital velocity included)
       const pv = this.pointVel(cp, _v);
-      const flow = this.waves.sampleFlowAt(cp.x, cp.y, cp.z, t, this.flow);
+      const flow = this.waves.sampleFlowAt(cp.x, cp.y, cp.z, t, this.colFlow[i]);
       pv.x -= flow.vx; pv.y -= flow.vy; pv.z -= flow.vz;
       const lv = pv.applyQuaternion(invQ); // local velocity
       const subDepth = Math.min(subLen, 2.5);
@@ -373,20 +385,27 @@ export class ShipPhysics {
       const Alat = hy.lateralFromProfile
         ? Math.min(subLen + c.bottom - c.keel!, 2.5) * c.dz * c.latW!
         : subDepth * c.dz / d.columns.strips;
-      hullLateralForce(lv.x, lv.z, Alat, _hullHorizontalForce);
-      const Fx = _hullHorizontalForce.x;
+      // (applied after the loop: induced drag needs the whole hull's lift)
+      this.hullLift.add(i, lv.x, lv.z, Alat);
+      this.liftPoint[i].copy(cp);
       // longitudinal: skin friction + form and wave-making drag (see resistance.ts)
       const Swet = c.area * hy.wettedFactor;
-      const Fz = -0.5 * RHO * dragCoefficient(hy.resistance, lv.z, hull.length) * Swet * lv.z * Math.abs(lv.z) + _hullHorizontalForce.z;
+      const Fz = -0.5 * RHO * dragCoefficient(hy.resistance, lv.z, hull.length) * Swet * lv.z * Math.abs(lv.z);
       if (!resp) {
         // vertical: radiation/viscous damping
         const Fy = -0.5 * RHO * hy.heaveDampQuad * c.area * lv.y * Math.abs(lv.y) - hy.heaveDampLin * c.area * lv.y;
-        const Fl = _v.set(Fx, Fy, Fz).applyQuaternion(this.quat);
+        const Fl = _v.set(0, Fy, Fz).applyQuaternion(this.quat);
         this.addForceAt(Fl, cp);
         continue;
       }
-      this.addForceAt(_v.set(Fx, 0, Fz).applyQuaternion(this.quat), cp);
-      this.columnResponse(c, cp, vol, subLen, resp.ca, invQ);
+      this.addForceAt(_v.set(0, 0, Fz).applyQuaternion(this.quat), cp);
+      this.columnResponse(c, cp, flow, vol, subLen, resp.ca, invQ);
+    }
+    const lift = this.hullLift;
+    lift.solve();
+    for (let i = 0; i < cols.length; i++) {
+      if (lift.fx[i] === 0 && lift.fz[i] === 0) continue;
+      this.addForceAt(_v.set(lift.fx[i], 0, lift.fz[i]).applyQuaternion(this.quat), this.liftPoint[i]);
     }
     this.bowSlam = Math.max(0, bowImm - this.bowImmersion) / dt;
     this.bowImmersion = bowImm;
@@ -403,11 +422,10 @@ export class ShipPhysics {
   /**
    * One submerged column of a response design (plan §4.3): heave damping on the centre line (same
    * strength as before, but no roll moment), wave excitation, and the column's share of the added mass.
-   * this.flow still holds the column's flow sample.
+   * `flow` is the column's flow sample at its submerged centre.
    */
-  private columnResponse(c: Column, cp: THREE.Vector3, vol: number, subLen: number, ca: [number, number, number], invQ: THREE.Quaternion) {
+  private columnResponse(c: Column, cp: THREE.Vector3, flow: FlowSample, vol: number, subLen: number, ca: [number, number, number], invQ: THREE.Quaternion) {
     const hy = this.design.hydro;
-    const flow = this.flow;
     const yc = c.bottom + subLen * 0.5; // local height of the submerged part's centre
     const pc = this.toWorld(_wa.set(0, yc, c.z), _wa);
     const v = this.pointVel(pc, _wb);
@@ -482,12 +500,14 @@ export class ShipPhysics {
       const s = r.s;
       const local = _p.set(side * (hull.halfBeam(s) + r.xOut), r.y, hull.zOf(s) + r.dz);
       const w = this.toWorld(local, _v2.copy(local));
-      const water = this.waves.heightAt(w.x, w.z, this.time);
+      // one sample per rudder: the height query warm-starts the flow query at the same point
+      const rf = this.rudderFlow[side < 0 ? 0 : 1];
+      const water = this.waves.heightAt(w.x, w.z, this.time, rf);
       const depth = water - w.y;
       if (depth < 0) continue; // blade lifted clear (heel)
       const sub = clamp(depth / r.depthNorm, 0, 1);
       const v = this.pointVel(w, _v);
-      const flow = this.waves.sampleFlowAt(w.x, w.y, w.z, this.time, this.flow);
+      const flow = this.waves.sampleFlowAt(w.x, w.y, w.z, this.time, rf);
       v.x -= flow.vx; v.y -= flow.vy; v.z -= flow.vz;
       v.applyQuaternion(invQ); // local blade velocity relative to moving water
       v.y = 0;

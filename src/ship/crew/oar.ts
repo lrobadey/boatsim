@@ -3,6 +3,7 @@ import { nominalDip } from '../rowing';
 import { Track, type TrackSample } from './tracks';
 import type { CrewRowingParams } from './params';
 import type { Hand } from './physiology';
+import { createFlowSample } from '../../world/waves';
 
 export type OarMode = 'rest' | 'transfer' | 'ready' | 'catch' | 'drive' | 'extract' | 'recover' | 'hold' | 'shipped';
 export type TransferTo = 'ready' | 'rest' | 'hold' | 'shipped';
@@ -45,6 +46,8 @@ export class Oar {
   shipped = false;
   next: TransferTo = 'rest';
   lastArc = 0;
+  /** this blade's wave query (and its warm start) */
+  readonly flow = createFlowSample();
   readonly plan: StrokePlan;
   lastCatch = -Infinity;
   prevCatch = -Infinity;

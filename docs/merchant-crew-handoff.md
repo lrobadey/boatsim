@@ -137,6 +137,24 @@ of the deck, path factor 1.3) is only accounted for in walk time. The animator n
 
 ## Rough-water speed investigation (open, 2026-10-10 late)
 
+**Update 2026-10-21: two causes separated; one fixed.** `scripts/_rough-diag.mjs` splits every force along
+the heading and switches suspects off one at a time.
+
+- **Fixed (beam and following seas):** induced drag was charged per hull column from each column's own lift
+  coefficient squared. The columns lie along the hull's chord, so induced drag belongs to the hull's *total* lift;
+  wave-frequency crossflow that cancels along the hull was charged as drag. `HullLift` in `hullLateral.ts`
+  now does this (`hullLateralForce` stays as the steady single-strip helper; sailing test 6 checks they agree in
+  uniform flow). Mean rowing speed at Full over 12 sea/heading cases: 1.02 → 1.40 kn (beam 12 m/s 0.91 → 1.69).
+  Calm water, steady sailing and roll damping are unchanged; turns keep more way and overshoot less. A time
+  lag on lift (Wagner) was tried and added nothing.
+- **Open (head seas):** the wave-pressure (Froude–Krylov) term on the instantaneous immersed volume pushes her
+  astern by about 560 N at Full in a 12 m/s sea; on the calm-water volume it is about 200 N. The outside review's
+  ~300 N is plausible; settling it needs the mean-drift formulation. Also open: with induced drag no longer
+  masking it, the quasi-steady lift's forward component under oscillating crossflow can push a towed trireme into
+  a head sea faster than in calm (7.17 vs 6.68 kn in `test-hull-waves`).
+- Ruled out: skin friction against orbital flow, the astern multiplier, wave-making drag (all negligible). The
+  integrator added-mass leak is real but ±20–110 N.
+
 **What the user saw:** at Full in the game, in rough water, the merchant barely makes 1 kn. They suspected the oar
 physics was holding the boat back. It isn't the oars.
 

@@ -3,7 +3,8 @@
    and accounts. The ledger's glass and hairlines; headings in Cormorant.
    ========================================================================== */
 
-.pm-root { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(6, 10, 16, 0.45); }
+/* Restore pointer input under #ui, including the backdrop so clicks cannot reach the world. */
+.pm-root { position: absolute; inset: 0; display: none; pointer-events: auto; align-items: center; justify-content: center; background: rgba(6, 10, 16, 0.45); }
 .pm-root.on { display: flex; }
 
 .pm { width: min(620px, calc(100vw - 32px)); height: min(520px, calc(100vh - 32px)); display: flex; flex-direction: column;

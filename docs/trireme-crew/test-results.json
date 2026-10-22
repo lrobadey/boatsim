@@ -3,52 +3,52 @@
     {
       "name": "setup: 170 crew oars in three banks, no stance payload, no animator view, merchant switches off",
       "status": "passed",
-      "ms": 46
+      "ms": 104
     },
     {
       "name": "order ladder from rest: Slow < Half < Full, Back astern, all oars in time",
       "status": "passed",
-      "ms": 14691
+      "ms": 15704
     },
     {
       "name": "the crew keeps time at every ramming call from 30 to 44 spm (no block of the crew settles behind the stroke)",
       "status": "passed",
-      "ms": 7610
+      "ms": 7890
     },
     {
       "name": "ramming speed: faster than Full, then drops to Full when the crew is spent",
       "status": "passed",
-      "ms": 21052
+      "ms": 22722
     },
     {
       "name": "hold water stops her from Full within two lengths",
       "status": "passed",
-      "ms": 3281
+      "ms": 3539
     },
     {
       "name": "turning: pivot from rest, and the oars help the helm at Full",
       "status": "passed",
-      "ms": 9752
+      "ms": 10414
     },
     {
       "name": "shipping runs every oar in, dry, and the crew rows again after",
       "status": "passed",
-      "ms": 983
+      "ms": 1028
     },
     {
       "name": "a real sea: Full at wind 10 m/s stays finite, in time and in the water",
       "status": "passed",
-      "ms": 20681
+      "ms": 13207
     },
     {
       "name": "entrained water: picked up with the sea, so the catch loses little to pickup",
       "status": "passed",
-      "ms": 2694
+      "ms": 2830
     },
     {
       "name": "deterministic and within the CPU budget",
       "status": "passed",
-      "ms": 1638
+      "ms": 1698
     }
   ],
   "measured": {
@@ -94,23 +94,23 @@
       "metres": 8.7
     },
     "turning": {
-      "pivotDeg": 112,
-      "pivotMaxKn": 0.32,
-      "fullDegS": 1.5,
-      "oarsUpDegS": 0.67
+      "pivotDeg": 118,
+      "pivotMaxKn": 0.61,
+      "fullDegS": 1.57,
+      "oarsUpDegS": 0.83
     },
     "sea10": {
-      "kn": 5.44,
-      "missed": 0.014,
-      "maxHeelDeg": 7.3
+      "kn": 5.35,
+      "missed": 0.01,
+      "maxHeelDeg": 8.1
     },
     "entrained": {
       "pickupW": 0.47,
       "hullW": 55.4
     },
     "cpu": {
-      "meanMs": 0.266,
-      "p95Ms": 0.435
+      "meanMs": 0.275,
+      "p95Ms": 0.45
     }
   }
 }

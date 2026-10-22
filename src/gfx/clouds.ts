@@ -49,12 +49,12 @@ vec3 vcHazeSky(vec3 rd) {
 }
 // march a view ray; returns premultiplied radiance (rgb) and transmittance (a).
 // Representative distance is the opacity-weighted centre of the visible cloud (metres).
-vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float representativeDistance) {
+// rayCone is the view-ray spread across one pixel. Pass it explicitly from code that marches
+// inside a per-pixel branch, where screen-space derivatives are undefined.
+vec4 vcMarchCone(vec3 rd, float steps, float jitter, float maxDistance, float rayCone, out float representativeDistance) {
   representativeDistance = 0.0;
   // A grazing ray can reach clouds hundreds of kilometres away. Filter morphology
   // over its pixel cone as well as the integration interval; LOD0 aliases into bands.
-  // Derivatives also account for reduced-resolution and environment-cube captures.
-  float rayCone = max(length(dFdx(rd)), length(dFdy(rd)));
   vec3 ro = uCloudOrigin;
   vec3 roE = vec3(0.0, ro.y + C_EARTH, 0.0);
   vec2 interval = vcCloudInterval(roE, rd);
@@ -142,6 +142,11 @@ vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float re
   if (opacityWeight > 0.0001) representativeDistance = weightedDistance / opacityWeight;
   return vec4(col, T);
 }
+vec4 vcMarch(vec3 rd, float steps, float jitter, float maxDistance, out float representativeDistance) {
+  // Derivatives also account for reduced-resolution and environment-cube captures.
+  float rayCone = max(length(dFdx(rd)), length(dFdy(rd)));
+  return vcMarchCone(rd, steps, jitter, maxDistance, rayCone, representativeDistance);
+}
 vec4 vcMarch(vec3 rd, float steps, float jitter) {
   float representativeDistance;
   return vcMarch(rd, steps, jitter, 1.0e30, representativeDistance);
@@ -163,22 +168,25 @@ layout(location = 1) out vec4 fragDepth;
 float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 float sceneRayDistance(vec2 uv) {
   if (uHasSceneDepth < 0.5) return -1.0;
-  float closest = 1.0e30;
+  float farthest = 0.0;
   vec2 footprint = 0.5 / uRes;
-  // Include the reduced-resolution pixel corners so an opaque edge clips the whole
-  // cloud pixel conservatively. This avoids low-res clouds bleeding over geometry.
+  // Clip each reduced-resolution pixel at the farthest surface in its footprint, so a
+  // pixel straddling a silhouette still carries the full sky behind it. The composite
+  // keeps those clouds off the nearer surface; clipping at the nearest surface instead
+  // left a band of cloudless taps beside every edge that the full-resolution sky pixels
+  // there could not use.
   for (int y = -1; y <= 1; y++) {
     for (int x = -1; x <= 1; x++) {
       vec2 duv = uv + vec2(float(x), float(y)) * footprint;
       float d = texture(uSceneDepth, clamp(duv, vec2(0.0), vec2(1.0))).r;
       bool sky = uReversedDepth > 0.5 ? d <= 0.0 : d >= 1.0;
-      if (sky) continue;
+      if (sky) return -1.0;
       float z = uReversedDepth > 0.5 ? d : d * 2.0 - 1.0;
       vec4 p = uInvViewProj * vec4(duv * 2.0 - 1.0, z, 1.0);
-      closest = min(closest, length(p.xyz / p.w));
+      farthest = max(farthest, length(p.xyz / p.w));
     }
   }
-  return closest < 1.0e29 ? closest : -1.0;
+  return farthest;
 }
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -460,11 +468,15 @@ export class Clouds {
     this.mat.uniforms.uSteps.value = n;
   }
 
+  get steps(): number {
+    return this.mat.uniforms.uSteps.value;
+  }
+
   get texture() {
     return this.targets[this.cur].texture;
   }
 
-  /** R = opacity-weighted cloud ray distance in km (0 invalid), G = nearest scene
+  /** R = opacity-weighted cloud ray distance in km (0 invalid), G = farthest scene
    * ray distance in km (-1 sky), B = cloud opacity, A reserved. */
   get depthTexture() {
     return this.targets[this.cur].textures[1];

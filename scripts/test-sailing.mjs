@@ -6,7 +6,7 @@ import * as THREE from 'three';
 
 const { SAIL_RIG, evaluateSailSample, sailSampleArea } = await import('../src/ship/sailGeometry.ts');
 const { evaluateSailForce, SailingSystem } = await import('../src/ship/sailing.ts');
-const { hullLateralForce } = await import('../src/ship/hullLateral.ts');
+const { hullLateralForce, HullLift } = await import('../src/ship/hullLateral.ts');
 const { Crew } = await import('../src/ship/crew.ts');
 const { ShipPhysics } = await import('../src/ship/physics.ts');
 const { Wind } = await import('../src/world/wind.ts');
@@ -194,6 +194,20 @@ test('6 hull balance and mirrored sail/water response', () => {
   for (const vz of [-5, -1, 1, 5]) { hullLateralForce(0, vz, .5, out); near(out.x, 0, 1e-10); near(out.z, 0, 1e-9); }
   // At pure axial velocity the helper preserves only the old crossflow lateral term (zero).
   hullLateralForce(0, -4, .7, out); near(out.x, 0, 1e-10); near(out.z, 0, 1e-9);
+  // The ship's whole-hull lift equals the steady helper strip by strip when every strip sees the same flow.
+  const lift = new HullLift(5), areas = [.3, .7, 1.1, .5, .9];
+  for (const [vx, vz] of [[.4, -2], [-.9, -1.5], [1.2, .8], [.05, -4]]) {
+    lift.reset(); areas.forEach((a, i) => lift.add(i, vx, vz, a)); lift.solve();
+    areas.forEach((a, i) => { hullLateralForce(vx, vz, a, out); near(lift.fx[i], out.x, 1e-9 * Math.max(1, Math.abs(out.x))); near(lift.fz[i], out.z, 1e-9 * Math.max(1, Math.abs(out.z))); });
+  }
+  // Lift that cancels along the hull (bow and stern pushed opposite ways) carries no induced drag: each
+  // strip differs from the helper by exactly the local induced drag the helper charges.
+  lift.reset(); lift.add(0, .6, -1.5, .8); lift.add(1, -.6, -1.5, .8); lift.solve();
+  for (const [i, vx] of [[0, .6], [1, -.6]]) {
+    hullLateralForce(vx, -1.5, .8, out);
+    const speed = Math.hypot(vx, 1.5), cl = .8 * Math.sin(2 * Math.atan2(vx, 1.5)), D = .5 * 1025 * .8 * speed * speed * cl * cl / (Math.PI * .18 * .7);
+    near(lift.fz[i] - out.z, D * -1.5 / speed, 1e-9 * D); near(lift.fx[i] - out.x, D * vx / speed, 1e-9 * D);
+  }
   const make = sign => { const w = uniformWind(-8 * sign, 0); const s = ship({ wind: w, heading: 0 }); s.sailing.deploymentTarget = 1; s.sailing.trimMode = 'manual'; s.sailing.manualYardTarget = sign * Math.PI / 4; s.crew.setOrder(1); for (let i = 0; i < 1800; i++) s.step(dt); return s; };
   const port = make(-1), starboard = make(1);
   assert.ok(Number.isFinite(port.leeway) && Number.isFinite(port.heel));
@@ -269,13 +283,15 @@ test('10 convergence: 60-second smooth-wind integration at 120 and 240 Hz', () =
   };
   const trim120 = trimCadence(1 / 120), trim240 = trimCadence(1 / 240);
   assert.deepEqual(trim120.map(p => p.calls), [1, 2, 3, 4]); assert.deepEqual(trim240.map(p => p.calls), [1, 2, 3, 4]);
-  const sim = h => { const w = new Wind(201), waves = flat(w), s = ship({ wind: w, waves }); s.sailing.deploymentTarget = 1; s.sailing.trimMode = 'auto'; s.crew.setOrder(3); let impulse = 0, accum = 0; const steps = Math.round(60 / h); for (let i = 0; i < steps; i++) { const t = (i + 1) * h; // smooth, deterministic open-water wind; no frame sampling
-      w.baseSpeed = 8 + 1.2 * Math.sin(t * .07); w.baseFrom = .3 + .12 * Math.sin(t * .03); w.update(h); s.step(h); impulse += s.sailing.telemetry.forwardForce * h; accum += h; }
-    return { speed: s.speed, pos: s.pos.clone(), impulse, yard: s.yardAngle, time: accum }; };
-  const a = sim(1 / 120), b = sim(1 / 240), speedError = Math.abs(a.speed - b.speed), posError = a.pos.distanceTo(b.pos), impulseError = Math.abs(a.impulse - b.impulse) / Math.max(1, Math.abs(a.impulse), Math.abs(b.impulse)), yardError = Math.abs(a.yard - b.yard);
-  report.measured.convergence = { trimCadence120: trim120, trimCadence240: trim240, speed120Mps: a.speed, speed240Mps: b.speed, speedErrorMps: speedError, positionErrorM: posError, impulse120Ns: a.impulse, impulse240Ns: b.impulse, impulseRelativeError: impulseError, yard120Rad: a.yard, yard240Rad: b.yard, yardErrorRad: yardError };
+  const sim = h => { const w = new Wind(201), waves = flat(w), s = ship({ wind: w, waves }); s.sailing.deploymentTarget = 1; s.sailing.trimMode = 'auto'; s.crew.setOrder(3); let impulse = 0, accum = 0; const yards = []; const steps = Math.round(60 / h); for (let i = 0; i < steps; i++) { const t = (i + 1) * h; // smooth, deterministic open-water wind; no frame sampling
+      w.baseSpeed = 8 + 1.2 * Math.sin(t * .07); w.baseFrom = .3 + .12 * Math.sin(t * .03); w.update(h); s.step(h); impulse += s.sailing.telemetry.forwardForce * h; accum += h; if (Math.abs(t * 4 - Math.round(t * 4)) < 1e-9) yards.push(s.yardAngle); }
+    return { speed: s.speed, pos: s.pos.clone(), impulse, yard: s.yardAngle, yards, time: accum }; };
+  const a = sim(1 / 120), b = sim(1 / 240), speedError = Math.abs(a.speed - b.speed), posError = a.pos.distanceTo(b.pos), impulseError = Math.abs(a.impulse - b.impulse) / Math.max(1, Math.abs(a.impulse), Math.abs(b.impulse)), yardError = a.yards.reduce((e, y, i) => e + Math.abs(y - b.yards[i]), 0) / a.yards.length;
+  report.measured.convergence = { trimCadence120: trim120, trimCadence240: trim240, speed120Mps: a.speed, speed240Mps: b.speed, speedErrorMps: speedError, positionErrorM: posError, impulse120Ns: a.impulse, impulse240Ns: b.impulse, impulseRelativeError: impulseError, yard120Rad: a.yard, yard240Rad: b.yard, yardMeanErrorRad: yardError };
   assert.ok(speedError <= Math.max(.03, .02 * Math.max(Math.abs(a.speed), Math.abs(b.speed))), `speed convergence ${speedError}`);
-  assert.ok(posError <= 1, `position convergence ${posError}`); assert.ok(impulseError <= .02, `sail impulse convergence ${impulseError}`); assert.ok(yardError <= .01, `yard convergence ${yardError}`);
+  assert.ok(posError <= 1, `position convergence ${posError}`); assert.ok(impulseError <= .02, `sail impulse convergence ${impulseError}`); // yard: mean difference over the run at every auto-trim tick (the trim decides at 4 Hz, so a hair's difference
+  // in state can move one decision to the neighbouring tick, and a single end-time sample can land mid-slew)
+  assert.equal(a.yards.length, b.yards.length); assert.ok(yardError <= .01, `yard convergence ${yardError}`);
 });
 
 if (!process.argv.includes('--quick')) test('11 long run: 300-second varied wind/wave stability and runtime', () => {

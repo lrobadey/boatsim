@@ -22,7 +22,7 @@
       "zeta3to1": 0.1048,
       "zeta5to2": 0.108,
       "undampedPeriod": 2.6058,
-      "speedKn": 3.957
+      "speedKn": 3.9572
     },
     "heave": {
       "dampedPeriod": 2.0839,
@@ -35,7 +35,7 @@
       "undampedPeriod": 2.2579
     },
     "beamWave": {
-      "ratio": 1.0115,
+      "ratio": 1.0116,
       "sway": 0.2338,
       "particle": 0.2311,
       "driftPerSecond": -0.0003
@@ -53,8 +53,8 @@
   },
   "stress": {
     "Hs": 1.7551,
-    "maxHeelDeg": 15.5335,
-    "maxPitchDeg": 17.7725,
-    "drift": 111.9949
+    "maxHeelDeg": 12.9256,
+    "maxPitchDeg": 20.6057,
+    "drift": 128.0664
   }
 }

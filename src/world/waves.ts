@@ -33,7 +33,17 @@ export interface WaveComponent {
   band?: [number, number, number, number];
 }
 
-export interface FlowSample {
+/**
+ * Warm start for the inverse query (world point -> undisplaced point). A caller that queries the same
+ * moving point every step keeps one of these: the next query starts from the last solution shifted by the
+ * point's motion and needs one fixed-point iteration instead of four (on the merchant in a 1.6 m sea this
+ * matched the cold solve within 4 N of hull force). A query too far from the last one in space or time
+ * solves cold, so a sample shared between distant points behaves exactly as before.
+ */
+export interface InverseCache { warm: boolean; qx: number; qz: number; px: number; pz: number; t: number }
+export const createInverseCache = (): InverseCache => ({ warm: false, qx: 0, qz: 0, px: 0, pz: 0, t: 0 });
+
+export interface FlowSample extends InverseCache {
   height: number; hx: number; hz: number; vx: number; vy: number; vz: number;
   sigma: number; H: number; Hx: number; guarded: boolean;
   sin: Float64Array; cos: Float64Array;
@@ -41,10 +51,16 @@ export interface FlowSample {
   env: Float64Array; enveloped: boolean;
 }
 export function createFlowSample(count = WAVE_COUNT): FlowSample {
-  return { height: 0, hx: 0, hz: 0, vx: 0, vy: 0, vz: 0,
+  return { ...createInverseCache(), height: 0, hx: 0, hz: 0, vx: 0, vy: 0, vz: 0,
     sigma: 1, H: 0, Hx: 0, guarded: false, sin: new Float64Array(count), cos: new Float64Array(count),
     env: new Float64Array(4), enveloped: false };
 }
+/** inverse fixed-point iterations from the query point (cold) and from a cached nearby solution (warm) */
+const INVERSE_COLD = 4;
+const INVERSE_WARM = 1;
+/** a cached solution is reused only for a query within this distance (m) and time (s) of it */
+const WARM_DIST = 0.25;
+const WARM_DT = 0.05;
 
 export class WaveField implements SeaWaveModel {
   waves: WaveComponent[] = [];
@@ -282,28 +298,45 @@ export class WaveField implements SeaWaveModel {
   }
 
   private tmp = new Float64Array(3);
-  /** Water surface height at world (x,z): inverts the horizontal displacement by fixed-point iteration. */
-  heightAt(x: number, z: number, t: number) {
-    let px = x,
-      pz = z;
+  /** the undisplaced point found by the last solveInverse */
+  private ipx = 0;
+  private ipz = 0;
+  /** world (x, z) -> undisplaced point by fixed-point iteration on the horizontal displacement, warm when it can */
+  private solveInverse(x: number, z: number, t: number, cache: InverseCache | null) {
+    let px = x, pz = z, iters = INVERSE_COLD;
+    if (cache && cache.warm && Math.abs(t - cache.t) <= WARM_DT && Math.abs(x - cache.qx) <= WARM_DIST && Math.abs(z - cache.qz) <= WARM_DIST) {
+      px = cache.px + (x - cache.qx);
+      pz = cache.pz + (z - cache.qz);
+      iters = INVERSE_WARM;
+    }
     const d = this.tmp;
-    for (let it = 0; it < 4; it++) {
+    for (let it = 0; it < iters; it++) {
       this.displacement(px, pz, t, d);
       px = x - d[0];
       pz = z - d[2];
     }
-    this.displacement(px, pz, t, d);
+    if (cache) { cache.warm = true; cache.qx = x; cache.qz = z; cache.px = px; cache.pz = pz; cache.t = t; }
+    this.ipx = px;
+    this.ipz = pz;
+  }
+
+  /**
+   * Water surface height at world (x,z): inverts the horizontal displacement by fixed-point iteration.
+   * A caller tracking one moving point passes its own cache to warm-start the inversion.
+   */
+  heightAt(x: number, z: number, t: number, cache: InverseCache | null = null) {
+    this.solveInverse(x, z, t, cache);
+    const d = this.tmp;
+    this.displacement(this.ipx, this.ipz, t, d);
     return d[1];
   }
 
   /** World-coordinate inverse query shared by hull, rudders and every oar. Frozen amplitudes:
-   * slow weather amplitude derivatives are omitted; orbital velocity decays as deep-water flow. */
+   * slow weather amplitude derivatives are omitted; orbital velocity decays as deep-water flow.
+   * `out` is also the query's warm-start cache: give each tracked point its own sample. */
   sampleFlowAt(x: number, y: number, z: number, t: number, out: FlowSample) {
-    let px = x, pz = z;
-    for (let it = 0; it < 4; it++) {
-      this.displacement(px, pz, t, this.tmp);
-      px = x - this.tmp[0]; pz = z - this.tmp[2];
-    }
+    this.solveInverse(x, z, t, out);
+    const px = this.ipx, pz = this.ipz;
     let height = 0, gx = 0, gz = 0, jxx = 1, jzz = 1, jxz = 0, H = 0, Hx = 0;
     if (this.waves.length > out.sin.length) throw new Error('Flow cache is too small');
     // sea state: amplitudes from the envelope at the undisplaced point (its gradient is neglected)

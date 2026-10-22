@@ -4,6 +4,9 @@ import type { Oar } from './oar';
 import type { CrewRowingParams } from './params';
 
 const UNAVAILABLE = 1e3;
+/** yaw demand at which a watch calls all hands for the turn, and the band below it before they stand down */
+const ALL_HANDS_N = 0.3;
+const ALL_HANDS_BAND = 0.05;
 
 /**
  * Who pulls, who backs and who rests, and how hard (spec §5.3): the crew's common knowledge of what
@@ -17,30 +20,44 @@ export class Allocator {
   private cost: Float64Array;
   private onWatch: number[] = [];
   private offWatch: number[] = [];
+  private allHands = false;
   constructor(n: number) { this.a = new Float64Array(n); this.cost = new Float64Array(n); }
 
   allocate(oars: Oar[], it: CrewIntent, p: CrewRowingParams) {
     const n = oars.length, a = this.a, cost = this.cost;
     // Oars Up: no rowing whatever the helm (a pivot is a manoeuvre intent, not Oars Up)
-    if (it.dir === 0) { for (const o of oars) { o.alloc = 0; o.bias = 0; o.watch = false; } return; }
-    let cmax = 0;
+    if (it.dir === 0) { for (const o of oars) { o.alloc = 0; o.bias = 0; o.watch = false; } this.allHands = false; return; }
     for (let i = 0; i < n; i++) {
       const o = oars[i], h = o.hand;
       const available = !!h && h.state === 'rowing' && !o.shipped;
       // a fresh man at full demand carries his full share (no base cost; audit §6.8: 104 W against 115 W ordered)
       cost[i] = available ? 0.25 * (1 - clamp(h.Wbal / p.Wp, 0, 1)) + 0.2 * (1 - h.R) : UNAVAILABLE;
-      a[i] = available ? o.alloc : 0;
-      if (available) cmax = Math.max(cmax, cost[i]);
     }
+    // the watch is chosen before the shares, so the yaw split lands on the men who row; a hard turn calls all
+    // hands (with a band, so a helm near the threshold does not toggle it)
+    const absN = Math.abs(it.N);
+    this.allHands = absN >= ALL_HANDS_N || (this.allHands && absN > ALL_HANDS_N - ALL_HANDS_BAND);
+    if (it.manned < n && !this.allHands) {
+      this.watches(oars, it, cost);
+      for (let i = 0; i < n; i++) if (!oars[i].watch) cost[i] = UNAVAILABLE;
+    } else for (const o of oars) o.watch = false;
+    // demands are fractions of the oars that can row, so a watch of two meets them as six would
+    let cmax = 0, m = 0;
+    for (let i = 0; i < n; i++) {
+      const available = cost[i] < UNAVAILABLE;
+      a[i] = available ? oars[i].alloc : 0;
+      if (available) { cmax = Math.max(cmax, cost[i]); m++; }
+    }
+    m = Math.max(1, m);
     const X = it.X, N = it.N, wn = 3 * it.yawPriority, wx = 1;
-    const step = 0.9 / ((2 * (wx + wn)) / n + (2 * cmax) / n);
+    const step = 0.9 / ((2 * (wx + wn)) / m + (2 * cmax) / m);
     for (let iter = 0; iter < 80; iter++) {
       let sx = 0, sn = 0;
-      for (let i = 0; i < n; i++) { sx += a[i] / n; sn += (-oars[i].slot.side * a[i]) / n; }
+      for (let i = 0; i < n; i++) { sx += a[i] / m; sn += (-oars[i].slot.side * a[i]) / m; }
       const ex = sx - X, en = sn - N;
       for (let i = 0; i < n; i++) {
         if (cost[i] >= UNAVAILABLE) continue;
-        const g = (2 * wx * ex) / n + (2 * wn * en * -oars[i].slot.side) / n + (2 * cost[i] * a[i]) / n;
+        const g = (2 * wx * ex) / m + (2 * wn * en * -oars[i].slot.side) / m + (2 * cost[i] * a[i]) / m;
         a[i] = clamp(a[i] - g * step, -1, 1);
       }
     }
@@ -51,8 +68,6 @@ export class Allocator {
       const fore = o.slot.z < 0 ? 1 : -1, want = -o.slot.side * Math.sign(a[i]) * N;
       o.bias = clamp(fore * want, -1, 1) * smoothstep(0.2, 0.8, Math.abs(N));
     }
-    if (it.manned < n && Math.abs(N) < 0.3) this.watches(oars, it, cost);
-    else for (const o of oars) o.watch = false;
   }
 
   /** rowing in watches: the same men stay at the oars; a side's man is swapped only when clearly more tired */
