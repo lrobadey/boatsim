@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { clamp, smoothstep } from '../../core/util';
 import { BladeClipper, bladeDrag, createKinematics, evaluateOar, type JointPose, type RowBody } from '../rowing';
-import { createFlowSample, type WaveField } from '../../world/waves';
+import { type WaveField } from '../../world/waves';
 import { hermite3, type TrackSample } from './tracks';
 import type { Oar } from './oar';
 import type { CrewRowingParams } from './params';
@@ -37,7 +37,6 @@ export class SweepDynamics {
   private kin = createKinematics();
   private kin1 = createKinematics();
   private clipper = new BladeClipper();
-  private flow = createFlowSample();
   private fv = { vx: 0, vy: 0, vz: 0 };
   private joint: JointPose = { sweep: 0, dip: 0, feather: 0, dSweep: 0, dDip: 0, dFeather: 0 };
   private patches: Patch[] = Array.from({ length: 4 }, () => ({ A: 0, n: new THREE.Vector3(), b: new THREE.Vector3(), s: new THREE.Vector3(), d: new THREE.Vector3(), pos: new THREE.Vector3() }));
@@ -125,8 +124,8 @@ export class SweepDynamics {
     const axis = v[2].copy(k.axis).applyQuaternion(q), width = v[3].copy(k.widthAxis).applyQuaternion(q), normal = v[4].copy(k.normal).applyQuaternion(q);
     const du0 = v[5].copy(k.axisVelocity).applyQuaternion(q), dB0 = v[6].copy(k.widthAxisVelocity).applyQuaternion(q);
     const du1 = v[7].copy(k1.axisVelocity).applyQuaternion(q), dB1 = v[8].copy(k1.widthAxisVelocity).applyQuaternion(q);
-    waves.sampleFlowAt(cW.x, cW.y, cW.z, time, this.flow);
-    const fl = this.flow;
+    // the oar's own sample: its blade centre moves a few cm per step, so the query warm-starts
+    const fl = waves.sampleFlowAt(cW.x, cW.y, cW.z, time, o.flow);
     let area = 0;
     this.nwet = 0;
     for (let j = 0; j < 4; j++) {

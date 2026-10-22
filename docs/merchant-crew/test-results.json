@@ -3,12 +3,12 @@
   {
    "name": "seam: the merchant builds the crew system with six sweeps and eight hands",
    "status": "passed",
-   "ms": 61
+   "ms": 76
   },
   {
    "name": "energy audit closes per oar at every order; patch power identity holds in calm water",
    "status": "passed",
-   "ms": 4436
+   "ms": 5221
   },
   {
    "name": "no hidden clipping: no force scaling in the crew code, cap fractions stay zero",
@@ -18,17 +18,17 @@
   {
    "name": "passivity: blades only ever dissipate; a held blade at rest does no rower work",
    "status": "passed",
-   "ms": 84
+   "ms": 97
   },
   {
    "name": "continuity over 10 minutes of mixed orders, helm, hold and shipping",
    "status": "passed",
-   "ms": 3316
+   "ms": 3267
   },
   {
    "name": "timestep independence: Full and Half steady within 0.5 %, speed at 60 s within 0.02 kn",
    "status": "passed",
-   "ms": 7505
+   "ms": 8648
   },
   {
    "name": "speed bands and acceleration (calm, 240 s)",
@@ -43,67 +43,67 @@
   {
    "name": "hold water stops her from 2 kn within 5 lengths, inside the hold capacity",
    "status": "passed",
-   "ms": 890
+   "ms": 1033
   },
   {
    "name": "payload: nine people sink her about 1.7 cm, cost under 1 % at Full, and walking trims her smoothly",
    "status": "passed",
-   "ms": 1251
+   "ms": 1490
   },
   {
    "name": "waves: a single 0.5 m swell with orders cycled stays finite and physical",
    "status": "passed",
-   "ms": 1953
+   "ms": 1426
   },
   {
    "name": "determinism: two identical runs are bit-identical",
    "status": "passed",
-   "ms": 1279
+   "ms": 944
   },
   {
    "name": "CPU: crew propulsion costs at most 0.1 ms per physics step",
    "status": "passed",
-   "ms": 286
+   "ms": 332
   },
   {
    "name": "rhythm: a ragged start settles, holds, and falls apart without coupling",
    "status": "passed",
-   "ms": 994
+   "ms": 1158
   },
   {
    "name": "startup: short heavy strokes that lengthen as she gathers way",
    "status": "passed",
-   "ms": 408
+   "ms": 477
   },
   {
    "name": "turning: a pivot from rest, crew assist underway, no rowing on Oars Up",
    "status": "passed",
-   "ms": 1984
+   "ms": 2321
   },
   {
    "name": "turning at 2 kn: hard over turns at least 1.3 deg/s on average over 60 s (the inner side backs once she is slow)",
    "status": "passed",
-   "ms": 609
+   "ms": 711
   },
   {
    "name": "watches: Slow mans one oar per side and keeps the same men on",
    "status": "passed",
-   "ms": 523
+   "ms": 610
   },
   {
    "name": "rotation: reliefs swap in at Full over an hour without leaving an oar empty",
    "status": "passed",
-   "ms": 16203
+   "ms": 19234
   },
   {
    "name": "reading the water: fewer missed drives in a real sea, and no speed lost (relative: reading on vs off)",
    "status": "passed",
-   "ms": 105614
+   "ms": 52528
   },
   {
    "name": "animator view: eight members, valid modes, walks on deck and clear of manned stances, relief swap seen",
    "status": "passed",
-   "ms": 2827
+   "ms": 3052
   },
   {
    "name": "animator view: fillView and updatePayload allocate nothing per step (needs --expose-gc)",
@@ -113,100 +113,100 @@
  ],
  "measured": {
   "order0": {
-   "kn": -2.004265041154547,
-   "t30": -0.9525613573000763,
-   "t60": -1.4591449411002537,
-   "to1": 30.775,
-   "thrustN": -188.0960575588849,
-   "crewW": 484.9507018673739,
-   "efficiency": 0.3999225047797103,
+   "kn": -2.0042905665951,
+   "t30": -0.9527348627199448,
+   "t60": -1.459295131459163,
+   "to1": 30.741666666666667,
+   "thrustN": -188.09438670240172,
+   "crewW": 484.95058061455336,
+   "efficiency": 0.3999241454557026,
    "spm": 15.247570038013496
   },
   "order2": {
-   "kn": 1.0023750419739892,
-   "t30": 0.2858536910700789,
-   "t60": 0.4860831314897385,
-   "to1": 204.76666666666665,
-   "thrustN": 53.32252816946287,
-   "crewW": 90.32477408263136,
-   "efficiency": 0.30441965161999485,
+   "kn": 1.0028073007935119,
+   "t30": 0.2858728409137482,
+   "t60": 0.48613977560733485,
+   "to1": 204.725,
+   "thrustN": 53.37992984911738,
+   "crewW": 90.44074977008844,
+   "efficiency": 0.30448781895977034,
    "spm": 13.946110632593161
   },
   "order3": {
-   "kn": 2.2065344143534813,
-   "t30": 0.9657972657680487,
-   "t60": 1.5085657868177849,
+   "kn": 2.2065518706639,
+   "t30": 0.9658557154309977,
+   "t60": 1.508613942949501,
    "to1": 31.633333333333333,
-   "thrustN": 166.15466147119113,
-   "crewW": 478.8524391554779,
-   "efficiency": 0.393876547887307,
+   "thrustN": 166.15945382527758,
+   "crewW": 478.86605244121927,
+   "efficiency": 0.3938798268827993,
    "spm": 16.280526814128585
   },
   "order4": {
-   "kn": 2.4803423277814187,
-   "t30": 1.0867391004955314,
-   "t60": 1.7647139012555386,
+   "kn": 2.4803608376222606,
+   "t30": 1.0869277153719834,
+   "t60": 1.7648373579807917,
    "to1": 27.9,
-   "thrustN": 197.93853385398003,
-   "crewW": 641.7867700061652,
-   "efficiency": 0.3935408372314801,
+   "thrustN": 197.93726163736287,
+   "crewW": 641.7864716337933,
+   "efficiency": 0.3935414275999151,
    "spm": 18.18033628629739
   },
   "continuity": {
-   "maxAcc": 15.31817804739943,
-   "maxDipJump": 0.36053403272243695,
-   "maxFeJump": 6.154932876962623,
-   "thMin": -0.40234060587851866,
-   "thMax": 0.4801062879527639,
-   "maxArcDeg": 45.17500854825613
+   "maxAcc": 16.737992017274422,
+   "maxDipJump": 0.23083961677255416,
+   "maxFeJump": 3.3248641957573755,
+   "thMin": -0.40199492676459486,
+   "thMax": 0.474184410331118,
+   "maxArcDeg": 45.14418756934647
   },
   "timestep": {
    "3": [
     {
      "h": 0.016666666666666666,
-     "kn": 2.1998567990412083,
-     "k60": 1.5076457684744444
+     "kn": 2.1998700151900152,
+     "k60": 1.5076900334768237
     },
     {
      "h": 0.008333333333333333,
-     "kn": 2.2065344143534813,
-     "k60": 1.5085657868177849
+     "kn": 2.2065518706639,
+     "k60": 1.508613942949501
     },
     {
      "h": 0.004166666666666667,
-     "kn": 2.209382635390275,
-     "k60": 1.508357314968622
+     "kn": 2.2094521308378328,
+     "k60": 1.508406096520592
     }
    ],
    "4": [
     {
      "h": 0.016666666666666666,
-     "kn": 2.4728083055434587,
-     "k60": 1.761577999697631
+     "kn": 2.4728282919493285,
+     "k60": 1.7616926018289176
     },
     {
      "h": 0.008333333333333333,
-     "kn": 2.4803423277814187,
-     "k60": 1.7647139012555386
+     "kn": 2.4803608376222606,
+     "k60": 1.7648373579807917
     },
     {
      "h": 0.004166666666666667,
-     "kn": 2.4835712885517145,
-     "k60": 1.764114584167768
+     "kn": 2.4835898214101397,
+     "k60": 1.7642277823384438
     }
    ]
   },
   "holdStop": {
-   "dist": 28.45285573345751,
-   "lengths": 2.0649884048174,
-   "peakOfCapacity": 0.6247718011371891
+   "dist": 28.45306657584105,
+   "lengths": 2.0650037068693745,
+   "peakOfCapacity": 0.6247722202854677
   },
   "payload": {
-   "sinkCm": 1.7386560505413984,
-   "fullWith": 2.4803423277814187,
-   "fullWithout": 2.48816019942628
+   "sinkCm": 1.7386560505408266,
+   "fullWith": 2.4803608376222606,
+   "fullWithout": 2.4881789633162614
   },
-  "cpuMsPerStep": 0.007933477222216222,
+  "cpuMsPerStep": 0.00837941708332538,
   "rhythm": [
    {
     "k": 0,
@@ -543,16 +543,16 @@
    }
   ],
   "pivot60": {
-   "turnedDeg": 94.59315244352193,
-   "maxKn": 0.1615939799751909
+   "turnedDeg": 97.76681155059336,
+   "maxKn": 0.35802448381044905
   },
   "turnRate": {
-   "assistDegS": 1.354645493324553,
-   "rudderOnlyDegS": 0.71248382002173
+   "assistDegS": 1.3537805104123521,
+   "rudderOnlyDegS": 0.812361574291165
   },
   "turn2kn": {
-   "rateDegS": 1.385,
-   "kn": 0.268,
+   "rateDegS": 1.555,
+   "kn": 0.64,
    "reachedAt": 74.8
   },
   "rotation": {
@@ -632,24 +632,24 @@
   },
   "waterRead": {
    "U6_off": {
-    "kn": 0.531,
+    "kn": 1.012,
     "hs": 0.78,
-    "missedPct": 8.03
+    "missedPct": 9.31
    },
    "U6_reading": {
-    "kn": 0.637,
+    "kn": 1.066,
     "hs": 0.78,
-    "missedPct": 0.26
+    "missedPct": 0.66
    },
    "U10_off": {
-    "kn": 0.21,
+    "kn": 0.594,
     "hs": 1.26,
-    "missedPct": 10.52
+    "missedPct": 10.08
    },
    "U10_reading": {
-    "kn": 0.23,
+    "kn": 0.723,
     "hs": 1.26,
-    "missedPct": 0.97
+    "missedPct": 0.94
    }
   },
   "animatorView": {
