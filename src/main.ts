@@ -35,7 +35,13 @@ const seed = Number(params.get('seed') ?? 1729);
 const dev = params.has('dev');
 const storedShip = (() => { try { return localStorage.getItem('trieres.ship'); } catch { return null; } })();
 const shipKind = chosenShipKind(location.search, storedShip);
-const design = DESIGNS[shipKind];
+const thalassa = dev && params.get('ship') === 'thalassa';
+const twinPaddles = thalassa && params.get('drive') === 'paddles';
+const devVesselModule = thalassa ? await import('./dev/thalassa') : null;
+const design = devVesselModule ? devVesselModule.makeThalassaDesign() : DESIGNS[shipKind];
+const launchShip = thalassa ? 'thalassa' : shipKind;
+const devQuery = thalassa ? `&dev&start=sea&hud=1&wind=8${twinPaddles ? '&drive=paddles' : ''}` : '';
+if (thalassa) document.title = 'Thalassa · Trieres Dev';
 
 const ui = document.getElementById('ui')!;
 const canvas = document.getElementById('gl') as HTMLCanvasElement;
@@ -57,7 +63,7 @@ const label = loading.querySelector('.load-status') as HTMLElement;
 /** quality segmented control: the key is stored in data-q, the label is sentence case */
 const qualitySeg = (seedValue: number | string, current: string) =>
   `<div class="seg" role="group" aria-label="Quality">${Object.keys(QUALITY)
-    .map((k) => `<a href="?q=${k}&seed=${seedValue}&ship=${shipKind}" data-q="${k}" class="${k === current ? 'on' : ''}"${k === current ? ' aria-current="true"' : ''}>${k[0].toUpperCase()}${k.slice(1)}</a>`)
+    .map((k) => `<a href="?q=${k}&seed=${seedValue}&ship=${launchShip}${devQuery}" data-q="${k}" class="${k === current ? 'on' : ''}"${k === current ? ' aria-current="true"' : ''}>${k[0].toUpperCase()}${k.slice(1)}</a>`)
     .join('')}</div>`;
 
 /** ship segmented control: picks the ship for the next load and remembers it */
@@ -125,12 +131,20 @@ async function boot() {
   label.textContent = 'Preparing the ship';
   fill.style.width = '92%';
   await new Promise((r) => setTimeout(r, 30));
-  const game = new Game(canvas, quality, gen, tex, assets, models, design,ormos);
+  const devVessel = devVesselModule ? await devVesselModule.loadThalassa(gen, new Wind(3).baseFrom + Math.PI * 0.6, twinPaddles) : undefined;
+  const game = new Game(canvas, quality, gen, tex, assets, models, design,ormos,devVessel);
   // cargo and ports (merchant): continue this world's saved voyage, or a new one docked at the main harbour
   const voyage = game.initTrade({ seed, heightmapSize: quality.heightmapSize },dev && ['ormosReview','sailingReview','rowingReview','cargoReview'].some(k=>params.has(k)));
   // every ship starts docked at the main harbour (the merchant's voyage has already placed her);
   // ?start=sea keeps the old start outside the harbour mouth
-  if (!voyage && params.get('start') !== 'sea') game.startInHarbour();
+  if (!voyage && !thalassa && params.get('start') !== 'sea') game.startInHarbour();
+  if (thalassa) {
+    game.player.mode = 'chase'; game.player.prevShipMode = 'helm';
+    game.player.chaseYaw = 0.8; game.player.chasePitch = 0.30;
+    game.clock.hours = 12.5; game.clock.compute();
+    game.hud.showToast(`Thalassa · W/S ${twinPaddles ? 'paddle effort' : 'rowing'} · A/D helm · F sails · C camera`);
+    if (twinPaddles) (await import('./dev/paddlePanel')).installPaddlePanel(game);
+  }
   // ?wind=<m/s at 10 m> sets the prevailing wind; the sea starts fully developed for it.
   // 3 is light airs, 6 a gentle breeze, 12 the default meltemi, 16+ a near gale.
   const windParam = params.get('wind');
@@ -298,7 +312,7 @@ async function boot() {
         <span><kbd>?</kbd> Controls</span>
       </div>
       ${qualitySeg(seed, quality.name)}
-      <a class="new-island" href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}&ship=${shipKind}">New archipelago</a>
+      <a class="new-island" href="?q=${quality.name}&seed=${Math.floor(Math.random() * 99999)}&ship=${launchShip}${devQuery}">New archipelago</a>
     </div>`;
   if (!dev) {
     ui.appendChild(title);

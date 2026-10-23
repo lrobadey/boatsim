@@ -49,6 +49,15 @@
         "--strictPort"
       ],
       "port": 5186
+    },
+    {
+      "name": "thalassa",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:thalassa"
+      ],
+      "port": 5175
     }
   ]
 }

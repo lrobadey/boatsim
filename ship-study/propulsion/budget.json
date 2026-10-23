@@ -1,0 +1,124 @@
+{
+  "schema": "thalassa-propulsion-budget-v1",
+  "scope": "design-only",
+  "created": "2026-10-22T18:25:43.364Z",
+  "sourceTowDate": "2026-10-22T17:59:49.138Z",
+  "sourceMassKg": 1335846.2132369909,
+  "assumptions": {
+    "humanMechanicalW": 100,
+    "oxMechanicalW": 350,
+    "transmissionEfficiency": 0.8,
+    "propulsorEfficiency": 0.55
+  },
+  "totalEfficiency": 0.44000000000000006,
+  "requirements": [
+    {
+      "knots": 2,
+      "steadyThrustN": 1764.997308796279,
+      "hullPowerW": 1815.984551052786,
+      "sourceMechanicalW": 4127.237616029059,
+      "workingHumans": 42,
+      "workingOxen": 12
+    },
+    {
+      "knots": 3,
+      "steadyThrustN": 3752.9103340962797,
+      "hullPowerW": 5791.9866117414795,
+      "sourceMechanicalW": 13163.605935776088,
+      "workingHumans": 132,
+      "workingOxen": 38
+    },
+    {
+      "knots": 4,
+      "steadyThrustN": 6416.97098109967,
+      "hullPowerW": 13204.688877603356,
+      "sourceMechanicalW": 30010.65654000762,
+      "workingHumans": 301,
+      "workingOxen": 86
+    },
+    {
+      "knots": 6,
+      "steadyThrustN": 13702.899841214721,
+      "hullPowerW": 42296.247635483196,
+      "sourceMechanicalW": 96127.83553518906,
+      "workingHumans": 962,
+      "workingOxen": 275
+    }
+  ],
+  "teams": [
+    {
+      "humans": 80,
+      "oxen": 0,
+      "sourceMechanicalW": 8000,
+      "hullPowerW": 3520.0000000000005,
+      "interpolatedCalmSteadyKn": 2.5206430024921014
+    },
+    {
+      "humans": 160,
+      "oxen": 0,
+      "sourceMechanicalW": 16000,
+      "hullPowerW": 7040.000000000001,
+      "interpolatedCalmSteadyKn": 3.211476419682472
+    },
+    {
+      "humans": 300,
+      "oxen": 0,
+      "sourceMechanicalW": 30000,
+      "hullPowerW": 13200.000000000002,
+      "interpolatedCalmSteadyKn": 3.9995041097536665
+    },
+    {
+      "humans": 0,
+      "oxen": 24,
+      "sourceMechanicalW": 8400,
+      "hullPowerW": 3696.0000000000005,
+      "interpolatedCalmSteadyKn": 2.5640045910010416
+    },
+    {
+      "humans": 0,
+      "oxen": 48,
+      "sourceMechanicalW": 16800,
+      "hullPowerW": 7392.000000000001,
+      "interpolatedCalmSteadyKn": 3.266642913653237
+    },
+    {
+      "humans": 80,
+      "oxen": 24,
+      "sourceMechanicalW": 16400,
+      "hullPowerW": 7216.000000000001,
+      "interpolatedCalmSteadyKn": 3.239278645390492
+    }
+  ],
+  "turningExample": {
+    "hullCentresMetres": 17,
+    "eachOpposingDriveThrustN": 10000,
+    "netSurgeN": 0,
+    "yawTorqueNm": 170000
+  },
+  "storageExamples": {
+    "gravity": {
+      "massKg": 10000,
+      "dropMetres": 5,
+      "idealStoredJ": 490500,
+      "idealSecondsAt20kW": 24.525
+    },
+    "flywheel": {
+      "rimMassKg": 1000,
+      "radiusMetres": 2,
+      "rpm": 60,
+      "idealStoredJ": 78956.83520871487
+    }
+  },
+  "limitations": [
+    "Tow resistance remains an uncalibrated current-game estimate.",
+    "100 W human and 350 W ox values are active-work scenarios, not continuous all-day output.",
+    "80% transmission and 55% propulsor efficiency are assumed scenarios, not ancient machinery measurements.",
+    "Existing tow curve holds design load fixed; machinery, animals, food and water need a later weight/trim budget.",
+    "Team speeds are log-log interpolation of existing steady tow points, not new dynamic simulations.",
+    "Starting, stopping, turning, waves, bollard thrust, propeller wash and animal footing are not tested."
+  ],
+  "sourceUrls": {
+    "power": "https://www.fao.org/4/ah810e/ah810e08.htm",
+    "mechanism": "https://www.fao.org/4/x5455b/x5455b0z.htm"
+  }
+}

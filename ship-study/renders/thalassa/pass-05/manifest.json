@@ -1,0 +1,19 @@
+{
+  "refinement": 5,
+  "blend": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/thalassa-pass-05.blend",
+  "views": [
+    "hero",
+    "stern",
+    "bow",
+    "terrace",
+    "garden",
+    "waterline"
+  ],
+  "resolution": [
+    2600,
+    1700
+  ],
+  "samples": 128,
+  "objects": 60,
+  "vertices": 460371
+}

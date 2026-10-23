@@ -1,0 +1,19 @@
+{
+  "variant": "A",
+  "name": "Asterion / War flagship",
+  "length_m": 90.0,
+  "beam_m": 12.6,
+  "source": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/a-terraced.blend",
+  "engine": "CYCLES",
+  "samples": 96,
+  "resolution": [
+    2000,
+    1300
+  ],
+  "views": [
+    "hero",
+    "stern",
+    "waterline"
+  ],
+  "interiors": false
+}

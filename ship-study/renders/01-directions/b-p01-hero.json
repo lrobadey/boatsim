@@ -1,0 +1,11 @@
+{
+  "concept": "B",
+  "iteration": 1,
+  "view": "hero",
+  "length": 84.0,
+  "beam": 16.0,
+  "objects": 20,
+  "vertices": 276699,
+  "blend": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/b-p01.blend",
+  "render": "/Users/lucarobadey/Developer/boatsim/ship-study/renders/01-directions/b-p01-hero.png"
+}

@@ -9,6 +9,9 @@
     "test:startup-cache": "node scripts/test-startup-cache.mjs && node scripts/test-startup-storage.mjs && node scripts/test-startup-revisions.mjs",
     "benchmark:startup-cache": "node scripts/benchmark-startup-cache.mjs",
     "dev": "vite",
+    "dev:thalassa": "vite --config scripts/thalassa-vite.config.ts",
+    "test:thalassa": "node scripts/test-thalassa.mjs",
+    "test:paddle-variants": "node scripts/test-paddle-geometry.mjs && node scripts/test-paddle-variants.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -48,7 +51,8 @@
     "test:journal": "node scripts/test-journal.mjs",
     "budget:opening": "node scripts/budget-opening.mjs",
     "test:trade": "node scripts/test-market.mjs && node scripts/test-voyage.mjs && node scripts/test-cargo-handling.mjs && node scripts/test-handling-status.mjs && node scripts/test-ledger-source.mjs && node scripts/test-hold.mjs && node scripts/test-talk.mjs && node scripts/test-books.mjs && node scripts/test-trade-golden.mjs",
-    "assets:ormos": "node scripts/stage-ormos.mjs"
+    "assets:ormos": "node scripts/stage-ormos.mjs",
+    "test:twin-paddles": "node scripts/test-twin-paddles.mjs"
   },
   "dependencies": {
     "postprocessing": "^6.39.5",

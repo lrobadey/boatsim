@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-22T18:15:43.088930+00:00",
+  "devUrl": "http://127.0.0.1:5174/",
+  "builtUrlTested": "http://127.0.0.1:5175/",
+  "browser": "Codex in-app browser, local macOS",
+  "checks": {
+    "presentedBlenderModel": true,
+    "builtGLBAndTowDataLoaded": true,
+    "pauseAndSingleStep": {
+      "beforeSeconds": 0,
+      "afterSeconds": 0.008,
+      "fixedHz": 120
+    },
+    "forceAndBuoyancyOverlays": true,
+    "sizingTargetAndRudderAreaControls": true,
+    "testDriveRange": {
+      "endKN": 40,
+      "homeKN": 0
+    },
+    "csvExport": {
+      "rows": 166,
+      "columns": 64,
+      "windowSeconds": 0.25,
+      "allRowsMatch": true
+    },
+    "snapshotExport": true,
+    "newConsoleErrors": 0
+  },
+  "localLiveSample": {
+    "fps": 119.98945147679312,
+    "renderSubmitMs": 1.00809889749773,
+    "physicsMsPerStep": 0.5959183672937204,
+    "forceMomentumResidualN": 9.828835982312795e-09
+  },
+  "images": [
+    "built-preview.png",
+    "sizing-preview.png"
+  ],
+  "limits": [
+    "Local measurements only; no GPU timing query.",
+    "Calm-water fixture, not full navigation world or real-ship validation."
+  ]
+}

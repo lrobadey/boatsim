@@ -1,0 +1,16 @@
+{
+  "refinement": 2,
+  "blend": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/thalassa-pass-02.blend",
+  "views": [
+    "hero",
+    "stern",
+    "court"
+  ],
+  "resolution": [
+    1400,
+    920
+  ],
+  "samples": 32,
+  "objects": 31,
+  "vertices": 328293
+}

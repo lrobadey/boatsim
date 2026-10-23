@@ -82,7 +82,10 @@ export class ShipPhysics {
   private force = new THREE.Vector3();
   private torque = new THREE.Vector3();
   readonly rowing: OarPropulsion;
+  /** Opt-in machinery replaces oars; contributes a world-space wrench before integration. */
+  externalDrive?: { step(dt: number, ship: ShipPhysics, force: THREE.Vector3, torque: THREE.Vector3): void; reset(): void };
   readonly sailing: SailingSystem;
+  readonly additionalSails: SailingSystem[];
   readonly mooring: Mooring;
   /** deck cargo / built pieces: weight acting at ship-local points (spec §8) */
   readonly payload: { mass: number; local: THREE.Vector3 }[] = [];
@@ -123,7 +126,7 @@ export class ShipPhysics {
   displacement = 0;
   time = 0;
 
-  constructor(private waves: WaveField, readonly wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
+  constructor(readonly waves: WaveField, readonly wind: Wind, private terrain: Terrain, public crew: Crew, readonly design: ShipDesign = TRIREME) {
     this.cg = new THREE.Vector3(0, design.mass.cgY, design.mass.cgZ);
     this.mooring = new Mooring(design);
     this.mooring.seabed = (x, z) => terrain.heightAt(x, z);
@@ -135,6 +138,7 @@ export class ShipPhysics {
     this.liftPoint = this.columns.map(() => new THREE.Vector3());
     this.rowing = createPropulsion(crew, design, this.payload);
     this.sailing = new SailingSystem(design.rig, design.aero);
+    this.additionalSails = (design.additionalRigs ?? []).map(rig => new SailingSystem(rig, design.aero));
     crew.maxOrder = design.oars.maxOrder;
     // mass from displacement at the design waterline: the ship floats where it was designed to
     let vol = 0;
@@ -182,7 +186,9 @@ export class ShipPhysics {
     this.prevPos.copy(this.pos);
     this.prevQuat.copy(this.quat);
     this.rowing.reset(this, this.time);
+    this.externalDrive?.reset();
     this.sailing.reset();
+    for (const sail of this.additionalSails) sail.reset();
   }
 
   /**
@@ -273,7 +279,7 @@ export class ShipPhysics {
   set sailTarget(value: number) { this.sailing.deploymentTarget = clamp(value, 0, 1); }
   get yardAngle() { return this.sailing.current.yardAngle; }
   set yardAngle(value: number) { this.sailing.current.yardAngle = clamp(value, -this.sailing.rig.maxYardAngle, this.sailing.rig.maxYardAngle); }
-  get sailForce() { return this.sailing.telemetry.forwardForce; }
+  get sailForce() { return this.additionalSails.reduce((force, sail) => force + sail.telemetry.forwardForce, this.sailing.telemetry.forwardForce); }
   get sailPressure() { return this.sailing.telemetry.pressure; }
   get apparentWind() { return this.sailing.telemetry.apparentWind; }
   private addForceAt(f: THREE.Vector3, world: THREE.Vector3) {
@@ -292,10 +298,21 @@ export class ShipPhysics {
 
     if (this.design.hydro.response) this.payloadInertiaUpdate();
     this.hydrostatics(dt, invQ);
-    this.rowing.step(dt, this.time, this, this.helm, this.waves, this.force, this.torque);
-    this.oarThrust = this.rowing.telemetry.oarThrust;
+    if (this.externalDrive) {
+      this.externalDrive.step(dt, this, this.force, this.torque);
+      this.oarThrust = 0;
+    } else {
+      this.rowing.step(dt, this.time, this, this.helm, this.waves, this.force, this.torque);
+      this.oarThrust = this.rowing.telemetry.oarThrust;
+    }
     this.rudders(dt, invQ);
     this.sailing.step(dt, this.time, this, this.wind, this.force, this.torque);
+    for (const sail of this.additionalSails) {
+      sail.deploymentTarget = this.sailing.deploymentTarget;
+      sail.trimMode = this.sailing.trimMode;
+      sail.manualYardTarget = this.sailing.manualYardTarget;
+      sail.step(dt, this.time, this, this.wind, this.force, this.torque, this.sailing.current);
+    }
     this.windage(invQ);
     for (const p of this.payload) this.addForceAt(_v.set(0, -p.mass * G, 0), this.toWorld(p.local, _p));
     this.mooring.step(dt, this);

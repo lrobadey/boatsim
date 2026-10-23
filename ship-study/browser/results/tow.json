@@ -1,0 +1,134 @@
+{
+  "schema": "thalassa-tow-v1",
+  "created": "2026-10-22T17:59:49.138Z",
+  "massKg": 1335846.2132369909,
+  "rows": [
+    {
+      "knots": 1,
+      "speedMps": 0.514444,
+      "waterDragN": 468.38596265018674,
+      "stillAirDragN": 10.779632400495753,
+      "rudderDragN": 9.042298162146777,
+      "steadyThrustN": 488.2078932128293,
+      "effectivePowerW": 251.15562141598076,
+      "shaftPowerWAt60Percent": 418.592702359968,
+      "humansAt140WAnd40Percent": 5,
+      "humansAt140WAnd60Percent": 3,
+      "extraThrustFor180sRampN": 3817.878162902725,
+      "endOf180sRampPowerW": 2215.24013505231
+    },
+    {
+      "knots": 2,
+      "speedMps": 1.028888,
+      "waterDragN": 1685.7095865457088,
+      "stillAirDragN": 43.118529601983006,
+      "rudderDragN": 36.16919264858713,
+      "steadyThrustN": 1764.997308796279,
+      "effectivePowerW": 1815.984551052786,
+      "shaftPowerWAt60Percent": 3026.64091842131,
+      "humansAt140WAnd40Percent": 33,
+      "humansAt140WAnd60Percent": 22,
+      "extraThrustFor180sRampN": 7635.75632580545,
+      "endOf180sRampPowerW": 9672.322605598105
+    },
+    {
+      "knots": 3,
+      "speedMps": 1.543332,
+      "waterDragN": 3574.512959032498,
+      "stillAirDragN": 97.01669160446178,
+      "rudderDragN": 81.3806834593197,
+      "steadyThrustN": 3752.9103340962797,
+      "effectivePowerW": 5791.9866117414795,
+      "shaftPowerWAt60Percent": 9653.311019569133,
+      "humansAt140WAnd40Percent": 104,
+      "humansAt140WAnd60Percent": 69,
+      "extraThrustFor180sRampN": 11453.634488708176,
+      "endOf180sRampPowerW": 23468.747234468443
+    },
+    {
+      "knots": 4,
+      "speedMps": 2.057776,
+      "waterDragN": 6099.8200920973895,
+      "stillAirDragN": 172.474118407932,
+      "rudderDragN": 144.67677059434826,
+      "steadyThrustN": 6416.97098109967,
+      "effectivePowerW": 13204.688877603356,
+      "shaftPowerWAt60Percent": 22007.814796005594,
+      "humansAt140WAnd40Percent": 236,
+      "humansAt140WAnd60Percent": 158,
+      "extraThrustFor180sRampN": 15271.5126516109,
+      "endOf180sRampPowerW": 44630.041095784625
+    },
+    {
+      "knots": 5,
+      "speedMps": 2.57222,
+      "waterDragN": 9241.02348671248,
+      "stillAirDragN": 269.4908100123914,
+      "rudderDragN": 226.05745405366682,
+      "steadyThrustN": 9736.57175077854,
+      "effectivePowerW": 25044.604588787577,
+      "shaftPowerWAt60Percent": 41741.0076479793,
+      "humansAt140WAnd40Percent": 448,
+      "humansAt140WAnd60Percent": 299,
+      "extraThrustFor180sRampN": 19089.390814513627,
+      "endOf180sRampPowerW": 74146.71742969583
+    },
+    {
+      "knots": 6,
+      "speedMps": 3.086664,
+      "waterDragN": 12989.310340959595,
+      "stillAirDragN": 388.06676641784713,
+      "rudderDragN": 325.5227338372788,
+      "steadyThrustN": 13702.899841214721,
+      "effectivePowerW": 42296.247635483196,
+      "shaftPowerWAt60Percent": 70493.74605913866,
+      "humansAt140WAnd40Percent": 756,
+      "humansAt140WAnd60Percent": 504,
+      "extraThrustFor180sRampN": 22907.268977416352,
+      "endOf180sRampPowerW": 113003.29012639105
+    },
+    {
+      "knots": 8,
+      "speedMps": 4.115552,
+      "waterDragN": 22368.619992511674,
+      "stillAirDragN": 689.896473631728,
+      "rudderDragN": 578.7070823773928,
+      "steadyThrustN": 23637.223548520797,
+      "effectivePowerW": 97280.22264956187,
+      "shaftPowerWAt60Percent": 162133.70441593646,
+      "humansAt140WAnd40Percent": 1738,
+      "humansAt140WAnd60Percent": 1159,
+      "extraThrustFor180sRampN": 30543.0253032218,
+      "endOf180sRampPowerW": 222981.63152228695
+    }
+  ],
+  "method": "Constant-speed upright carriage, 120 actual solver steps per point, no wind, no waves, oars disabled, sails fully furled. Water + still-air + current rudder profile drag.",
+  "interpretation": [
+    "Effective power = thrust times speed. Shaft/motor power must cover propulsor losses.",
+    "40% and 60% overall human-to-hull efficiencies are explicit scenarios, not measured efficiencies.",
+    "180-second acceleration is a constant acceleration sizing example; added mass is not enabled.",
+    "Current longitudinal resistance law excludes catamaran interference, further appendage drag and structural constraints."
+  ],
+  "body": {
+    "massKg": 1335846.2132369909,
+    "cg": [
+      0,
+      2.5,
+      -0.5999991409447594
+    ],
+    "inertia": [
+      565283757.1026243,
+      635886933.5178678,
+      133383634.99321567
+    ],
+    "hydrostaticReference": {
+      "volume": 1314.3216080365207,
+      "mass": 1347179.6482374338,
+      "cbY": -1.260878373338409,
+      "cbZ": -0.5999991409447594,
+      "waterplane": 609.341945719666,
+      "waterplaneRollInertia": 45086.10058618616,
+      "metacentricHeightAboveWater": 33.042826526971936
+    }
+  }
+}
