@@ -49,6 +49,8 @@ export class PlayerController {
   chaseLift = 0;
   /** chase camera swings back behind the ship after the player stops looking around */
   autoCenter = true;
+  /** Explicit inspection views may hold their orbit while the vessel is underway. */
+  orbitLock = false;
   shipSpeed = 0;
   /** automatic framing inputs from the game; zeros = none */
   chaseHints: ChaseHints = { steering: false, yawRate: 0, docking: 0 };
@@ -382,7 +384,7 @@ export class PlayerController {
     this.chaseDist = clamp(this.chaseDist * (1 + inp.wheel * 0.1) * Math.exp(zoomKey * 0.9 * dt), 14, 160);
     const sp = clamp(Math.abs(this.shipSpeed) / 5, 0, 1);
     const delay = hints.steering ? 0.6 : 2.0;
-    const auto = this.autoCenter && this.lookIdle > delay;
+    const auto = this.autoCenter && !this.orbitLock && this.lookIdle > delay;
     this.chaseDocking += (clamp(hints.docking, 0, 1) - this.chaseDocking) * (1 - Math.exp(-dt * 2.5));
     // look into turns: swing the orbit to the outside of the turn, so the bow and the water it turns toward are in frame
     const turnGoal = auto ? -clamp(hints.yawRate * 2.2, -0.35, 0.35) : 0;

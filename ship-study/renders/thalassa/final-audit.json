@@ -1,0 +1,62 @@
+[
+  {
+    "scene": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/thalassa-pass-05.blend",
+    "refinement": 5,
+    "file_size": 14564060,
+    "packed_images": [
+      "cloth_color.png",
+      "cloth_normal.png",
+      "wood_color.png",
+      "wood_normal.png",
+      "wood_rough.png"
+    ],
+    "cameras": [
+      "Camera | hero",
+      "Camera | stern",
+      "Camera | profile",
+      "Camera | deck",
+      "Camera | bow",
+      "Camera | court",
+      "Camera | waterline",
+      "Camera | terrace",
+      "Camera | garden"
+    ],
+    "meshes": 28,
+    "render_engine": "CYCLES",
+    "resolution": [
+      2600,
+      1700
+    ],
+    "samples": 128
+  },
+  {
+    "scene": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/thalassa-pass-05-dusk.blend",
+    "refinement": 5,
+    "file_size": 14564032,
+    "packed_images": [
+      "cloth_color.png",
+      "cloth_normal.png",
+      "wood_color.png",
+      "wood_normal.png",
+      "wood_rough.png"
+    ],
+    "cameras": [
+      "Camera | hero",
+      "Camera | stern",
+      "Camera | profile",
+      "Camera | deck",
+      "Camera | bow",
+      "Camera | court",
+      "Camera | waterline",
+      "Camera | terrace",
+      "Camera | garden"
+    ],
+    "meshes": 28,
+    "render_engine": "CYCLES",
+    "resolution": [
+      2600,
+      1700
+    ],
+    "samples": 128
+  }
+]

@@ -1,0 +1,2197 @@
+{
+  "created": "2026-10-22T18:02:12.962Z",
+  "hydrostaticReference": {
+    "volume": 1314.3216080365207,
+    "mass": 1347179.6482374338,
+    "cbY": -1.260878373338409,
+    "cbZ": -0.5999991409447594,
+    "waterplane": 609.341945719666,
+    "waterplaneRollInertia": 45086.10058618616,
+    "metacentricHeightAboveWater": 33.042826526971936
+  },
+  "cases": {
+    "rest": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:14.234Z",
+      "sample": {
+        "t": 59.999999999997236,
+        "x": 2.5706554421527572e-9,
+        "y": 2.500006540734988,
+        "z": 4.769898509312347e-9,
+        "speed": 7.38462271240317e-11,
+        "sog": 7.384621090251347e-11,
+        "sway": 9.918068445213877e-18,
+        "heading": 2.647285911348493,
+        "heel": -3.159771706437442e-17,
+        "pitch": -0.00008009117385138696,
+        "helm": -2.35398909954942e-19,
+        "heaveVelocity": -2.054953732405209e-13,
+        "yawRate": 2.905560026037869e-20,
+        "sailN": 0,
+        "oarN": 0,
+        "rowerW": 0,
+        "hullW": 0,
+        "kineticJ": 3.705899528437561e-15,
+        "windMps": 0,
+        "windFrom": 0.7453905950276705,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 9.311830151834881e-10,
+        "forceWindowSeconds": 60,
+        "water_FxN": 0.000002063910659303969,
+        "water_FyN": 13104651.351854093,
+        "water_FzN": 0.000003829624712836321,
+        "water_yawNm": 3.322877088411784e-13,
+        "rowing_FxN": 0,
+        "rowing_FyN": 0,
+        "rowing_FzN": 0,
+        "rowing_yawNm": 0,
+        "rudders_FxN": 0,
+        "rudders_FyN": 0,
+        "rudders_FzN": 0,
+        "rudders_yawNm": 0,
+        "main_sail_FxN": -9.719577961102614e-7,
+        "main_sail_FyN": 0.0000010161924487360185,
+        "main_sail_FzN": -0.0000018034855950020402,
+        "main_sail_yawNm": -4.202091227612291e-18,
+        "aft_sail_FxN": -2.8981809443460165e-7,
+        "aft_sail_FyN": -4.99363186490391e-7,
+        "aft_sail_FzN": -5.377628129282014e-7,
+        "aft_sail_yawNm": 1.6810357741749136e-18,
+        "windage_FxN": -2.212924834646081e-8,
+        "windage_FyN": 2.356194757272949e-12,
+        "windage_FzN": -4.106122794710451e-8,
+        "windage_yawNm": -9.221085844515068e-25,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 1,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            0.000002063910659303969,
+            13104651.351854093,
+            0.000003829624712836321
+          ],
+          "torqueNm": [
+            0.00006442622256728322,
+            -3.322877088411784e-13,
+            -0.000034721504693611225
+          ],
+          "msPerStep": 0.08028280097222348
+        },
+        "rowing": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0814395766666666
+        },
+        "rudders": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0004871977777790764
+        },
+        "main sail": {
+          "forceN": [
+            -9.719577961102614e-7,
+            0.0000010161924487360185,
+            -0.0000018034855950020402
+          ],
+          "torqueNm": [
+            -0.00005134485088948044,
+            4.202091227612291e-18,
+            0.000027671431502140168
+          ],
+          "msPerStep": 0.0018411223611117578
+        },
+        "aft sail": {
+          "forceN": [
+            -2.8981809443460165e-7,
+            -4.99363186490391e-7,
+            -5.377628129282014e-7
+          ],
+          "torqueNm": [
+            -0.000016897906256249465,
+            -1.6810357741749136e-18,
+            0.000009106838315354872
+          ],
+          "msPerStep": 0.0015225311111100599
+        },
+        "windage": {
+          "forceN": [
+            -2.212924834646081e-8,
+            2.356194757272949e-12,
+            -4.106122794710451e-8
+          ],
+          "torqueNm": [
+            -1.1497145555972216e-7,
+            9.221085844515068e-25,
+            6.196190297064142e-8
+          ],
+          "msPerStep": 0.00021372666666636065
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00008109083333385078
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00009272041666726239
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0037237791666669216
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00007809041666763821
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.17332071319444284,
+        "steps": 7200
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 1.258885417,
+      "meanLast30s": {
+        "speedKn": 1.4354122890102555e-10,
+        "rowerKW": 0,
+        "hullKW": 0,
+        "oarKN": 0,
+        "sailKN": 0
+      },
+      "headingChangeDeg": 0,
+      "maxHeelDeg": 2.6560271699086815e-15
+    },
+    "row": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:24.373Z",
+      "sample": {
+        "t": 239.99999999994606,
+        "x": 195.233546131033,
+        "y": 2.500891650426649,
+        "z": 371.1168406646842,
+        "speed": 2.550551469559199,
+        "sog": 2.55055146949758,
+        "sway": 0.000678636297267153,
+        "heading": 2.6522795029363904,
+        "heel": -0.000024166984877902972,
+        "pitch": -0.000028840833123117777,
+        "helm": -0.007720861530308874,
+        "heaveVelocity": -0.0031686441378322157,
+        "yawRate": -0.00003377093235679069,
+        "sailN": 0,
+        "oarN": -37406.92446600016,
+        "rowerW": 157227.93661766124,
+        "hullW": -95370.28755173151,
+        "kineticJ": 4345058.11832613,
+        "windMps": 0,
+        "windFrom": 0.3368984530410367,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 3.944352265053295e-8,
+        "forceWindowSeconds": 240,
+        "water_FxN": -2047.8829923783119,
+        "water_FyN": 13104599.82168061,
+        "water_FzN": -4705.819963818734,
+        "water_yawNm": 3149.2943778108374,
+        "rowing_FxN": 9101.549357670816,
+        "rowing_FyN": 33.87620924005324,
+        "rowing_FzN": 17340.41777218608,
+        "rowing_yawNm": 7478.881712369788,
+        "rudders_FxN": -316.70333484830905,
+        "rudders_FyN": 0.0073528318991012065,
+        "rudders_FzN": 26.154403847652603,
+        "rudders_yawNm": -10717.654392060153,
+        "main_sail_FxN": -0.0003370276702760754,
+        "main_sail_FyN": 0.0000019430736883006424,
+        "main_sail_FzN": -0.0006759283768755625,
+        "main_sail_yawNm": -0.0003816002866869438,
+        "aft_sail_FxN": -0.00017703853274891412,
+        "aft_sail_FyN": 2.7179177092973824e-7,
+        "aft_sail_FzN": -0.00031908031977840467,
+        "aft_sail_yawNm": -0.00010095513539752362,
+        "windage_FxN": -67.69141469278144,
+        "windage_FyN": 0.00985472442043013,
+        "windage_FzN": -128.40889274463436,
+        "windage_yawNm": 0.0020556541926760345,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 4,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            -2047.8829923783119,
+            13104599.82168061,
+            -4705.819963818734
+          ],
+          "torqueNm": [
+            52272.22907438908,
+            -3149.2943778108374,
+            -27110.03013580111
+          ],
+          "msPerStep": 0.07892721343750067
+        },
+        "rowing": {
+          "forceN": [
+            9101.549357670816,
+            33.87620924005324,
+            17340.41777218608
+          ],
+          "torqueNm": [
+            -52013.0215179702,
+            -7478.881712369788,
+            28120.43609945325
+          ],
+          "msPerStep": 0.26102970215278226
+        },
+        "rudders": {
+          "forceN": [
+            -316.70333484830905,
+            0.0073528318991012065,
+            26.154403847652603
+          ],
+          "torqueNm": [
+            -91.25942705916077,
+            10717.654392060153,
+            -1107.8450392792995
+          ],
+          "msPerStep": 0.0005180072569457176
+        },
+        "main sail": {
+          "forceN": [
+            -0.0003370276702760754,
+            0.0000019430736883006424,
+            -0.0006759283768755625
+          ],
+          "torqueNm": [
+            -0.016754119677167823,
+            0.0003816002866869438,
+            0.00835480571644441
+          ],
+          "msPerStep": 0.001300157187497343
+        },
+        "aft sail": {
+          "forceN": [
+            -0.00017703853274891412,
+            2.7179177092973824e-7,
+            -0.00031908031977840467
+          ],
+          "torqueNm": [
+            -0.006417606064471111,
+            0.00010095513539752362,
+            0.0035603424244287124
+          ],
+          "msPerStep": 0.0010603331944445355
+        },
+        "windage": {
+          "forceN": [
+            -67.69141469278144,
+            0.00985472442043013,
+            -128.40889274463436
+          ],
+          "torqueNm": [
+            -359.5449009144754,
+            -0.0020556541926760345,
+            189.5359617075662
+          ],
+          "msPerStep": 0.00017329468749892384
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00006993253472594398
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00008680236110939019
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0038966380555575833
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000060941319441888534
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.35038734756944473,
+        "steps": 28800
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 10.136371167000002,
+      "meanLast30s": {
+        "speedKn": 4.863642395297527,
+        "rowerKW": 87.02251012587593,
+        "hullKW": 29.125974658399056,
+        "oarKN": 11.629495071190142,
+        "sailKN": 0
+      },
+      "headingChangeDeg": 0.2861117225985626,
+      "maxHeelDeg": 0.0018760137648135865
+    },
+    "row_one_hand": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:32.288Z",
+      "sample": {
+        "t": 239.99999999994606,
+        "x": 0.44943811892625507,
+        "y": 2.500372304727505,
+        "z": 0.7374916763143612,
+        "speed": 0.006121904830395768,
+        "sog": 0.006128146172886786,
+        "sway": -0.00027412988275349077,
+        "heading": 2.6418068212707575,
+        "heel": -0.0000037590795176571403,
+        "pitch": -0.00007757689973069448,
+        "helm": 0.00898812860101407,
+        "heaveVelocity": 0.0013814818632273387,
+        "yawRate": -0.00002797958630055759,
+        "sailN": 0,
+        "oarN": -5734.5311336625755,
+        "rowerW": 263563.18822992017,
+        "hullW": -96.76057774130025,
+        "kineticJ": 26.74585970344157,
+        "windMps": 0,
+        "windFrom": 0.3368984530410367,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 9.469400385402496e-10,
+        "forceWindowSeconds": 240,
+        "water_FxN": -20.76500463384489,
+        "water_FyN": 13104621.756650986,
+        "water_FzN": 11.20599747848704,
+        "water_yawNm": 1134.1943614642144,
+        "rowing_FxN": 38.434615270556144,
+        "rowing_FyN": 37.2845675892931,
+        "rowing_FzN": 17.970699887104594,
+        "rowing_yawNm": -1208.331760365637,
+        "rudders_FxN": 0,
+        "rudders_FyN": 0,
+        "rudders_FzN": 0,
+        "rudders_yawNm": 0,
+        "main_sail_FxN": -5.509175762480249e-8,
+        "main_sail_FyN": 3.935013675338014e-8,
+        "main_sail_FzN": -1.4837303207128665e-7,
+        "main_sail_yawNm": -1.6012981565991856e-7,
+        "aft_sail_FxN": -1.220740533530457e-8,
+        "aft_sail_FyN": -3.237001805608588e-8,
+        "aft_sail_FzN": -5.877055437519382e-8,
+        "aft_sail_yawNm": 2.876428302625861e-7,
+        "windage_FxN": -0.0002981312319584371,
+        "windage_FyN": 4.957524254099453e-8,
+        "windage_FzN": -0.0005434104029861426,
+        "windage_yawNm": -0.000008446247512860771,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 4,
+        "rowingEnabled": true,
+        "handsPerOar": 1,
+        "auxiliaryKN": 0,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            -20.76500463384489,
+            13104621.756650986,
+            11.20599747848704
+          ],
+          "torqueNm": [
+            148.8193158363751,
+            -1134.1943614642144,
+            -217.5402844476343
+          ],
+          "msPerStep": 0.07948564624999234
+        },
+        "rowing": {
+          "forceN": [
+            38.434615270556144,
+            37.2845675892931,
+            17.970699887104594
+          ],
+          "torqueNm": [
+            -176.8205043513489,
+            1208.331760365637,
+            250.99718576478594
+          ],
+          "msPerStep": 0.18390722749999233
+        },
+        "rudders": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0003877038194404905
+        },
+        "main sail": {
+          "forceN": [
+            -5.509175762480249e-8,
+            3.935013675338014e-8,
+            -1.4837303207128665e-7
+          ],
+          "torqueNm": [
+            -0.000004021049522640041,
+            1.6012981565991856e-7,
+            0.0000014910329511096264
+          ],
+          "msPerStep": 0.0011206505208343743
+        },
+        "aft sail": {
+          "forceN": [
+            -1.220740533530457e-8,
+            -3.237001805608588e-8,
+            -5.877055437519382e-8
+          ],
+          "torqueNm": [
+            -0.0000016074581235771114,
+            -2.876428302625861e-7,
+            4.79575065552234e-7
+          ],
+          "msPerStep": 0.0009074259375031741
+        },
+        "windage": {
+          "forceN": [
+            -0.0002981312319584371,
+            4.957524254099453e-8,
+            -0.0005434104029861426
+          ],
+          "torqueNm": [
+            -0.0015215488151539337,
+            0.000008446247512860771,
+            0.0008347680472462481
+          ],
+          "msPerStep": 0.00015781461805128554
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00004832031250127026
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00007811538193474614
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0038376096180542164
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000047669166669000636
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.2731502149305631,
+        "steps": 28800
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 1 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 7.909928458999999,
+      "meanLast30s": {
+        "speedKn": 0.011027421461906174,
+        "rowerKW": 14.494885536853182,
+        "hullKW": -0.0017163131569128984,
+        "oarKN": -0.05149319593080036,
+        "sailKN": 0
+      },
+      "headingChangeDeg": -0.3139287370262378,
+      "maxHeelDeg": 0.0012552038966739574
+    },
+    "sail": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:37.336Z",
+      "sample": {
+        "t": 239.99999999994606,
+        "x": 83.36320578081335,
+        "y": 2.4999348903188103,
+        "z": 166.60127844399597,
+        "speed": 1.6195243276305247,
+        "sog": 1.6196735829037217,
+        "sway": 0.021984123590151686,
+        "heading": 2.611019968592476,
+        "heel": -0.0003747644004136914,
+        "pitch": -0.0002509100223304633,
+        "helm": 0.057640543856390454,
+        "heaveVelocity": -0.0000074880032194616305,
+        "yawRate": 0.00004824810266739228,
+        "sailN": 12350.262626498552,
+        "oarN": 0,
+        "rowerW": 0,
+        "hullW": 0,
+        "kineticJ": 1752192.6786891061,
+        "windMps": 9.058431904187586,
+        "windFrom": 0.3368984530410367,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 1.975399401024514e-8,
+        "forceWindowSeconds": 240,
+        "water_FxN": 9688.830058530893,
+        "water_FyN": 13104657.37525507,
+        "water_FzN": -8965.84538742408,
+        "water_yawNm": -6842.489625548216,
+        "rowing_FxN": 0,
+        "rowing_FyN": 0,
+        "rowing_FzN": 0,
+        "rowing_yawNm": 0,
+        "rudders_FxN": 515.553435055143,
+        "rudders_FyN": 0.2955642782793392,
+        "rudders_FzN": -356.6418562302009,
+        "rudders_yawNm": 22920.02125088677,
+        "main_sail_FxN": 1011.1636862211174,
+        "main_sail_FyN": -1.4537192936041576,
+        "main_sail_FzN": 8698.645332066415,
+        "main_sail_yawNm": 39420.809371358366,
+        "aft_sail_FxN": 466.8392920012466,
+        "aft_sail_FyN": -0.6849342727722391,
+        "aft_sail_FzN": 4048.48324691837,
+        "aft_sail_yawNm": -24899.882518506663,
+        "windage_FxN": -7226.438493585352,
+        "windage_FyN": -4.221989328909538,
+        "windage_FzN": 4412.282083292744,
+        "windage_yawNm": -30470.613984414114,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 8,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 1,
+        "order": 1,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            9688.830058530893,
+            13104657.37525507,
+            -8965.84538742408
+          ],
+          "torqueNm": [
+            -282523.59648764215,
+            6842.489625548216,
+            9198.756330646198
+          ],
+          "msPerStep": 0.07885756930553574
+        },
+        "rowing": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.08135748010417994
+        },
+        "rudders": {
+          "forceN": [
+            515.553435055143,
+            0.2955642782793392,
+            -356.6418562302009
+          ],
+          "torqueNm": [
+            1254.7527546997542,
+            -22920.02125088677,
+            1794.855814912064
+          ],
+          "msPerStep": 0.00042210045138479777
+        },
+        "main sail": {
+          "forceN": [
+            1011.1636862211174,
+            -1.4537192936041576,
+            8698.645332066415
+          ],
+          "torqueNm": [
+            193837.83324307416,
+            -39420.809371358366,
+            -22548.621291092295
+          ],
+          "msPerStep": 0.002952919166673382
+        },
+        "aft sail": {
+          "forceN": [
+            466.8392920012466,
+            -0.6849342727722391,
+            4048.48324691837
+          ],
+          "torqueNm": [
+            74970.14292742059,
+            24899.882518506663,
+            -8643.104121363316
+          ],
+          "msPerStep": 0.0028410565277945605
+        },
+        "windage": {
+          "forceN": [
+            -7226.438493585352,
+            -4.221989328909538,
+            4412.282083292744
+          ],
+          "torqueNm": [
+            12344.62001224397,
+            30470.613984414114,
+            20247.16239375197
+          ],
+          "msPerStep": 0.00025327545137568245
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00005864854165628862
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00006907770833436188
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0038133254513869966
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000041049131951796074
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.17387001684028708,
+        "steps": 28800
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 5.042516292,
+      "meanLast30s": {
+        "speedKn": 2.926111486817759,
+        "rowerKW": 0,
+        "hullKW": 0,
+        "oarKN": 0,
+        "sailKN": 13.104761113077062
+      },
+      "headingChangeDeg": -2.0778854599827907,
+      "maxHeelDeg": 0.04314654645821309
+    },
+    "combined": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:47.308Z",
+      "sample": {
+        "t": 239.99999999994606,
+        "x": 219.1517037562519,
+        "y": 2.498854237969311,
+        "z": 416.40905028714855,
+        "speed": 2.927961053010577,
+        "sog": 2.927992593001088,
+        "sway": 0.013666264968813133,
+        "heading": 2.6411139295853756,
+        "heel": -0.00039798552787221404,
+        "pitch": -0.00014210077311945126,
+        "helm": 0.009897534373376394,
+        "heaveVelocity": -0.0026663329733601655,
+        "yawRate": -0.000002809511525952935,
+        "sailN": 11570.608703101723,
+        "oarN": -4567.219109964681,
+        "rowerW": 9565.868480669285,
+        "hullW": -13372.611897854744,
+        "kineticJ": 5726206.088303337,
+        "windMps": 9.058431904187586,
+        "windFrom": 0.3368984530410367,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 3.9608322238543784e-8,
+        "forceWindowSeconds": 240,
+        "water_FxN": 8339.936487371404,
+        "water_FyN": 13104630.324841939,
+        "water_FzN": -12510.88732193606,
+        "water_yawNm": -16311.222851753733,
+        "rowing_FxN": 6482.037521418091,
+        "rowing_FyN": 12.438257563203802,
+        "rowing_FzN": 11934.154785369277,
+        "rowing_yawNm": 2176.288227298398,
+        "rudders_FxN": 580.064948841527,
+        "rudders_FyN": 0.4212372063948418,
+        "rudders_FzN": -493.11180119649975,
+        "rudders_yawNm": 27334.149680284852,
+        "main_sail_FxN": -268.56824687133025,
+        "main_sail_FyN": -1.4803553197155506,
+        "main_sail_FzN": 7778.955082084174,
+        "main_sail_yawNm": 44996.061946862224,
+        "aft_sail_FxN": -135.31638070097313,
+        "aft_sail_FyN": -0.6919002866625874,
+        "aft_sail_FzN": 3607.5546272340457,
+        "aft_sail_yawNm": -28383.51068000242,
+        "windage_FxN": -7244.793158819116,
+        "windage_FyN": -4.501104588781186,
+        "windage_FzN": 4018.145748347473,
+        "windage_yawNm": -29819.165616762035,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 8,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 1,
+        "order": 3,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            8339.936487371404,
+            13104630.324841939,
+            -12510.88732193606
+          ],
+          "torqueNm": [
+            -216087.3066006901,
+            16311.222851753733,
+            -51466.434170694156
+          ],
+          "msPerStep": 0.07950404652777895
+        },
+        "rowing": {
+          "forceN": [
+            6482.037521418091,
+            12.438257563203802,
+            11934.154785369277
+          ],
+          "torqueNm": [
+            -36927.344106202596,
+            -2176.288227298398,
+            20542.772238082725
+          ],
+          "msPerStep": 0.25116351565971123
+        },
+        "rudders": {
+          "forceN": [
+            580.064948841527,
+            0.4212372063948418,
+            -493.11180119649975
+          ],
+          "torqueNm": [
+            1736.1563457740735,
+            -27334.149680284852,
+            2018.982678302843
+          ],
+          "msPerStep": 0.0004730231250079618
+        },
+        "main sail": {
+          "forceN": [
+            -268.56824687133025,
+            -1.4803553197155506,
+            7778.955082084174
+          ],
+          "torqueNm": [
+            173360.0092069264,
+            -44996.061946862224,
+            5955.373122607646
+          ],
+          "msPerStep": 0.003061483194446358
+        },
+        "aft sail": {
+          "forceN": [
+            -135.31638070097313,
+            -0.6919002866625874,
+            3607.5546272340457
+          ],
+          "torqueNm": [
+            66805.33180493498,
+            28383.51068000242,
+            2506.3955579083276
+          ],
+          "msPerStep": 0.0028545348958415517
+        },
+        "windage": {
+          "forceN": [
+            -7244.793158819116,
+            -4.501104588781186,
+            4018.145748347473
+          ],
+          "torqueNm": [
+            11239.170704630054,
+            29819.165616762035,
+            20297.835144469238
+          ],
+          "msPerStep": 0.0002630951735995445
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000060714201387352454
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00008478996527641256
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00392915517358991
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00004205052084267259
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.3445930178819467,
+        "steps": 28800
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 9.966550500000006,
+      "meanLast30s": {
+        "speedKn": 5.572235005892375,
+        "rowerKW": 55.11307586128521,
+        "hullKW": 19.65344242604803,
+        "oarKN": 6.848255718755617,
+        "sailKN": 10.301604608566898
+      },
+      "headingChangeDeg": -0.35362850625832676,
+      "maxHeelDeg": 0.047896743208349545
+    },
+    "test_drive": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:02:54.842Z",
+      "sample": {
+        "t": 359.9999999998369,
+        "x": 131.0798636999359,
+        "y": 2.4999870746630988,
+        "z": 243.2211017018185,
+        "speed": 1.386238930096648,
+        "sog": 1.386238934247104,
+        "sway": 1.4114603437528827e-14,
+        "heading": 2.6472859113486535,
+        "heel": 2.2110948055126256e-17,
+        "pitch": -0.0000774096560025852,
+        "helm": -2.5252003532329193e-13,
+        "heaveVelocity": -3.73605152473318e-8,
+        "yawRate": -5.870245089825286e-16,
+        "sailN": 0,
+        "oarN": 0,
+        "rowerW": 0,
+        "hullW": 0,
+        "kineticJ": 1283520.0369143991,
+        "windMps": 0,
+        "windFrom": 0.26554396870880287,
+        "auxiliaryThrustN": 6400,
+        "auxiliaryHullW": 8871.929152618548,
+        "forceClosureN": 1.9799611595564188e-8,
+        "forceWindowSeconds": 360,
+        "water_FxN": -569.1756242220857,
+        "water_FyN": 13104651.822557203,
+        "water_FzN": -1056.1158554605306,
+        "water_yawNm": 2.240436318654011e-8,
+        "rowing_FxN": 0,
+        "rowing_FyN": 0,
+        "rowing_FzN": 0,
+        "rowing_yawNm": 0,
+        "rudders_FxN": -12.183342158142839,
+        "rudders_FyN": 0.0019416246884515242,
+        "rudders_FzN": -22.606415800985,
+        "rudders_yawNm": -2.344119110291452e-8,
+        "main_sail_FxN": -0.00001838877143010687,
+        "main_sail_FyN": 3.4749863015659264e-7,
+        "main_sail_FzN": -0.00003412070412593011,
+        "main_sail_yawNm": -1.2911316634315983e-18,
+        "aft_sail_FxN": -0.000008841137012444168,
+        "aft_sail_FyN": -1.9965008223417006e-7,
+        "aft_sail_FzN": -0.000016404892588121343,
+        "aft_sail_yawNm": 7.62351245312853e-19,
+        "windage_FxN": -14.564429023534702,
+        "windage_FyN": 0.00232109372382835,
+        "windage_FzN": -27.024566342785796,
+        "windage_yawNm": -1.3116252143333718e-15,
+        "test_drive_FxN": 3036.2975406195687,
+        "test_drive_FyN": -0.4751038113537289,
+        "test_drive_FzN": 5633.906017895223,
+        "test_drive_yawNm": -5.881718428051015e-14,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 1,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 6.4,
+        "headingHold": true,
+        "targetHeading": 2.647285911348493,
+        "helm": 0
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            -569.1756242220857,
+            13104651.822557203,
+            -1056.1158554605306
+          ],
+          "torqueNm": [
+            14081.337073871955,
+            -2.240436318654011e-8,
+            -7588.896405125119
+          ],
+          "msPerStep": 0.07914751634259119
+        },
+        "rowing": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0835939058101827
+        },
+        "rudders": {
+          "forceN": [
+            -12.183342158142839,
+            0.0019416246884515242,
+            -22.606415800985
+          ],
+          "torqueNm": [
+            79.1224555296656,
+            2.344119110291452e-8,
+            -42.6416976754147
+          ],
+          "msPerStep": 0.0004762670833344129
+        },
+        "main sail": {
+          "forceN": [
+            -0.00001838877143010687,
+            3.4749863015659264e-7,
+            -0.00003412070412593011
+          ],
+          "torqueNm": [
+            -0.0008346215497564635,
+            1.2911316634315983e-18,
+            0.0004498050465921921
+          ],
+          "msPerStep": 0.0011449449074141874
+        },
+        "aft sail": {
+          "forceN": [
+            -0.000008841137012444168,
+            -1.9965008223417006e-7,
+            -0.000016404892588121343
+          ],
+          "torqueNm": [
+            -0.00032872598057805043,
+            -7.62351245312853e-19,
+            0.0001771612595597268
+          ],
+          "msPerStep": 0.0009425618055353914
+        },
+        "windage": {
+          "forceN": [
+            -14.564429023534702,
+            0.00232109372382835,
+            -27.024566342785796
+          ],
+          "torqueNm": [
+            -75.66878597614378,
+            1.3116252143333718e-15,
+            40.780401382492244
+          ],
+          "msPerStep": 0.00016779543981741612
+        },
+        "test drive": {
+          "forceN": [
+            3036.2975406195687,
+            -0.4751038113537289,
+            5633.906017895223
+          ],
+          "torqueNm": [
+            -14084.765083660746,
+            5.881718428051015e-14,
+            7590.743872523308
+          ],
+          "msPerStep": 0.0002598736111084926
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00007127321761345229
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0038749827314696057
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00005540888887110298
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.17283824266201953,
+        "steps": 43200
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 7.529618624999996,
+      "meanLast30s": {
+        "speedKn": 2.6203748795527333,
+        "rowerKW": 0,
+        "hullKW": 0,
+        "oarKN": 0,
+        "sailKN": 0
+      },
+      "headingChangeDeg": 9.210886357518344e-12,
+      "maxHeelDeg": 6.957657491353388e-15
+    },
+    "pivot": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:03:04.847Z",
+      "sample": {
+        "t": 239.99999999994606,
+        "x": -23.929251386635652,
+        "y": 2.499682760717834,
+        "z": 46.85357819597199,
+        "speed": 0.31812167220056753,
+        "sog": 0.3185341267614573,
+        "sway": -0.016202129663153663,
+        "heading": -1.943767945390154,
+        "heel": 0.00021092824407674933,
+        "pitch": -0.0001388235715941026,
+        "helm": 1,
+        "heaveVelocity": 0.0008440309231297037,
+        "yawRate": 0.006769079727234881,
+        "sailN": 0,
+        "oarN": -13264.02087756635,
+        "rowerW": 16523.505693050283,
+        "hullW": -2465.0182925071886,
+        "kineticJ": 82341.7035602157,
+        "windMps": 0,
+        "windFrom": 0.3368984530410367,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 4.955583524758448e-9,
+        "forceWindowSeconds": 240,
+        "water_FxN": -1392.7595592948878,
+        "water_FyN": 13104627.10921202,
+        "water_FzN": 2342.1386224179423,
+        "water_yawNm": -554852.6537904274,
+        "rowing_FxN": -65.74228135733823,
+        "rowing_FyN": 28.94473612179349,
+        "rowing_FzN": -1658.6836491686088,
+        "rowing_yawNm": 578771.4184102323,
+        "rudders_FxN": -158.69310045054928,
+        "rudders_FyN": -0.004403319676640372,
+        "rudders_FzN": 47.899314788444315,
+        "rudders_yawNm": -5982.644382828387,
+        "main_sail_FxN": 0.000012727998055481346,
+        "main_sail_FyN": 3.005335490404624e-7,
+        "main_sail_FzN": -0.00003068698716297822,
+        "main_sail_yawNm": -0.00042219943657223897,
+        "aft_sail_FxN": -0.000013299213891531928,
+        "aft_sail_FyN": -1.437931273010255e-7,
+        "aft_sail_FzN": -0.0000018327617403304828,
+        "aft_sail_yawNm": -0.00020036999616165218,
+        "windage_FxN": 1.1181489744106108,
+        "windage_FyN": 0.00020785847325299067,
+        "windage_FzN": -2.1659603687567848,
+        "windage_yawNm": -1.2792644854065147,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 4,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": false,
+        "targetHeading": 2.647285911348493,
+        "helm": 1
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            -1392.7595592948878,
+            13104627.10921202,
+            2342.1386224179423
+          ],
+          "torqueNm": [
+            -4013.8969197455526,
+            554852.6537904274,
+            1222.6518775486727
+          ],
+          "msPerStep": 0.0839740070833419
+        },
+        "rowing": {
+          "forceN": [
+            -65.74228135733823,
+            28.94473612179349,
+            -1658.6836491686088
+          ],
+          "torqueNm": [
+            4221.429833640548,
+            -578771.4184102323,
+            -449.51594527444087
+          ],
+          "msPerStep": 0.2519239217708355
+        },
+        "rudders": {
+          "forceN": [
+            -158.69310045054928,
+            -0.004403319676640372,
+            47.899314788444315
+          ],
+          "torqueNm": [
+            -167.68198641261546,
+            5982.644382828387,
+            -555.0103206440122
+          ],
+          "msPerStep": 0.00044881916664230124
+        },
+        "main sail": {
+          "forceN": [
+            0.000012727998055481346,
+            3.005335490404624e-7,
+            -0.00003068698716297822
+          ],
+          "torqueNm": [
+            -0.0007618649737272319,
+            0.00042219943657223897,
+            -0.0003141308559757558
+          ],
+          "msPerStep": 0.001114511145836635
+        },
+        "aft sail": {
+          "forceN": [
+            -0.000013299213891531928,
+            -1.437931273010255e-7,
+            -0.0000018327617403304828
+          ],
+          "torqueNm": [
+            -0.000038547072471044115,
+            0.00020036999616165218,
+            0.00026887221611224374
+          ],
+          "msPerStep": 0.0009441209027249897
+        },
+        "windage": {
+          "forceN": [
+            1.1181489744106108,
+            0.00020785847325299067,
+            -2.1659603687567848
+          ],
+          "torqueNm": [
+            -6.0647024885512835,
+            1.2792644854065147,
+            -3.130727294539548
+          ],
+          "msPerStep": 0.00016310968751769098
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00007912652779522331
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00007916243055686007
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.003923648472227039
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000050131215266699457
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.34576116565970577,
+        "steps": 28800
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 9.998814707999998,
+      "meanLast30s": {
+        "speedKn": 0.6205557373480524,
+        "rowerKW": 39.9113962507412,
+        "hullKW": 2.6997086086145057,
+        "oarKN": -3.8491038074889015,
+        "sailKN": 0
+      },
+      "headingChangeDeg": 96.95199049161627,
+      "maxHeelDeg": 0.012424091667681983
+    },
+    "rudder_at_rest": {
+      "schema": "thalassa-trial-v1",
+      "generatedAt": "2026-10-22T18:03:06.083Z",
+      "sample": {
+        "t": 59.999999999997236,
+        "x": 2.5706554421527572e-9,
+        "y": 2.500006540734988,
+        "z": 4.769898509312347e-9,
+        "speed": 7.38462271240317e-11,
+        "sog": 7.384621090251347e-11,
+        "sway": 9.918068445213877e-18,
+        "heading": 2.647285911348493,
+        "heel": -3.159771706437442e-17,
+        "pitch": -0.00008009117385138696,
+        "helm": 1,
+        "heaveVelocity": -2.054953732405209e-13,
+        "yawRate": 2.905560026037869e-20,
+        "sailN": 0,
+        "oarN": 0,
+        "rowerW": 0,
+        "hullW": 0,
+        "kineticJ": 3.705899528437561e-15,
+        "windMps": 0,
+        "windFrom": 0.7453905950276705,
+        "auxiliaryThrustN": 0,
+        "auxiliaryHullW": 0,
+        "forceClosureN": 9.311830151834881e-10,
+        "forceWindowSeconds": 60,
+        "water_FxN": 0.000002063910659303969,
+        "water_FyN": 13104651.351854093,
+        "water_FzN": 0.000003829624712836321,
+        "water_yawNm": 3.322877088411784e-13,
+        "rowing_FxN": 0,
+        "rowing_FyN": 0,
+        "rowing_FzN": 0,
+        "rowing_yawNm": 0,
+        "rudders_FxN": 0,
+        "rudders_FyN": 0,
+        "rudders_FzN": 0,
+        "rudders_yawNm": 0,
+        "main_sail_FxN": -9.719577961102614e-7,
+        "main_sail_FyN": 0.0000010161924487360185,
+        "main_sail_FzN": -0.0000018034855950020402,
+        "main_sail_yawNm": -4.202091227612291e-18,
+        "aft_sail_FxN": -2.8981809443460165e-7,
+        "aft_sail_FyN": -4.99363186490391e-7,
+        "aft_sail_FzN": -5.377628129282014e-7,
+        "aft_sail_yawNm": 1.6810357741749136e-18,
+        "windage_FxN": -2.212924834646081e-8,
+        "windage_FyN": 2.356194757272949e-12,
+        "windage_FzN": -4.106122794710451e-8,
+        "windage_yawNm": -9.221085844515068e-25,
+        "test_drive_FxN": 0,
+        "test_drive_FyN": 0,
+        "test_drive_FzN": 0,
+        "test_drive_yawNm": 0,
+        "mooring_FxN": 0,
+        "mooring_FyN": 0,
+        "mooring_FzN": 0,
+        "mooring_yawNm": 0,
+        "ground_FxN": 0,
+        "ground_FyN": 0,
+        "ground_FzN": 0,
+        "ground_yawNm": 0,
+        "boundary_FxN": 0,
+        "boundary_FyN": 0,
+        "boundary_FzN": 0,
+        "boundary_yawNm": 0
+      },
+      "settings": {
+        "windBase": 0,
+        "windBaseFrom": 0.3490658503988659,
+        "sail": 0,
+        "order": 1,
+        "rowingEnabled": true,
+        "handsPerOar": 3,
+        "auxiliaryKN": 0,
+        "headingHold": false,
+        "targetHeading": 2.647285911348493,
+        "helm": 1
+      },
+      "geometry": {
+        "length": 82,
+        "hullBeam": 6.6,
+        "hullCentres": [
+          -8.5,
+          8.5
+        ],
+        "columns": 512,
+        "oars": 188,
+        "mainSailArea": 138.37399999999997,
+        "aftSailArea": 67.01039999999999
+      },
+      "body": {
+        "massKg": 1335846.2132369909,
+        "cg": [
+          0,
+          2.5,
+          -0.5999991409447594
+        ],
+        "inertia": [
+          565283757.1026243,
+          635886933.5178678,
+          133383634.99321567
+        ],
+        "hydrostaticReference": {
+          "volume": 1314.3216080365207,
+          "mass": 1347179.6482374338,
+          "cbY": -1.260878373338409,
+          "cbZ": -0.5999991409447594,
+          "waterplane": 609.341945719666,
+          "waterplaneRollInertia": 45086.10058618616,
+          "metacentricHeightAboveWater": 33.042826526971936
+        }
+      },
+      "ledger": {
+        "water": {
+          "forceN": [
+            0.000002063910659303969,
+            13104651.351854093,
+            0.000003829624712836321
+          ],
+          "torqueNm": [
+            0.00006442622256728322,
+            -3.322877088411784e-13,
+            -0.000034721504693611225
+          ],
+          "msPerStep": 0.07873603361111337
+        },
+        "rowing": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.08161293888883545
+        },
+        "rudders": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0003657733333986673
+        },
+        "main sail": {
+          "forceN": [
+            -9.719577961102614e-7,
+            0.0000010161924487360185,
+            -0.0000018034855950020402
+          ],
+          "torqueNm": [
+            -0.00005134485088948044,
+            4.202091227612291e-18,
+            0.000027671431502140168
+          ],
+          "msPerStep": 0.0010606920833106414
+        },
+        "aft sail": {
+          "forceN": [
+            -2.8981809443460165e-7,
+            -4.99363186490391e-7,
+            -5.377628129282014e-7
+          ],
+          "torqueNm": [
+            -0.000016897906256249465,
+            -1.6810357741749136e-18,
+            0.000009106838315354872
+          ],
+          "msPerStep": 0.0009078798611466886
+        },
+        "windage": {
+          "forceN": [
+            -2.212924834646081e-8,
+            2.356194757272949e-12,
+            -4.106122794710451e-8
+          ],
+          "torqueNm": [
+            -1.1497145555972216e-7,
+            9.221085844515068e-25,
+            6.196190297064142e-8
+          ],
+          "msPerStep": 0.00013959013888274462
+        },
+        "test drive": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00005185180556812459
+        },
+        "mooring": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.00006837499996537291
+        },
+        "ground": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.0037994299999758773
+        },
+        "boundary": {
+          "forceN": [
+            0,
+            0,
+            0
+          ],
+          "torqueNm": [
+            0,
+            0,
+            0
+          ],
+          "msPerStep": 0.000044934305538441146
+        }
+      },
+      "performance": {
+        "physicsMsPerStep": 0.1697229226388946,
+        "steps": 7200
+      },
+      "assumptions": [
+        "Rigid twin hulls, calm flat water, open wind, deep seabed.",
+        "Displacement-derived mass; assumed CG 2.5m above waterline and column-derived inertia.",
+        "Existing CrewRowing, 3 hands per oar as a grouped motor approximation; long-oar inertia and inboard handles are estimates.",
+        "Two independent existing SailingSystems; no rig shadowing or catamaran wave interference.",
+        "Windage area and rudder area are estimates. No structure, damage, interiors or navigation world.",
+        "Optional test drive applies a specified forward force at both hulls near the stern; no paddle or animal mechanism is simulated."
+      ],
+      "cpuSeconds": 1.2316012499999998,
+      "meanLast30s": {
+        "speedKn": 1.4354122890102555e-10,
+        "rowerKW": 0,
+        "hullKW": 0,
+        "oarKN": 0,
+        "sailKN": 0
+      },
+      "headingChangeDeg": 0,
+      "maxHeelDeg": 2.6560271699086815e-15
+    }
+  },
+  "convergence": [
+    {
+      "stations": 32,
+      "strips": 8,
+      "columns": 512,
+      "massKg": 1335846.2132369897,
+      "relativeError": -0.008412712450987514
+    },
+    {
+      "stations": 64,
+      "strips": 16,
+      "columns": 2048,
+      "massKg": 1335993.2982512007,
+      "relativeError": -0.008303532495364307
+    },
+    {
+      "stations": 128,
+      "strips": 32,
+      "columns": 8192,
+      "massKg": 1346337.3491173543,
+      "relativeError": -0.0006252314761298061
+    }
+  ]
+}

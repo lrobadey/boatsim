@@ -1,0 +1,60 @@
+{
+  "state": {
+    "time_s": 89.45000000001725,
+    "source_limit_W": 12000,
+    "source_W": 8468.974798902553,
+    "shaft_W": 6775.179839122043,
+    "port_command": 1,
+    "stbd_command": 1,
+    "port_rpm": 2.6918926718943883,
+    "stbd_rpm": 2.699535523318451,
+    "port_thrust_N": 2800.110677887813,
+    "stbd_thrust_N": 2606.669174541513,
+    "yaw_moment_Nm": 2681.905887721308,
+    "speed_kn": 0.6619574805777924,
+    "heading_rad": 2.175105944324721,
+    "yaw_rad_s": -0.00043720192220447724,
+    "hull_W": 1749.8084589665075,
+    "waves_W": -8.637289449458873,
+    "water_loss_W": 5008.80543035505,
+    "friction_W": 21.825980919446785,
+    "rotor_storage_W": -13.903129220493867,
+    "integration_W": 0.0200560060164017,
+    "wind_m_s": 6.942479342733306,
+    "sails": 1,
+    "heel_rad": -0.002757434996866202,
+    "machinery_kg": 24000,
+    "active_crew_kg": 12800,
+    "mass_kg": 1372646.2132369909,
+    "cpu_ms": 0,
+    "reaction_W": -0.025864658111127925,
+    "lastPassDrawCalls": 1,
+    "lastPassTriangles": 1,
+    "gpuMs": 12.910580451610338,
+    "finite": true,
+    "grounding": 0,
+    "rows": 354,
+    "mode": "independent",
+    "rotorAngle": [
+      -5.990057845130057,
+      -6.199100641069002
+    ],
+    "coordinates": [
+      1925.5557987185764,
+      2.4755334534490094,
+      2982.607623619004
+    ],
+    "terrainHeight": -53.94971927855727
+  },
+  "console": [],
+  "checks": [
+    "Three visual review passes",
+    "6 kW watch preset lowers crew mass by 6400 kg",
+    "12 kW watch preset restored",
+    "Independent shaft reversal and pivot",
+    "CSV download: 763 rows, 27 numeric columns",
+    "Sail deployment with F",
+    "Inspection orbit locked",
+    "Normal camera tests passed"
+  ]
+}

@@ -131,6 +131,7 @@ export class Ocean {
       uShipInv: { value: new THREE.Matrix4() },
       uHullLen: { value: 34 },
       uHullW: { value: new Float32Array(16) },
+      uHullOffset: { value: 0 },
       uHullDeck: { value: 2.0 },
     };
 
@@ -389,6 +390,7 @@ uniform float uLastLevel;
 uniform mat4 uShipInv;
 uniform float uHullLen;
 uniform float uHullW[16];
+uniform float uHullOffset;
 uniform float uHullDeck;
 varying vec3 vWorld;
 varying vec2 vGrid;
@@ -438,7 +440,7 @@ void main() {
   // keep the sea out of the hull
   vec3 lp = (uShipInv * vec4(vWorld, 1.0)).xyz;
   if (abs(lp.z) < uHullLen * 0.5 && lp.y < uHullDeck) {
-    if (abs(lp.x) < hullHalfWidth(lp.z) - 0.05) discard;
+    if (abs(abs(lp.x) - uHullOffset) < hullHalfWidth(lp.z) - 0.05) discard;
   }
 
   vec3 toCam = cameraPosition - vWorld;

@@ -1,0 +1,11 @@
+{
+  "concept": "C",
+  "iteration": 2,
+  "view": "hero",
+  "length": 82.0,
+  "beam": 23.6,
+  "objects": 29,
+  "vertices": 322498,
+  "blend": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/c-terraced.blend",
+  "render": "/Users/lucarobadey/Developer/boatsim/ship-study/renders/02-terraced-variants/c-p02-hero.png"
+}

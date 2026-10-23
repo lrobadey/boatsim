@@ -188,6 +188,8 @@ export interface ShipDesign {
     crew?: CrewRowingParams;
   };
   rig: SailRig;
+  /** Additional square rigs follow the main rig's deployment and yard pose as one control. */
+  additionalRigs?: SailRig[];
   aero: SailAero;
   docking: DockingDesign;
   /** dropping and weighing the anchor (Mooring) */

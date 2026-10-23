@@ -1,0 +1,13 @@
+{
+  "source": "Blender pass 5, rebuilt without moving oars and running sails",
+  "runtimeRotationY": 1.5707963267948966,
+  "hullLength": 82,
+  "hullCentres": [
+    -8.5,
+    8.5
+  ],
+  "hullBeam": 6.6,
+  "objects": 28,
+  "vertices": 383196,
+  "bytes": 26724964
+}

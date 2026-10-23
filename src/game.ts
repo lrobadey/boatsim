@@ -50,6 +50,16 @@ import { noise1, clamp, smoothstep } from './core/util';
 
 const SIM_DT = 1 / 120;
 
+/** Opt-in development vessels can supply their authored exterior without entering saved voyages. */
+export interface DevVessel {
+  createModel(ship: ShipPhysics): ShipVisual;
+  buildSolids(solids: WalkGeometry): void;
+  start: WorldGenResult['sites']['start'];
+  /** A positive offset renders two hull cutouts, leaving water visible in the channel. */
+  hullOffset: number;
+  hullWidths: Float32Array;
+}
+
 export class Game {
   readonly scene = new THREE.Scene();
   readonly camera: THREE.PerspectiveCamera;
@@ -145,7 +155,7 @@ export class Game {
     return best;
   }
 
-  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit, readonly design: ShipDesign = TRIREME, ormos?:OrmosHarbour) {
+  constructor(canvas: HTMLCanvasElement, private quality: Quality, gen: WorldGenResult, tex: { noise: Uint8Array; ripple: Uint8Array; cloudShape: Uint16Array; cloudDetail: Uint16Array; cloudWeather: Uint8Array }, assets: VisualAssets, readonly models: ModelKit, readonly design: ShipDesign = TRIREME, ormos?:OrmosHarbour, devVessel?: DevVessel) {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 60000);
     this.pipeline = new Pipeline(canvas, this.scene, this.camera, quality);
     this.input = new Input(canvas);
@@ -223,9 +233,10 @@ export class Game {
     this.ocean.uniforms.uReflect.value = this.reflection.target.texture;
     this.ocean.uniforms.uReflMatrix.value = this.reflection.textureMatrix;
     this.ocean.uniforms.uReflOn.value = this.reflection.enabled ? 1 : 0;
-    this.ocean.uniforms.uHullW.value = design.hull.hullWidthTable();
+    this.ocean.uniforms.uHullW.value = devVessel?.hullWidths ?? design.hull.hullWidthTable();
+    this.ocean.uniforms.uHullOffset.value = devVessel?.hullOffset ?? 0;
     this.ocean.uniforms.uHullLen.value = design.hull.length;
-    this.ocean.uniforms.uHullDeck.value = design.kind === 'merchant' ? design.deck.deckY(0.5) : 2.0;
+    this.ocean.uniforms.uHullDeck.value = devVessel || design.kind === 'merchant' ? design.deck.deckY(0.5) : 2.0;
 
     this.foam = new FoamSystem(quality.name === 'low' ? 512 : 1024, design.hull);
     this.ocean.uniforms.uFoamMap.value = this.foam.target.texture;
@@ -244,7 +255,7 @@ export class Game {
 
     T('props');
     this.ship = new ShipPhysics(this.waves, this.wind, this.terrain, this.crew, design);
-    this.model = design.kind === 'merchant'
+    this.model = devVessel ? devVessel.createModel(this.ship) : design.kind === 'merchant'
       ? new MerchantModel(ormos?.wood??assets.planks, this.ship.rowing.slots, this.models, design)
       : new Trireme(assets.planks, this.ship.rowing.slots, this.models);
     if(ormos && this.model instanceof MerchantModel){this.model.setAuthoredShell(ormos.shell);this.model.setSailSurface(ormos.linen);}
@@ -259,7 +270,8 @@ export class Game {
     this.walk = new WalkGeometry(this.terrain);
     for (const l of this.harbourLayouts) for (const sol of l.solids) this.walk.add(sol);
     for (const sol of this.props.solids) this.walk.add(sol);
-    this.buildShipSolids();
+    if (devVessel) devVessel.buildSolids(this.shipSolids);
+    else this.buildShipSolids();
     this.shipPose = { origin: new THREE.Vector3(), quat: new THREE.Quaternion(), cgWorld: new THREE.Vector3(), vel: new THREE.Vector3(), angVel: new THREE.Vector3(), plank: null, solids: this.shipSolids };
     this.harbourRig = new HarbourRig(design);
     this.harbourRig.setPlankModel(ormos && design.kind==='merchant' ? ormos.plank : this.models.get('gangplank'),ormos && design.kind==='merchant' ? 3.1 : 3,!!ormos && design.kind==='merchant');
@@ -267,7 +279,8 @@ export class Game {
     this.scene.add(this.harbourRig.group);
     this.berthMarker = new BerthMarker(this.harbourLayouts, design);
     this.scene.add(this.berthMarker.group);
-    this.ship.place(gen.sites.start.x, gen.sites.start.z, gen.sites.start.heading);
+    const start = devVessel?.start ?? gen.sites.start;
+    this.ship.place(start.x, start.z, start.heading);
     // settle on the water before the player arrives
     for (let i = 0; i < 240; i++) this.ship.step(SIM_DT);
     // one clock: the wind starts where the ship's time is

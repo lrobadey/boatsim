@@ -26,6 +26,25 @@ without opening the game window. If startup fails, the app offers its log at
 Quality presets (low / medium / high / ultra) are on the title screen; render resolution adapts to
 hold the display's refresh rate.
 
+### Thalassa dev build
+
+`npm run dev:thalassa` serves the playable Thalassa at http://127.0.0.1:5175/.
+It opens the normal game world in chase view, in deep open water at least 1.2 km from
+every harbour, with a 350 m clear radius and a 1 km departure corridor. The equivalent
+URL on the normal dev server is `/?dev&ship=thalassa&start=sea&hud=1&wind=8`.
+W/S orders the oars, A/D steers, F raises/brails both sails, G reefs both, J/L trims
+both yards and K restores automatic trim. C switches between chase and helm views.
+The two sails move together; each still applies its own aerodynamic load at its own mast.
+The playable dev rig uses a 28 × 13 m main sail and a 24 × 10 m aft sail, totaling
+about 555 m² of projected cloth (2.7 times the original sea-trial rig). The existing
+mast/yard heights keep both sails clear of the upper terraces when fully lowered.
+This exterior prototype uses the sea-trial's estimated physics and grouped three-hands-per-oar
+motors. Docking, anchoring, trade and construction are disabled; deck collision is preliminary.
+It does not load or write merchant voyages or replace the remembered normal ship.
+`npm run test:thalassa` checks the offshore start and vessel headlessly; it is not browser verification.
+`node scripts/probe-thalassa-sails.mjs` compares original/enlarged rigs over a matched
+180 s wind-only run with normal waves, resting oars and 8 m/s prevailing wind.
+
 ## Controls
 
 | | |
@@ -121,3 +140,19 @@ by [Digital in situ Preservation Archive](https://sketchfab.com/kotaro_yamafune)
 [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/). The source model is in
 `tools/blender/ref/kyrenia_steffy_gltf/`; `tools/blender/merchant_offsets.py` turns it into
 `src/ship/merchantOffsets.ts`.
+
+The experimental twin-paddle retrofit is available at
+[`?dev&ship=thalassa&start=sea&hud=1&wind=8&drive=paddles`](http://127.0.0.1:5175/?dev&ship=thalassa&start=sea&hud=1&wind=8&drive=paddles)
+when `npm run dev:thalassa` is running. It adds independent finite-torque wheel shafts,
+source-power/crew-weight presets and developer diagnostics. See
+[the machinery trial notes](ship-study/propulsion/TWIN-PADDLES.md); run `npm run test:twin-paddles`
+for the geometry, energy/force closure and motion probes.
+
+### Three paddle mechanisms
+
+The paddle dev view now switches between **Helios** (side wheels), **Polypous**
+(eight articulated sweeps per side across 56 m), and **Scarab** (58.8 m endless
+paddle tracks). Open `http://127.0.0.1:5175/?dev&ship=thalassa&start=sea&hud=1&wind=8&drive=paddles&paddle=polypous`.
+Use the design buttons to refit, then **Restart · paddles only** for a fresh start.
+See [mechanism assumptions and validation](ship-study/propulsion/THREE-MECHANISMS.md).
+`npm run test:paddle-variants` checks shared geometry and the actual physics solver.

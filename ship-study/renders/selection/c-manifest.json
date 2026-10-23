@@ -1,0 +1,19 @@
+{
+  "variant": "C",
+  "name": "Thalassa / Twin-hull court",
+  "length_m": 82.0,
+  "beam_m": 23.6,
+  "source": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/c-terraced.blend",
+  "engine": "CYCLES",
+  "samples": 96,
+  "resolution": [
+    2000,
+    1300
+  ],
+  "views": [
+    "hero",
+    "stern",
+    "waterline"
+  ],
+  "interiors": false
+}

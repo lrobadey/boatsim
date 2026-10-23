@@ -1,0 +1,11 @@
+{
+  "concept": "A",
+  "iteration": 2,
+  "view": "hero",
+  "length": 90.0,
+  "beam": 12.6,
+  "objects": 26,
+  "vertices": 220878,
+  "blend": "/Users/lucarobadey/Developer/boatsim/ship-study/blender/a-terraced.blend",
+  "render": "/Users/lucarobadey/Developer/boatsim/ship-study/renders/02-terraced-variants/a-p02-hero.png"
+}

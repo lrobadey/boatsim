@@ -188,6 +188,7 @@ export class SailingSystem {
     wind: SailWind,
     force: THREE.Vector3,
     torque: THREE.Vector3,
+    linkedControls?: Pick<SailState, 'deployment' | 'yardAngle'>,
   ): void {
     if (!Number.isFinite(dt) || dt <= 0) return;
     this.copyState(this.current, this.previous);
@@ -198,8 +199,10 @@ export class SailingSystem {
       this.rig.maxYardAngle,
     );
     const deploymentStep = dt / 6;
-    this.current.deployment += clamp(this.deploymentTarget - this.current.deployment, -deploymentStep, deploymentStep);
+    this.current.deployment = linkedControls ? linkedControls.deployment
+      : this.current.deployment + clamp(this.deploymentTarget - this.current.deployment, -deploymentStep, deploymentStep);
     this.current.deployment = clamp(this.current.deployment, 0, 1);
+    if (linkedControls) this.current.yardAngle = linkedControls.yardAngle;
 
     const invQ = this.inverseQuat.copy(body.quat).invert();
     this.setLocalNormal(this.current.yardAngle, this.normalLocal);
@@ -226,7 +229,7 @@ export class SailingSystem {
       this.updateAutoTrim(centerSpeed, incidence, this.centerAirLocal);
     }
     const yardTarget = this.trimMode === 'manual' ? this.manualYardTarget : this.autoYardTarget;
-    this.current.yardAngle += clamp(yardTarget - this.current.yardAngle, -0.25 * dt, 0.25 * dt);
+    if (!linkedControls) this.current.yardAngle += clamp(yardTarget - this.current.yardAngle, -0.25 * dt, 0.25 * dt);
     this.current.yardAngle = clamp(this.current.yardAngle, -this.rig.maxYardAngle, this.rig.maxYardAngle);
 
     // Refresh rig-center telemetry at the actual yard pose used for this force evaluation.

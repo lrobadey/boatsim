@@ -1,0 +1,40 @@
+[
+  {
+    "id": "basileus",
+    "scenario": "ahead",
+    "sourceKW": 24,
+    "seconds": 40,
+    "speed_kn": 0.6168768103040436,
+    "heading_deg": 1.1966536377183913e-18,
+    "maxPower": 24000,
+    "closure": 9.900192913733785e-10,
+    "maxRPM": 3.977144574588047,
+    "maxThrust": 7046.123438619827,
+    "rotorMass": 28589.404196316988,
+    "rotorInertia": 367381.8767353479,
+    "visibleMass": 131737.48167383432,
+    "machineryMass": 143737.48167383432,
+    "geometry": {
+      "mechanism": "oars",
+      "x": 19,
+      "rowlockX": 10.8,
+      "y": 5.8,
+      "z": 0,
+      "outboard": 10.2,
+      "inboard": 3,
+      "radius": 0.42,
+      "width": 2.2,
+      "bladeHeight": 4,
+      "areaFactor": 0.6392,
+      "axleDiameter": 0.75,
+      "blades": 8,
+      "cd": 1.65,
+      "maxTorque": 21600,
+      "maxOmega": 0.6,
+      "gearEfficiency": 0.72,
+      "inertia": 367381.8767353479,
+      "rotorMass": 28589.404196316988,
+      "machineryMass": 143737.48167383432
+    }
+  }
+]
